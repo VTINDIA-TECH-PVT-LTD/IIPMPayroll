@@ -119,31 +119,63 @@ const EmployeePortal: React.FC = () => {
 <html><head><meta charset="utf-8"/>
 <title>Pay Slip - ${monthLabel} ${p.year}</title>
 <style>
-  @page { size: A4; margin: 14mm 16mm; }
+  @page { size: A4; margin: 10mm 15mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 11px; color: #111; background:#fff; position:relative; }
-  .watermark { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:340px; opacity:0.06; z-index:0; pointer-events:none; }
-  .content { position:relative; z-index:1; }
-  .header { text-align:center; margin-bottom:10px; }
-  .header h1 { font-size:15px; font-weight:bold; margin-bottom:2px; }
-  .header .addr { font-size:11px; line-height:1.55; }
-  .ps-title { text-align:center; font-weight:bold; font-size:13px; margin-top:10px; }
-  .emp-name { text-align:center; font-size:12.5px; font-weight:bold; margin:10px 0 12px 0; }
-  .detail-table { width:100%; border-collapse:collapse; margin-bottom:12px; }
-  .detail-table td { padding:2.5px 3px; font-size:11px; vertical-align:top; }
-  .lbl { color:#333; white-space:nowrap; width:140px; }
-  .sep { width:8px; }
-  .sal-table { width:100%; border-collapse:collapse; margin-bottom:8px; border:1px solid #111; }
-  .sal-table th { background:#fff; font-weight:bold; font-size:11.5px; padding:5px 8px; border:1px solid #111; text-align:left; }
-  .sal-table td { padding:4px 8px; border:1px solid #111; font-size:11px; }
-  .amt { text-align:right; width:110px; }
-  .total-row td { font-weight:bold; background:#eee; }
-  .net-row td { font-weight:bold; font-size:12px; background:#e8e8e8; }
-  .words { margin-top:10px; font-size:11px; line-height:1.6; }
-  .footer { text-align:center; margin-top:28px; font-size:11px; color:#444; font-style:italic; }
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; background:#fff; position:relative; }
+  
+  /* Watermark */
+  .watermark-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%;
+    opacity: 0.1;
+    z-index: 0;
+    pointer-events: none;
+    text-align: center;
+  }
+  .watermark-container img { width: 100%; max-width: 400px; }
+
+  .content { position:relative; z-index:1; padding-top: 10px; }
+  
+  /* Header */
+  .header { text-align:center; margin-bottom:15px; }
+  .header h1 { font-size:14px; font-weight:bold; margin-bottom:3px; letter-spacing: 0.2px; }
+  .header .addr { font-size:10px; line-height:1.4; color: #111; }
+  
+  .ps-title { text-align:center; font-weight:bold; font-size:11px; margin-top:15px; line-height: 1.4; }
+  .emp-name { text-align:center; font-size:12px; font-weight:bold; margin:10px 0 20px 0; }
+  
+  /* Details Table */
+  .detail-table { width:100%; border-collapse:collapse; margin-bottom:15px; }
+  .detail-table td { padding:2px; font-size:9.5px; vertical-align:top; }
+  .lbl { color:#000; white-space:nowrap; width:130px; }
+  .sep { width:10px; text-align: center; }
+  .detail-val { width: auto; }
+  
+  /* Salary Table */
+  .sal-table { width:100%; border-collapse:collapse; margin-bottom:15px; border: 1.5px solid #000; }
+  .sal-table th { background:#fff; font-weight:bold; font-size:10px; padding:5px 6px; border:1px solid #000; text-align:left; }
+  .sal-table td { padding:4px 6px; border:1px solid #000; font-size:9.5px; }
+  .sal-table .amt { text-align:right; width:90px; }
+  .total-row td { font-weight:bold; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
+  .net-row td { font-weight:bold; font-size:10px; }
+  
+  /* Footer */
+  .words { margin-top:15px; font-size:10px; line-height:1.5; }
+  .footer { text-align:center; margin-top:40px; font-size:9px; color:#111; font-style:italic; }
+  
+  /* Print overrides */
+  @media print {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 </style></head>
 <body>
-<img src="${logoUrl}" class="watermark" onerror="this.style.display='none'"/>
+<div class="watermark-container">
+  <img src="${logoUrl}" alt="watermark" onerror="this.style.display='none'"/>
+</div>
 <div class="content">
   <div class="header">
     <h1>Indian Institute of Petroleum and Energy</h1>
@@ -154,35 +186,34 @@ const EmployeePortal: React.FC = () => {
 
   <table class="detail-table">
     <tr>
-      <td class="lbl">Employee Number</td><td class="sep">:</td><td>${p.employeeId||''}</td>
-      <td width="25"></td>
-      <td class="lbl">Tax Regime</td><td class="sep">:</td><td>${u?.taxRegime||'Regular Tax Regime'}</td>
+      <td class="lbl">Employee Number</td><td class="sep">:</td><td class="detail-val">${p.employeeId||''}</td>
+      <td width="40"></td>
+      <td class="lbl">Tax Regime</td><td class="sep">:</td><td class="detail-val">${u?.taxRegime||'Regular Tax Regime'}</td>
     </tr>
     <tr>
-      <td class="lbl">Function</td><td class="sep">:</td><td>${u?.function||'NPS'}</td>
+      <td class="lbl">Function</td><td class="sep">:</td><td class="detail-val">${u?.function||'NPS'}</td>
       <td></td>
-      <td class="lbl">Income Tax Number (PAN)</td><td class="sep">:</td><td>${u?.pan||''}</td>
+      <td class="lbl">Income Tax Number (PAN)</td><td class="sep">:</td><td class="detail-val">${u?.pan||''}</td>
     </tr>
     <tr>
-      <td class="lbl">Designation</td><td class="sep">:</td><td><b>${u?.designation||''}</b></td>
+      <td class="lbl">Designation</td><td class="sep">:</td><td class="detail-val">${u?.designation||''}</td>
       <td></td>
-      <td class="lbl">Pay Level</td><td class="sep">:</td><td>Level-${u?.payLevel||p.payLevel||''}</td>
+      <td class="lbl">Pay Level</td><td class="sep">:</td><td class="detail-val">Level-${u?.payLevel||p.payLevel||''}</td>
     </tr>
     <tr>
-      <td class="lbl">Location</td><td class="sep">:</td><td>${u?.location||'Visakhapatnam'}</td>
+      <td class="lbl">Location</td><td class="sep">:</td><td class="detail-val">${u?.location||'Visakhapatnam'}</td>
       <td></td>
-      <td class="lbl">PF account number</td><td class="sep">:</td><td>${u?.pfAccountNumber||''}</td>
+      <td class="lbl">PF account number</td><td class="sep">:</td><td class="detail-val">${u?.pfAccountNumber||''}</td>
     </tr>
     <tr>
-      <td class="lbl">Bank Details</td><td class="sep">:</td><td>${u?.bankName?`${u.bankName}${u.bankAccountNumber?' (****'+String(u.bankAccountNumber).slice(-4)+')':''}`:''}
-      </td>
+      <td class="lbl">Bank Details</td><td class="sep">:</td><td class="detail-val">${u?.bankName?`${u.bankName}${u.bankAccountNumber?' (****'+String(u.bankAccountNumber).slice(-4)+')':''}`:''}</td>
       <td></td>
-      <td class="lbl">Department</td><td class="sep">:</td><td>${u?.department||''}</td>
+      <td class="lbl">Department</td><td class="sep">:</td><td class="detail-val">${u?.department||''}</td>
     </tr>
     <tr>
-      <td class="lbl">Date of joining</td><td class="sep">:</td><td>${doj}</td>
+      <td class="lbl">Date of joining</td><td class="sep">:</td><td class="detail-val">${doj}</td>
       <td></td>
-      <td class="lbl">PR Account Number (IPRAN)</td><td class="sep">:</td><td>${u?.pranAccountNumber||''}</td>
+      <td class="lbl">PR Account Number (IPRAN)</td><td class="sep">:</td><td class="detail-val">${u?.pranAccountNumber||''}</td>
     </tr>
   </table>
 
@@ -219,7 +250,7 @@ const EmployeePortal: React.FC = () => {
         <td>Total Deductions</td><td class="amt">${fmt(p.totalDeductions)}</td>
       </tr>
       <tr class="net-row">
-        <td colspan="2"></td>
+        <td colspan="2" style="border:none; border-right:1px solid #000;"></td>
         <td>Net Amount</td><td class="amt">${fmt(p.netSalary)}</td>
       </tr>
     </tbody>
