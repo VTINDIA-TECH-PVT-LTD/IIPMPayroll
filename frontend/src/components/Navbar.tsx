@@ -3,6 +3,11 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { UserContext } from '../App';
 import api from '../services/api';
 import '../styles/Navbar.css';
+import { 
+  LayoutDashboard, Users, Settings, Database,
+  Banknote, FileCheck, CheckSquare, IndianRupee,
+  FileText, Receipt, FileSignature
+} from 'lucide-react';
 
 interface NavbarProps {
   onLogout: () => void;
@@ -81,23 +86,23 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
       <nav className="sidebar-nav">
         <div className="sidebar-section-label">Overview</div>
         <NavLink to="/" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} end>
-          <span className="sidebar-nav-icon">🏠</span> Dashboard
+          <span className="sidebar-nav-icon"><LayoutDashboard size={20} /></span> Dashboard
         </NavLink>
 
         {(role === 'SUPER_ADMIN' || role === 'ADMIN_ADMIN' || role === 'ADMIN_OPERATOR') && (
           <>
             <div className="sidebar-section-label">Administration</div>
             <NavLink to="/users" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon">👥</span> Employees
+              <span className="sidebar-nav-icon"><Users size={20} /></span> Employees
             </NavLink>
             {(role === 'SUPER_ADMIN' || role === 'ADMIN_ADMIN') && (
               <NavLink to="/settings" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon">⚙️</span> Settings
+                <span className="sidebar-nav-icon"><Settings size={20} /></span> Settings
               </NavLink>
             )}
             {(role === 'SUPER_ADMIN' || role === 'ADMIN_ADMIN') && (
               <NavLink to="/data" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon">💾</span> Data Management
+                <span className="sidebar-nav-icon"><Database size={20} /></span> Data Management
               </NavLink>
             )}
           </>
@@ -107,7 +112,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
           <>
             <div className="sidebar-section-label">Payroll Processing</div>
             <NavLink to="/payroll" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon">₹</span> Salary Processing
+              <span className="sidebar-nav-icon"><Banknote size={20} /></span> Salary Processing
             </NavLink>
           </>
         )}
@@ -117,12 +122,12 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
             <div className="sidebar-section-label">Approvals</div>
             {(role === 'SUPER_ADMIN' || role === 'FA_ADMIN') && (
               <NavLink to="/approvals" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon">✓</span> Pending Salary
+                <span className="sidebar-nav-icon"><FileCheck size={20} /></span> Pending Salary
               </NavLink>
             )}
             {(role === 'SUPER_ADMIN' || role === 'FA_OPERATOR') && (
               <NavLink to="/it-approvals" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon">✓</span> IT Approvals
+                <span className="sidebar-nav-icon"><CheckSquare size={20} /></span> IT Approvals
               </NavLink>
             )}
           </>
@@ -132,12 +137,12 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
           <>
             {(role === 'SUPER_ADMIN' || role === 'FA_OPERATOR') && (
               <NavLink to="/arrears" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon">⇌</span> Arrears
+                <span className="sidebar-nav-icon"><IndianRupee size={20} /></span> Arrears
               </NavLink>
             )}
             <div className="sidebar-section-label">Reports</div>
             <NavLink to="/reports" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon">📊</span> Reports
+              <span className="sidebar-nav-icon"><FileText size={20} /></span> Reports
             </NavLink>
           </>
         )}
@@ -146,13 +151,13 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
           <>
             <div className="sidebar-section-label">My Payroll</div>
             <NavLink to="/payslips" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon">📄</span> My Payslips
+              <span className="sidebar-nav-icon"><Receipt size={20} /></span> My Payslips
             </NavLink>
             <NavLink to="/form16" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon">📑</span> Form 16
+              <span className="sidebar-nav-icon"><FileText size={20} /></span> Form 16
             </NavLink>
             <NavLink to="/it-declaration" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon">📋</span> IT Declaration
+              <span className="sidebar-nav-icon"><FileSignature size={20} /></span> IT Declaration
             </NavLink>
           </>
         )}

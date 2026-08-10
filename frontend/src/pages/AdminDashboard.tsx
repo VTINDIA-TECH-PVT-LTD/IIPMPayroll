@@ -2,6 +2,10 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import apiService from '../services/api';
 import { UserContext } from '../App';
+import { 
+  Users, Banknote, FileCheck, CheckSquare, 
+  Settings, FileText, IndianRupee, Ban, HandCoins
+} from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import '../styles/Dashboard.css';
 
@@ -104,22 +108,22 @@ const AdminDashboard: React.FC = () => {
   const isFaAdmin = userCtx?.role === 'FA_ADMIN';
 
   const statCards = isFaAdmin ? [
-    { title: 'Pending Approvals', amount: stats.pendingApprovals.toString(), icon: '⏳', color: '#f59e0b', trend: '', up: true, link: '/approvals' },
-    { title: 'Approved Payrolls', amount: stats.approvedPayrolls.toString(), icon: '✅', color: '#22c55e', trend: '', up: true, link: '/reports' },
-    { title: 'Rejected Payrolls', amount: stats.rejectedPayrolls.toString(), icon: '❌', color: '#ef4444', trend: '', up: false, link: '/reports' },
+    { title: 'Pending Approvals', amount: stats.pendingApprovals.toString(), icon: <FileCheck size={24} />, color: '#f59e0b', trend: '', up: true, link: '/approvals' },
+    { title: 'Approved Payrolls', amount: stats.approvedPayrolls.toString(), icon: <CheckSquare size={24} />, color: '#22c55e', trend: '', up: true, link: '/reports' },
+    { title: 'Rejected Payrolls', amount: stats.rejectedPayrolls.toString(), icon: <Ban size={24} />, color: '#ef4444', trend: '', up: false, link: '/reports' },
   ] : [
-    { title: 'Total Payrolls', amount: fmt(stats.totalNetThisMonth), icon: '💰', color: '#153C7D', trend: '', up: true, link: '/reports' },
-    { title: 'Pending Payments', amount: stats.pendingApprovals.toString(), icon: '⏳', color: '#F47C20', trend: '', up: false, link: '/payroll' },
-    { title: 'Total Employees', amount: stats.totalEmployees.toString(), icon: '👥', color: '#388E3C', trend: '', up: true, link: '/users' },
+    { title: 'Total Payrolls', amount: fmt(stats.totalNetThisMonth), icon: <Banknote size={24} />, color: '#153C7D', trend: '', up: true, link: '/reports' },
+    { title: 'Pending Payments', amount: stats.pendingApprovals.toString(), icon: <FileCheck size={24} />, color: '#F47C20', trend: '', up: false, link: '/payroll' },
+    { title: 'Total Employees', amount: stats.totalEmployees.toString(), icon: <Users size={24} />, color: '#388E3C', trend: '', up: true, link: '/users' },
   ];
 
   const quickActions = [
-    { title: 'Process Payroll', desc: 'Create salary for this month', icon: '₹', link: '/payroll', color: '#153C7D', show: !isFaAdmin },
-    { title: 'Approve Payroll', desc: 'Approve pending salaries', icon: '✓', link: '/approvals', color: '#153C7D', show: isFaAdmin },
-    { title: 'Manage Employees', desc: 'Add or update employee records', icon: '👥', link: '/users', color: '#F47C20', show: !isFaAdmin },
-    { title: 'Arrears', desc: 'DA & promotion arrears', icon: '⇌', link: '/arrears', color: '#388E3C', show: !isFaAdmin },
-    { title: 'Settings', desc: 'Configure DA%, HRA%, NPS%', icon: '⚙', link: '/settings', color: '#64748b', show: !isFaAdmin },
-    { title: 'Reports', desc: 'View and export reports', icon: '📊', link: '/reports', color: '#8b5cf6', show: isFaAdmin },
+    { title: 'Process Payroll', desc: 'Create salary for this month', icon: <HandCoins size={24} />, link: '/payroll', color: '#153C7D', show: !isFaAdmin },
+    { title: 'Approve Payroll', desc: 'Approve pending salaries', icon: <FileCheck size={24} />, link: '/approvals', color: '#153C7D', show: isFaAdmin },
+    { title: 'Manage Employees', desc: 'Add or update employee records', icon: <Users size={24} />, link: '/users', color: '#F47C20', show: !isFaAdmin },
+    { title: 'Arrears', desc: 'DA & promotion arrears', icon: <IndianRupee size={24} />, link: '/arrears', color: '#388E3C', show: !isFaAdmin },
+    { title: 'Settings', desc: 'Configure DA%, HRA%, NPS%', icon: <Settings size={24} />, link: '/settings', color: '#64748b', show: !isFaAdmin },
+    { title: 'Reports', desc: 'View and export reports', icon: <FileText size={24} />, link: '/reports', color: '#8b5cf6', show: isFaAdmin },
   ].filter(q => q.show !== false);
 
   const getStatusBadge = (status: string) => {
