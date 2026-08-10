@@ -1,0 +1,822 @@
+import React, { useState, useEffect, useContext } from 'react';
+import * as XLSX from 'xlsx';
+import apiService from '../services/api';
+import { UserContext } from '../App';
+
+const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const ReportsPage: React.FC = () => {
+  const userCtx = useContext(UserContext);
+  const [tab, setTab] = useState<'register' | 'nps' | 'tds' | 'dept' | 'ytd' | 'comparison'>('register');
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [userId, setUserId] = useState<string>('');
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<any>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const [signatures, setSignatures] = useState({
+    preparedBy: 'S.SIRISHA',
+    verifiedBy1: 'Y RAMA RAO',
+    verifiedBy2: 'DR. B.MURALI KRISHNA',
+    approvedBy: 'SHRI.RAM PHAL DWIVEDI'
+  });
+
+  useEffect(() => {
+    apiService.getAllUsers().then(res => setEmployees(res)).catch(console.error);
+  }, []);
+
+  const loadReport = async () => {
+    setLoading(true); setData(null); setMsg(null);
+    try {
+      let result: any;
+      if (tab === 'register') result = await apiService.getSalaryRegister(month, year);
+      else if (tab === 'nps')  result = await apiService.getNPSReport(year);
+      else if (tab === 'tds')  result = await apiService.getTDSReport(year);
+      else if (tab === 'dept') result = await apiService.getDepartmentReport(month, year);
+      else if (tab === 'ytd')  result = await apiService.getYTDReport(userCtx?.userId || '');
+      else if (tab === 'comparison') {
+        if (!userId) { setLoading(false); return; }
+        result = await apiService.getSalaryComparison(userId);
+      }
+      // For register, attach user details to payroll data
+      if (tab === 'register' && (result?.data || result)) {
+        const payload = result.data || result;
+        payload.payrolls = payload.payrolls?.map((p: any) => {
+          const emp = employees.find(e => e.employeeId === p.employeeId);
+          return { ...p, designation: emp?.designation || '', payLevel: emp?.payLevel || '', staffFunction: emp?.function || '' };
+        });
+        setData(payload);
+      } else {
+        setData(result?.data || result);
+      }
+    } catch (e: any) {
+      setMsg(e.response?.data?.message || 'Failed to load report.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadReport(); }, [tab]);
+
+  const fmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
+  const fmtN = (n: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n || 0);
+
+  const tabList = [
+    { key: 'register', label: '📋 Salary Register' },
+    { key: 'nps',      label: '🏦 NPS Report' },
+    { key: 'tds',      label: '📊 TDS Report' },
+    { key: 'dept',     label: '🏢 Department-wise' },
+    { key: 'ytd',      label: '📈 Year-to-Date' },
+    { key: 'comparison',label: '⚖️ YoY Comparison' },
+  ] as const;
+
+  const exportSalaryRegisterToExcel = () => {
+    if (!data || !data.payrolls) return;
+
+    // Split payrolls by staff type
+    const facultyPayrolls = data.payrolls.filter((p: any) => p.staffFunction === 'Faculty');
+    const nonTeachingPayrolls = data.payrolls.filter((p: any) => p.staffFunction !== 'Faculty');
+
+    const wb = XLSX.utils.book_new();
+
+    // 1. Generate Faculty Sheet
+    if (facultyPayrolls.length > 0) {
+      const facultyData = facultyPayrolls.map((p: any, i: number) => ({
+        'Sl.no': i + 1,
+        'Pay level': p.payLevel || '10',
+        'Basic': p.basicPay || 0,
+        'DA 60%': p.da || 0,
+        'TA( Rs.3600+ * DA@60%)': p.ta || 0,
+        'HRA 20 %': p.hra || 0,
+        'Dean / Warden Allowance': p.otherAllowances || 0,
+        'NPS Employer share': p.npsEmployerShare || 0,
+        'Gross Salary': p.grossSalary || 0,
+        'PT': p.professionalTax || 0,
+        'TDS': p.tds || 0,
+        'NPS Employee share': p.npsEmployeeShare || 0,
+        'NPS Employer share_1': p.npsEmployerShare || 0, // Duplicate name bypass in XLSX
+        'CGHS Contribution': p.cghs || 0,
+        'Other deductions': p.otherDeductions || 0,
+        'Total Deductions': p.totalDeductions || 0,
+        'Net Salary': p.netSalary || 0
+      }));
+
+      const facultyTotals = facultyData.reduce((acc: any, curr: any) => {
+        Object.keys(curr).forEach(key => {
+          if (key !== 'Sl.no' && key !== 'Pay level') {
+            acc[key] = (acc[key] || 0) + (curr[key] || 0);
+          }
+        });
+        return acc;
+      }, { 'Sl.no': 'Total', 'Pay level': '' });
+      facultyData.push(facultyTotals);
+
+      // Fix duplicate column name for rendering
+      const finalFacultyData = facultyData.map((row: any) => {
+        const newRow: any = { ...row };
+        newRow['NPS Employer share '] = newRow['NPS Employer share_1']; // Add trailing space to differentiate keys
+        delete newRow['NPS Employer share_1'];
+        return newRow;
+      });
+
+      // Append Signature Block
+      finalFacultyData.push({}, {}, {}); // 3 empty rows
+      finalFacultyData.push({
+        'Sl.no': 'PREPARED BY',
+        'DA 60%': 'VERIFIED BY',
+        'Gross Salary': 'VERIFIED BY',
+        'CGHS Contribution': 'APPROVED /NOT APPROVED'
+      });
+      finalFacultyData.push({
+        'Sl.no': `(${signatures.preparedBy})`,
+        'DA 60%': `(${signatures.verifiedBy1})`,
+        'Gross Salary': `(${signatures.verifiedBy2})`,
+        'CGHS Contribution': `(${signatures.approvedBy})`
+      });
+      finalFacultyData.push({
+        'Sl.no': 'ACCOUNTS EXECUTIVE',
+        'DA 60%': 'Jr SUPTD(ACTING ASSISTANT REGISTRAR (F&A))',
+        'Gross Salary': 'JOINT REGISTRAR',
+        'CGHS Contribution': 'REGISTRAR'
+      });
+
+      const wsFaculty = XLSX.utils.json_to_sheet(finalFacultyData);
+      XLSX.utils.book_append_sheet(wb, wsFaculty, "Faculty");
+    }
+
+    // 2. Generate Non-Teaching Sheet
+    if (nonTeachingPayrolls.length > 0) {
+      const nonTeachingData = nonTeachingPayrolls.map((p: any) => ({
+        'Designation': p.designation || 'Staff',
+        'Pay Scale': `Level-${p.payLevel || '10'}`,
+        'Basic': p.basicPay || 0,
+        'DA 60%': p.da || 0,
+        'TA': p.ta || 0,
+        'HRA 20 %': p.hra || 0,
+        'NPS Employer Share': p.npsEmployerShare || 0,
+        'Gross salary': p.grossSalary || 0,
+        'PT': p.professionalTax || 0,
+        'TDS': p.tds || 0,
+        'NPS Employee share': p.npsEmployeeShare || 0,
+        'NPS Employer share': p.npsEmployerShare || 0,
+        'CGHS Contribution': p.cghs || 0,
+        'Other Recovery': p.otherDeductions || 0,
+        'Total Deductions': p.totalDeductions || 0,
+        'Net Salary': p.netSalary || 0
+      }));
+
+      const nonTeachingTotals = nonTeachingData.reduce((acc: any, curr: any) => {
+        Object.keys(curr).forEach(key => {
+          if (key !== 'Designation' && key !== 'Pay Scale') {
+            acc[key] = (acc[key] || 0) + (curr[key] || 0);
+          }
+        });
+        return acc;
+      }, { 'Designation': 'TOTAL', 'Pay Scale': '' });
+      nonTeachingData.push(nonTeachingTotals);
+
+      // Fix duplicate column name
+      const finalNTData = nonTeachingData.map((row: any) => {
+        const newRow: any = { ...row };
+        // Since XLSX handles duplicate keys in objects by overwriting, we need to ensure the JS objects have unique keys, but the excel sheet can have same headers. 
+        // Wait, JSON objects can't have duplicate keys. So I need to use an array of arrays for custom headers, but this is fine (trailing space).
+        newRow['NPS Employer share '] = newRow['NPS Employer share']; 
+        return newRow;
+      });
+
+      // Append Signature Block
+      finalNTData.push({}, {}, {}); // 3 empty rows
+      finalNTData.push({
+        'Designation': 'PREPARED BY',
+        'DA 60%': 'VERIFIED BY',
+        'Gross salary': 'VERIFIED BY',
+        'CGHS Contribution': 'APPROVED /NOT APPROVED'
+      });
+      finalNTData.push({
+        'Designation': `(${signatures.preparedBy})`,
+        'DA 60%': `(${signatures.verifiedBy1})`,
+        'Gross salary': `(${signatures.verifiedBy2})`,
+        'CGHS Contribution': `(${signatures.approvedBy})`
+      });
+      finalNTData.push({
+        'Designation': 'ACCOUNTS EXECUTIVE',
+        'DA 60%': 'Jr SUPTD(ACTING ASSISTANT REGISTRAR (F&A))',
+        'Gross salary': 'JOINT REGISTRAR',
+        'CGHS Contribution': 'REGISTRAR'
+      });
+
+      const wsNT = XLSX.utils.json_to_sheet(finalNTData);
+      XLSX.utils.book_append_sheet(wb, wsNT, "Non teaching Staff");
+    }
+
+    if (wb.SheetNames.length === 0) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ Message: "No data available" }]), "Sheet1");
+    }
+
+    XLSX.writeFile(wb, `INDIAN_INSTITUTE_OF_PETROLEUM_AND_ENERGY_Salary_${months[month-1]}_${year}.xlsx`);
+  };
+
+  return (
+    <div className="page-container">
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1>Reports</h1>
+          <p>Salary register, NPS, TDS, department-wise, and Form 16 reports</p>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {tab === 'register' && (
+            <button className="btn-success-iipm" onClick={exportSalaryRegisterToExcel}>
+              📊 Export to Excel
+            </button>
+          )}
+          <button className="btn-primary-iipm" onClick={() => window.print()}>
+            🖨 Print / Export PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border)', marginBottom: '24px', overflowX: 'auto' }}>
+        {tabList.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)} style={{
+            padding: '10px 20px', background: 'none', border: 'none', whiteSpace: 'nowrap',
+            borderBottom: `2px solid ${tab === t.key ? 'var(--accent)' : 'transparent'}`,
+            color: tab === t.key ? 'var(--accent)' : 'var(--text-muted)',
+            fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem', fontFamily: 'var(--font)'
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="card-iipm" style={{ padding: '16px 20px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          {(tab === 'register' || tab === 'dept') && (
+            <div>
+              <label className="form-label-iipm">Month</label>
+              <select className="form-control-iipm" value={month} onChange={e => setMonth(+e.target.value)} style={{ width: '150px' }}>
+                {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+              </select>
+            </div>
+          )}
+          {tab === 'comparison' ? (
+            <div>
+              <label className="form-label-iipm">Select Employee</label>
+              <select className="form-control-iipm" value={userId} onChange={e => setUserId(e.target.value)} style={{ width: '250px' }}>
+                <option value="">-- Select Employee --</option>
+                {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.id})</option>)}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="form-label-iipm">Year</label>
+              <input type="number" className="form-control-iipm" value={year} onChange={e => setYear(+e.target.value)} style={{ width: '100px' }} />
+            </div>
+          )}
+          <button className="btn-primary-iipm" onClick={loadReport} disabled={loading || (tab === 'comparison' && !userId)}>
+            {loading ? '⏳ Loading...' : '🔍 Generate Report'}
+          </button>
+        </div>
+        {tab === 'register' && (
+          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px' }}>EXCEL EXPORT SIGNATURE BLOCK CONFIGURATION</div>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <div><label className="form-label-iipm">Prepared By</label><input className="form-control-iipm" value={signatures.preparedBy} onChange={e => setSignatures({...signatures, preparedBy: e.target.value})} style={{width: '200px'}} /></div>
+              <div><label className="form-label-iipm">Verified By (1)</label><input className="form-control-iipm" value={signatures.verifiedBy1} onChange={e => setSignatures({...signatures, verifiedBy1: e.target.value})} style={{width: '200px'}} /></div>
+              <div><label className="form-label-iipm">Verified By (2)</label><input className="form-control-iipm" value={signatures.verifiedBy2} onChange={e => setSignatures({...signatures, verifiedBy2: e.target.value})} style={{width: '200px'}} /></div>
+              <div><label className="form-label-iipm">Approved By</label><input className="form-control-iipm" value={signatures.approvedBy} onChange={e => setSignatures({...signatures, approvedBy: e.target.value})} style={{width: '200px'}} /></div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {msg && <div className="alert-iipm alert-danger">{msg}</div>}
+
+      {/* ===== SALARY REGISTER ===== */}
+      {tab === 'register' && data && (
+        <>
+          {/* Summary */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+            {[
+              { label: 'Total Employees', value: fmtN(data.totalEmployees), icon: '👥', color: '#3b82f6' },
+              { label: 'Total Gross', value: fmt(data.totalGross), icon: '💰', color: '#c9a84c' },
+              { label: 'Total Deductions', value: fmt(data.totalDeductions), icon: '➖', color: '#ef4444' },
+              { label: 'Net Disbursement', value: fmt(data.totalNet), icon: '✅', color: '#22c55e' },
+            ].map((s, i) => (
+              <div className="stat-card" key={i}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div><div className="stat-label">{s.label}</div><div className="stat-value" style={{ fontSize: '1.4rem', color: s.color }}>{s.value}</div></div>
+                  <div style={{ fontSize: '1.8rem', opacity: 0.4 }}>{s.icon}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="card-iipm" style={{ padding: 0 }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontWeight: 600 }}>
+              Salary Register — {months[month - 1]} {year}
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table-iipm">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Employee ID</th><th>Basic</th><th>DA</th><th>HRA</th><th>TA</th>
+                    <th>Gross</th><th>TDS</th><th>NPS Emp</th><th>NPS Emp (14%)</th><th>PT</th><th>Total Ded.</th><th>Net Pay</th><th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.payrolls || []).map((p: any, i: number) => (
+                    <tr key={p.id}>
+                      <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{p.employeeId}</td>
+                      <td>{fmt(p.basicPay)}</td><td>{fmt(p.da)}</td><td>{fmt(p.hra)}</td><td>{fmt(p.ta)}</td>
+                      <td style={{ fontWeight: 600 }}>{fmt(p.grossSalary)}</td>
+                      <td>{fmt(p.tds)}</td><td>{fmt(p.npsEmployeeShare)}</td><td>{fmt(p.npsEmployerShare)}</td>
+                      <td>{fmt(p.professionalTax)}</td><td>{fmt(p.totalDeductions)}</td>
+                      <td style={{ color: '#22c55e', fontWeight: 700 }}>{fmt(p.netSalary)}</td>
+                      <td><span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{p.status}</span></td>
+                    </tr>
+                  ))}
+                  {!data.payrolls?.length && (
+                    <tr><td colSpan={14} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>No payroll data for this period.</td></tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr style={{ background: 'var(--bg-hover)', fontWeight: 700 }}>
+                    <td colSpan={6} style={{ padding: '12px 16px', color: 'var(--accent)' }}>TOTALS</td>
+                    <td style={{ padding: '12px 16px', color: 'var(--accent)' }}>{fmt(data.totalGross)}</td>
+                    <td colSpan={4}></td>
+                    <td style={{ padding: '12px 16px', color: '#ef4444' }}>{fmt(data.totalDeductions)}</td>
+                    <td style={{ padding: '12px 16px', color: '#22c55e' }}>{fmt(data.totalNet)}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ===== NPS REPORT ===== */}
+      {tab === 'nps' && data && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+            {[
+              { label: 'Total NPS (Employee 10%)', value: fmt(data.totalNPSEmployee), color: '#3b82f6' },
+              { label: 'Total NPS (Employer 14%)', value: fmt(data.totalNPSEmployer), color: '#8b5cf6' },
+              { label: 'Total NPS Trust Contribution', value: fmt(data.totalNPS), color: '#c9a84c' },
+            ].map((s, i) => (
+              <div className="stat-card" key={i}>
+                <div className="stat-label">{s.label}</div>
+                <div className="stat-value" style={{ fontSize: '1.5rem', color: s.color }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+          <div className="card-iipm" style={{ padding: '20px' }}>
+            <h3 style={{ marginBottom: '16px' }}>Monthly NPS Contribution — {year}</h3>
+            <table className="table-iipm">
+              <thead><tr><th>Month</th><th>NPS Contribution (Employee + Employer)</th></tr></thead>
+              <tbody>
+                {Object.entries(data.monthlyData || {}).sort().map(([m, v]: [string, any]) => (
+                  <tr key={m}><td>{shortMonths[parseInt(m) - 1] || m}</td><td>{fmt(v)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ===== TDS REPORT ===== */}
+      {tab === 'tds' && data && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+            {[
+              { label: 'Total TDS (Annual)', value: fmt(data.totalTDS), color: '#ef4444' },
+              { label: 'Average Monthly TDS', value: fmt(data.averageMonthlyTDS), color: '#f59e0b' },
+              { label: 'Payroll Records', value: fmtN(data.payrollCount), color: '#3b82f6' },
+            ].map((s, i) => (
+              <div className="stat-card" key={i}>
+                <div className="stat-label">{s.label}</div>
+                <div className="stat-value" style={{ fontSize: '1.5rem', color: s.color }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+          <div className="card-iipm" style={{ padding: '20px' }}>
+            <h3 style={{ marginBottom: '16px' }}>Monthly TDS — {year}</h3>
+            <table className="table-iipm">
+              <thead><tr><th>Month</th><th>TDS Deducted</th></tr></thead>
+              <tbody>
+                {Object.entries(data.monthlyTDS || {}).sort().map(([m, v]: [string, any]) => (
+                  <tr key={m}><td>{shortMonths[parseInt(m) - 1] || m}</td><td style={{ color: '#ef4444' }}>{fmt(v)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ===== DEPARTMENT WISE ===== */}
+      {tab === 'dept' && data && (
+        <div className="card-iipm" style={{ padding: '20px' }}>
+          <h3 style={{ marginBottom: '16px' }}>Department-wise Salary — {months[month - 1]} {year}</h3>
+          <table className="table-iipm">
+            <thead><tr><th>Department</th><th>Employees</th><th>Total Gross</th><th>Avg. Gross</th><th>Total Net</th></tr></thead>
+            <tbody>
+              {Object.entries(data.departments || {}).map(([dept, d]: [string, any]) => (
+                <tr key={dept}>
+                  <td style={{ fontWeight: 600 }}>{dept}</td>
+                  <td>{fmtN(d.employeeCount)}</td>
+                  <td>{fmt(d.totalGross)}</td>
+                  <td>{fmt(d.averageGross)}</td>
+                  <td style={{ color: '#22c55e', fontWeight: 600 }}>{fmt(d.totalNet)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ===== YEAR TO DATE ===== */}
+      {tab === 'ytd' && data && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+            {[
+              { label: 'Months Processed', value: fmtN(data.monthsProcessed), color: '#3b82f6' },
+              { label: 'Total Gross Salary', value: fmt(data.totalGrossSalary), color: '#c9a84c' },
+              { label: 'Total TDS', value: fmt(data.totalTDS), color: '#ef4444' },
+              { label: 'Total NPS', value: fmt(data.totalNPS), color: '#8b5cf6' },
+              { label: 'Total Net Salary', value: fmt(data.totalNetSalary), color: '#22c55e' },
+              { label: 'Avg Monthly', value: fmt(data.averageMonthly), color: '#f59e0b' },
+            ].map((s, i) => (
+              <div className="stat-card" key={i}>
+                <div className="stat-label">{s.label}</div>
+                <div className="stat-value" style={{ fontSize: '1.3rem', color: s.color }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+          <div className="card-iipm" style={{ padding: '20px' }}>
+            <h3 style={{ marginBottom: '4px' }}>Year-to-Date Summary — {data.year}</h3>
+            <p style={{ marginBottom: '20px', fontSize: '0.85rem' }}>Cumulative earnings and deductions from April to current month</p>
+            <table className="table-iipm">
+              <thead><tr><th>Component</th><th>Annual Total</th><th>Monthly Avg</th></tr></thead>
+              <tbody>
+                {[
+                  { label: 'Basic Pay', annual: data.totalGrossSalary * 0.45, key: 'bp' },
+                  { label: 'Dearness Allowance', annual: data.totalDA, key: 'da' },
+                  { label: 'HRA', annual: data.totalHRA, key: 'hra' },
+                  { label: 'Transport Allowance', annual: data.totalTA, key: 'ta' },
+                  { label: 'TDS Deducted', annual: data.totalTDS, key: 'tds' },
+                  { label: 'NPS (Employee 10%)', annual: data.totalNPS, key: 'nps' },
+                  { label: 'Net Salary', annual: data.totalNetSalary, key: 'net' },
+                ].map(row => (
+                  <tr key={row.key}>
+                    <td>{row.label}</td>
+                    <td style={{ fontWeight: 600 }}>{fmt(row.annual)}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{fmt((row.annual || 0) / Math.max(data.monthsProcessed, 1))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ===== YoY COMPARISON ===== */}
+      {tab === 'comparison' && data && (
+        <div className="card-iipm" style={{ padding: '20px' }}>
+          <h3 style={{ marginBottom: '4px' }}>Year-over-Year Salary Comparison</h3>
+          <p style={{ marginBottom: '20px', fontSize: '0.85rem' }}>Comparing current year ({data.currentYear}) with previous year ({data.previousYear})</p>
+          <table className="table-iipm">
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th style={{ textAlign: 'right' }}>{data.previousYear} Total</th>
+                <th style={{ textAlign: 'right' }}>{data.currentYear} Total</th>
+                <th style={{ textAlign: 'right' }}>% Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { label: 'Basic Pay', prev: data.previousYearTotals?.basicPay, curr: data.currentYearTotals?.basicPay },
+                { label: 'Dearness Allowance (DA)', prev: data.previousYearTotals?.da, curr: data.currentYearTotals?.da },
+                { label: 'House Rent Allowance (HRA)', prev: data.previousYearTotals?.hra, curr: data.currentYearTotals?.hra },
+                { label: 'Transport Allowance (TA)', prev: data.previousYearTotals?.ta, curr: data.currentYearTotals?.ta },
+                { label: 'Gross Salary', prev: data.previousYearTotals?.grossSalary, curr: data.currentYearTotals?.grossSalary },
+                { label: 'NPS Deduction', prev: data.previousYearTotals?.npsEmployeeShare, curr: data.currentYearTotals?.npsEmployeeShare },
+                { label: 'TDS Deducted', prev: data.previousYearTotals?.tds, curr: data.currentYearTotals?.tds },
+                { label: 'Net Salary', prev: data.previousYearTotals?.netSalary, curr: data.currentYearTotals?.netSalary }
+              ].map(row => {
+                const prev = row.prev || 0;
+                const curr = row.curr || 0;
+                const pct = prev > 0 ? ((curr - prev) / prev) * 100 : (curr > 0 ? 100 : 0);
+                return (
+                  <tr key={row.label} style={{ fontWeight: row.label.includes('Salary') ? 700 : 400 }}>
+                    <td>{row.label}</td>
+                    <td style={{ textAlign: 'right' }}>{fmt(prev)}</td>
+                    <td style={{ textAlign: 'right', color: curr > prev && row.label.includes('Salary') ? '#22c55e' : 'inherit' }}>{fmt(curr)}</td>
+                    <td style={{ textAlign: 'right', color: pct > 0 ? '#22c55e' : (pct < 0 ? '#ef4444' : 'inherit') }}>
+                      {pct > 0 ? '↑ ' : (pct < 0 ? '↓ ' : '')}{Math.abs(pct).toFixed(1)}%
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Form 16 Banner */}
+      <div style={{ marginTop: '24px', padding: '20px 24px', background: 'linear-gradient(135deg, rgba(201,168,76,0.1), rgba(26,58,110,0.2))', borderRadius: 'var(--radius)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>📋 Form 16 — Annual TDS Certificate</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Generate and download Form 16 (Part A & B) for any employee for the financial year</div>
+          
+          <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+            <select className="form-control-iipm" id="form16EmployeeSelect" style={{ width: '250px' }}>
+              <option value="">-- Select Employee --</option>
+              {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.id})</option>)}
+            </select>
+          </div>
+        </div>
+        <button className="btn-accent-iipm" onClick={async () => {
+          const selectEl = document.getElementById('form16EmployeeSelect') as HTMLSelectElement;
+          const selectedUserId = selectEl?.value;
+          if (!selectedUserId) { alert('Please select an employee first.'); return; }
+          
+          try {
+            const data = await apiService.getForm16(selectedUserId, year - 1);
+            const html = `
+              <html><head><title>Form 16 - TRACES Format</title>
+              <style>
+                body { font-family: 'Times New Roman', serif; font-size: 11px; margin: 20px; color: #000; }
+                .container { max-width: 1000px; margin: 0 auto; }
+                .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
+                .title { text-align: center; }
+                .title h1 { margin: 0; font-size: 16px; font-weight: bold; }
+                .title h2 { margin: 5px 0 0 0; font-size: 14px; font-weight: bold; }
+                .title h3 { margin: 5px 0 0 0; font-size: 12px; font-weight: normal; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                th, td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
+                .bg-light { background-color: #f5f5f5; font-weight: bold; }
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+                .bold { font-weight: bold; }
+                .section-title { font-weight: bold; background: #e0e0e0; text-align: center; font-size: 12px; padding: 4px; }
+                .page-break { page-break-after: always; }
+                .small-text { font-size: 9px; }
+              </style>
+              </head><body>
+              <div class="container">
+                <!-- PART A -->
+                <div class="header-row">
+                  <div><h2 style="color:#00a65a; margin:0;">TDS</h2><span style="font-size:10px;">Centralized Processing Cell</span></div>
+                  <div class="title">
+                    <h1 style="color:#00509e;">TRACES</h1>
+                    <span style="font-size:10px;">TDS Reconciliation Analysis and Correction Enabling System</span>
+                  </div>
+                  <div style="text-align:right;"><span style="font-size:10px;">Government of India<br/>Income Tax Department</span></div>
+                </div>
+                
+                <table>
+                  <tr><td class="section-title">FORM NO. 16</td></tr>
+                  <tr><td class="text-center">[See rule 31(1)(a)]</td></tr>
+                  <tr><td class="section-title" style="font-size:14px;">PART A</td></tr>
+                  <tr><td class="text-center small-text">Certificate under Section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P</td></tr>
+                </table>
+
+                <table>
+                  <tr>
+                    <td colspan="2"><span class="bold">Certificate No.</span> ACORZOA</td>
+                    <td colspan="2" class="text-right"><span class="bold">Last updated on</span> 10-Jul-2026</td>
+                  </tr>
+                  <tr class="bg-light">
+                    <td colspan="2">Name and address of the Employer/Specified Bank</td>
+                    <td colspan="2">Name and address of the Employee/Specified senior citizen</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="height: 60px;">${data.employerName}<br/>${data.employerAddress}</td>
+                    <td colspan="2">${data.employeeName}<br/>${data.employeeAddress}</td>
+                  </tr>
+                  <tr class="bg-light text-center">
+                    <td>PAN of the Deductor</td>
+                    <td>TAN of the Deductor</td>
+                    <td>PAN of the Employee</td>
+                    <td>Employee Reference No.</td>
+                  </tr>
+                  <tr class="text-center">
+                    <td>${data.employerPAN}</td>
+                    <td>${data.employerTAN}</td>
+                    <td>${data.employeePAN}</td>
+                    <td>${data.employeeId}</td>
+                  </tr>
+                  <tr class="bg-light text-center">
+                    <td colspan="2">CIT (TDS)</td>
+                    <td>Assessment Year</td>
+                    <td>Period with the Employer</td>
+                  </tr>
+                  <tr class="text-center">
+                    <td colspan="2">The Commissioner of Income Tax (TDS)<br/>Hyderabad - 500004</td>
+                    <td>${data.assessmentYear}</td>
+                    <td><span class="bold">From:</span> 01-Apr-${year - 1} <br/> <span class="bold">To:</span> 31-Mar-${year}</td>
+                  </tr>
+                </table>
+
+                <table class="text-center">
+                  <tr><td colspan="5" class="bg-light">Summary of amount paid/credited and tax deducted at source thereon in respect of the employee</td></tr>
+                  <tr class="bg-light">
+                    <td>Quarter(s)</td>
+                    <td>Receipt Numbers of original quarterly statements</td>
+                    <td>Amount paid/credited</td>
+                    <td>Amount of tax deducted (Rs.)</td>
+                    <td>Amount of tax deposited / remitted (Rs.)</td>
+                  </tr>
+                  ${data.quarterlyTdsList.map((q: any) => `
+                    <tr>
+                      <td>${q.quarter}</td>
+                      <td>${q.receiptNumber}</td>
+                      <td class="text-right">${q.amountPaid.toFixed(2)}</td>
+                      <td class="text-right">${q.taxDeducted.toFixed(2)}</td>
+                      <td class="text-right">${q.taxDeposited.toFixed(2)}</td>
+                    </tr>
+                  `).join('')}
+                  <tr class="bold">
+                    <td colspan="2">Total (Rs.)</td>
+                    <td class="text-right">${data.grossSalary.toFixed(2)}</td>
+                    <td class="text-right">${data.totalTdsDeposited.toFixed(2)}</td>
+                    <td class="text-right">${data.totalTdsDeposited.toFixed(2)}</td>
+                  </tr>
+                </table>
+
+                <table>
+                  <tr><td class="section-title">II. DETAILS OF TAX DEDUCTED AND DEPOSITED IN THE CENTRAL GOVERNMENT ACCOUNT THROUGH CHALLAN</td></tr>
+                </table>
+                <table class="text-center">
+                  <tr class="bg-light">
+                    <td rowspan="2">Sl. No.</td>
+                    <td rowspan="2">Tax Deposited in respect of the deductee (Rs.)</td>
+                    <td colspan="4">Challan Identification Number (CIN)</td>
+                  </tr>
+                  <tr class="bg-light">
+                    <td>BSR Code of the Bank Branch</td>
+                    <td>Date on which Tax deposited</td>
+                    <td>Challan Serial Number</td>
+                    <td>Status of matching with OLTAS*</td>
+                  </tr>
+                  ${data.challanDetails.map((c: any, i: number) => `
+                    <tr>
+                      <td>${i + 1}</td>
+                      <td class="text-right">${c.amount.toFixed(2)}</td>
+                      <td>${c.bsrCode}</td>
+                      <td>${c.dateOfDeposit}</td>
+                      <td>${c.challanSerialNumber}</td>
+                      <td>F</td>
+                    </tr>
+                  `).join('')}
+                </table>
+
+                <div class="page-break"></div>
+
+                <!-- PART B -->
+                <table style="margin-top:20px;">
+                  <tr><td class="section-title">FORM NO. 16</td></tr>
+                  <tr><td class="section-title" style="font-size:14px;">PART B</td></tr>
+                  <tr><td class="section-title">Annexure - I</td></tr>
+                </table>
+
+                <table>
+                  <tr class="bg-light">
+                    <td colspan="4">Details of Salary Paid and any other income and tax deducted</td>
+                  </tr>
+                  <tr>
+                    <td width="5%">A</td>
+                    <td width="55%">Whether opting out of taxation u/s 115BAC(1A)?</td>
+                    <td colspan="2" class="text-center bold">${data.standardDeduction === 75000 ? 'No' : 'Yes'}</td>
+                  </tr>
+                  <tr>
+                    <td>1.</td><td>Gross Salary</td><td class="text-center">Rs.</td><td class="text-center">Rs.</td>
+                  </tr>
+                  <tr>
+                    <td>(a)</td><td>Salary as per provisions contained in section 17(1)</td>
+                    <td class="text-right"></td><td class="text-right">${data.grossSalary.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>(d)</td><td class="bold">Total</td>
+                    <td class="text-right"></td><td class="text-right bold">${data.grossSalary.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>2.</td><td colspan="3">Less: Allowances to the extent exempt under section 10</td>
+                  </tr>
+                  <tr>
+                    <td>(e)</td><td>House rent allowance under section 10(13A)</td>
+                    <td class="text-right"></td><td class="text-right">${data.allowancesExemptUpto10.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>3.</td><td class="bold">Total amount of salary received from current employer [1(d)-2(i)]</td>
+                    <td class="text-right"></td><td class="text-right bold">${data.balance.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>4.</td><td colspan="3">Less: Deductions under section 16</td>
+                  </tr>
+                  <tr>
+                    <td>(a)</td><td>Standard deduction under section 16(ia)</td>
+                    <td class="text-right"></td><td class="text-right">${data.standardDeduction.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>(c)</td><td>Tax on employment under section 16(iii)</td>
+                    <td class="text-right"></td><td class="text-right">${data.professionalTax.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>5.</td><td>Total amount of deductions under section 16 [4(a)+4(b)+4(c)]</td>
+                    <td class="text-right"></td><td class="text-right">${(data.standardDeduction + data.professionalTax).toFixed(2)}</td>
+                  </tr>
+                  <tr class="bg-light">
+                    <td>6.</td><td class="bold">Income chargeable under the head "Salaries" [(3+1(e)-5]</td>
+                    <td class="text-right"></td><td class="text-right bold">${data.incomeChargeableUnderSalaries.toFixed(2)}</td>
+                  </tr>
+                  <tr class="bg-light">
+                    <td>9.</td><td class="bold">Gross total income (6+8)</td>
+                    <td class="text-right"></td><td class="text-right bold">${data.grossTotalIncome.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>10.</td><td class="bold">Deductions under Chapter VI-A</td>
+                    <td class="text-center bold">Gross Amount</td><td class="text-center bold">Deductible Amount</td>
+                  </tr>
+                  <tr>
+                    <td>(a)</td><td>Deduction in respect of life insurance premia, contributions to provident fund etc. under section 80C</td>
+                    <td class="text-right">${data.deduction80C.toFixed(2)}</td><td class="text-right">${data.deduction80C.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>(f)</td><td>Deduction in respect of contribution by Employer to pension scheme under section 80CCD (2)</td>
+                    <td class="text-right">${data.deduction80CCD?.toFixed(2) || '0.00'}</td><td class="text-right">${data.deduction80CCD?.toFixed(2) || '0.00'}</td>
+                  </tr>
+                  <tr>
+                    <td>(g)</td><td>Deduction in respect of health insurance premia under section 80D</td>
+                    <td class="text-right">${data.deduction80D.toFixed(2)}</td><td class="text-right">${data.deduction80D.toFixed(2)}</td>
+                  </tr>
+                  <tr class="bg-light">
+                    <td>11.</td><td class="bold">Aggregate of deductible amount under Chapter VI-A</td>
+                    <td class="text-right"></td><td class="text-right bold">${data.totalChapterVIADeductions.toFixed(2)}</td>
+                  </tr>
+                  <tr class="bg-light">
+                    <td>12.</td><td class="bold">Total taxable income (9-11)</td>
+                    <td class="text-right"></td><td class="text-right bold">${data.totalTaxableIncome.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>13.</td><td>Tax on total income</td>
+                    <td class="text-right"></td><td class="text-right">${data.taxOnTotalIncome.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>14.</td><td>Rebate under section 87A, if applicable</td>
+                    <td class="text-right"></td><td class="text-right">${data.rebate87A.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>16.</td><td>Health and education cess</td>
+                    <td class="text-right"></td><td class="text-right">${data.healthAndEducationCess.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>17.</td><td class="bold">Tax payable (13+15+16-14)</td>
+                    <td class="text-right"></td><td class="text-right bold">${data.totalTaxPayable.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>19.</td><td>Less: Tax deducted at source</td>
+                    <td class="text-right"></td><td class="text-right">${data.taxDeductedAtSource.toFixed(2)}</td>
+                  </tr>
+                  <tr class="bg-light">
+                    <td>21.</td><td class="bold">Net tax payable (17-18-19-20)</td>
+                    <td class="text-right"></td><td class="text-right bold">${Math.max(0, data.taxPayableOrRefundable).toFixed(2)}</td>
+                  </tr>
+                </table>
+
+                <div style="border: 1px solid #000; padding: 10px; margin-top: 15px;">
+                  <p class="text-center bold" style="margin: 0 0 10px 0;">Verification</p>
+                  <p style="margin: 0;">I, <span class="bold">SHALIVAHAN</span>, son/daughter of SURESH PANDEY KUMAR SINHA working in the capacity of <span class="bold">AUTHORISED SIGNATORY</span> do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, TDS statements, and other available records.</p>
+                  <br/>
+                  <table style="border: none; margin: 0;">
+                    <tr>
+                      <td style="border: none; width: 50%;">Place: Visakhapatnam<br/>Date: 13-Jul-${year}</td>
+                      <td style="border: none; text-align: right; vertical-align: bottom;">
+                        (Signature of person responsible for deduction of tax)<br/><br/>
+                        <span class="bold">SHALIVAHAN</span>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+              </body></html>
+            `;
+            const win = window.open('', '_blank');
+            if (win) { win.document.write(html); win.document.close(); win.print(); }
+          } catch(e: any) {
+            alert('Failed to fetch Form 16. ' + e.message);
+          }
+        }}>
+          Download Form 16
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ReportsPage;

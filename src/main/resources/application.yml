@@ -1,0 +1,70 @@
+spring:
+  application:
+    name: IIPM Payroll Management System
+
+  data:
+    mongodb:
+      uri: mongodb+srv://seed_vtindia:Vtindia%40Ocac@seed-cluster.czqvi1e.mongodb.net/IIPM
+      database: IIPM
+      auto-index-creation: true
+
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: update
+
+  mvc:
+    cors:
+      allowed-origins: "*"
+      allowed-methods: "*"
+      allowed-headers: "*"
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+server:
+  port: 3330
+
+
+logging:
+  level:
+    root: INFO
+    com.iipm: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:iipm-payroll-system-secret-key-change-in-production-environment}
+    expiration: 86400000
+    refresh-expiration: 604800000
+
+  file:
+    upload-dir: ./uploads
+    logo-dir: ./uploads/logo
+    temp-dir: ./temp
+
+  company:
+    name: Indian Institute of Petroleum & Energy
+    location: Visakhapatnam
+    currency: INR
+    timezone: Asia/Kolkata
+
+payroll:
+  default:
+    da-percentage: 60
+    hra-percentage: 20
+    pt-amount: 200
+    cghs-amount: 1000
+    nps-employee-percentage: 10
+    nps-employer-percentage: 10
