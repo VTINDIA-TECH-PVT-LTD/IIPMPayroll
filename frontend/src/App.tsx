@@ -10,6 +10,7 @@ import EmployeePortal from './pages/EmployeePortal';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import Form16Portal from './pages/Form16Portal';
 import ITDeclarationPortal from './pages/ITDeclarationPortal';
+import ITDeclarationHistory from './pages/ITDeclarationHistory';
 import ITApprovals from './pages/ITApprovals';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -122,6 +123,7 @@ function App() {
               <Route path="/payslips" element={<ProtectedRoute><EmployeePortal /></ProtectedRoute>} />
               <Route path="/form16"   element={<ProtectedRoute><Form16Portal /></ProtectedRoute>} />
               <Route path="/it-declaration" element={<ProtectedRoute><ITDeclarationPortal /></ProtectedRoute>} />
+              <Route path="/it-declaration-history" element={<ProtectedRoute><ITDeclarationHistory /></ProtectedRoute>} />
               <Route path="/profile"  element={<ProtectedRoute><MyProfilePage /></ProtectedRoute>} />
 
               {/* Catch all */}

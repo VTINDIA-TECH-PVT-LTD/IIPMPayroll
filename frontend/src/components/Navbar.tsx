@@ -159,6 +159,9 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
             <NavLink to="/it-declaration" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
               <span className="sidebar-nav-icon"><FileSignature size={20} /></span> IT Declaration
             </NavLink>
+            <NavLink to="/it-declaration-history" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
+              <span className="sidebar-nav-icon"><FileText size={20} /></span> Declaration History
+            </NavLink>
           </>
         )}
 
