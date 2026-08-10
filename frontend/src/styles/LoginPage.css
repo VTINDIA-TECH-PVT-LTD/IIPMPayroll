@@ -41,19 +41,20 @@
 }
 
 .login-logo {
-  width: 140px;
-  height: 140px;
-  object-fit: cover;
-  border-radius: 50%;
+  width: 180px;
+  height: auto;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 12px;
   background: #ffffff;
-  padding: 4px;
+  padding: 12px;
   margin-bottom: 28px;
   animation: pulse 3s ease-in-out infinite;
   border: 2px solid var(--accent);
 }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.3); }
-  50% { box-shadow: 0 0 0 12px rgba(245,158,11,0); }
+  50% { box-shadow: 0 0 0 10px rgba(245,158,11,0); }
 }
 
 .login-tagline {
@@ -198,12 +199,13 @@
 
 .login-logo-mobile {
   display: none;
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 50%;
+  width: 100px;
+  height: auto;
+  max-height: 100px;
+  object-fit: contain;
+  border-radius: 8px;
   background: #ffffff;
-  padding: 2px;
+  padding: 6px;
   margin: 0 auto 16px;
   border: 2px solid var(--accent);
 }
