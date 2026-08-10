@@ -571,9 +571,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                 <table className="table-iipm">
                   <thead>
                     <tr>
-                      <th style={{ width: '40px' }}>
-                        <input type="checkbox" onChange={handleSelectAllPayrolls} checked={selectedPayrolls.length === payrolls.length && payrolls.length > 0} />
-                      </th>
+                      <th>Emp ID</th>
                       <th>Employee Name</th>
                       <th>Level</th>
                       <th>Gross</th>
@@ -581,28 +579,26 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                       <th>Status</th>
                       <th>Remark</th>
                       <th>Attachments</th>
-                      {isAdmin && <th>Actions (Admin)</th>}
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {currentPayrolls.map((p: any) => (
-                      <tr key={p.id} style={{ background: selectedPayrolls.includes(p.id) ? 'var(--bg-hover)' : '' }}>
-                        <td>
-                          <input type="checkbox" checked={selectedPayrolls.includes(p.id)} onChange={() => handleSelectPayroll(p.id)} />
-                        </td>
+                      <tr key={p.id}>
                         <td style={{ fontWeight: 600 }}>{p.employeeId}</td>
-                        <td>{userMap[p.employeeId] || p.payLevel || '-'}</td>
+                        <td>{userMap[p.employeeId] || p.employeeName || '-'}</td>
+                        <td>{p.payLevel ? `Level-${p.payLevel}` : '-'}</td>
                         <td>{fmt(p.grossSalary)}</td>
                         <td style={{ color: 'var(--success)', fontWeight: 700 }}>{fmt(p.netSalary)}</td>
                         <td>
-                          <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, background: `${statusBadge[p.status]}20`, color: statusBadge[p.status] }}>
+                          <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, background: `${statusBadge[p.status] || '#94a3b8'}20`, color: statusBadge[p.status] || '#94a3b8' }}>
                             {p.status}
                           </span>
                         </td>
-                      <td style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {p.remark || '-'}
-                      </td>
-                      <td>
+                        <td style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {p.remark || '-'}
+                        </td>
+                        <td>
                           {p.attachments && p.attachments.length > 0 ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               {p.attachments.map((att: string, idx: number) => {
@@ -660,21 +656,24 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                             </div>
                           ) : '-'}
                         </td>
-                        {isAdmin && (
-                          <td style={{ whiteSpace: 'nowrap' }}>
-                            {p.status === 'PENDING' && (
-                              <>
-                                <button onClick={() => handleApprove(p.id)} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: 'rgba(34,197,94,0.15)', color: '#22c55e', cursor: 'pointer', marginRight: '6px', fontSize: '0.8rem', fontWeight: 600, fontFamily: 'var(--font)' }}>
-                                  Release Salary
-                                </button>
-                                <button onClick={() => { setRejectModal({ id: p.id }); }} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: 'rgba(239,68,68,0.15)', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, fontFamily: 'var(--font)' }}>
-                                  Forward to Operator
-                                </button>
-                              </>
-                            )}
-                            {p.status === 'APPROVED' && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Released</span>}
-                          </td>
-                        )}
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          {(p.status === 'PENDING' || p.status === 'DRAFT') && isAdmin && (
+                            <>
+                              <button onClick={() => handleApprove(p.id)} style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', background: 'rgba(34,197,94,0.15)', color: '#22c55e', cursor: 'pointer', marginRight: '4px', fontSize: '0.78rem', fontWeight: 600, fontFamily: 'var(--font)' }}>
+                                ✓ Approve
+                              </button>
+                              <button onClick={() => { setRejectModal({ id: p.id }); }} style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', background: 'rgba(239,68,68,0.15)', color: '#ef4444', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, fontFamily: 'var(--font)' }}>
+                                ✗ Reject
+                              </button>
+                            </>
+                          )}
+                          {p.status === 'APPROVED' && <span style={{ color: '#22c55e', fontSize: '0.8rem', fontWeight: 600 }}>✓ Released</span>}
+                          {p.status === 'REJECTED' && isAdmin && (
+                            <button onClick={() => handleApprove(p.id)} style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', background: 'rgba(34,197,94,0.15)', color: '#22c55e', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, fontFamily: 'var(--font)' }}>
+                              ✓ Re-Approve
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

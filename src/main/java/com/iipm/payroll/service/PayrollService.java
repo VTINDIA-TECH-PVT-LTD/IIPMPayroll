@@ -309,6 +309,7 @@ public class PayrollService {
 
                 payroll = createPayroll(user.getId(), month, year, tds, 0, createdBy);
                 payroll.setRemark(remark);
+                payroll.setStatus("PENDING"); // Submitted for approval
                 payrollRepository.save(payroll);
                 created.add(payroll);
             } catch (Exception e) {
