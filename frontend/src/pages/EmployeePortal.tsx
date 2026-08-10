@@ -513,23 +513,6 @@ const EmployeePortal: React.FC = () => {
         <p>View and download your salary slips and Form 16</p>
       </div>
 
-      {/* YTD Summary */}
-      {ytd && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-          {[
-            { label: 'Months Processed', value: ytd.monthsProcessed, color: '#3b82f6', prefix: '' },
-            { label: 'Total Gross (YTD)', value: fmt(ytd.totalGrossSalary), color: '#c9a84c', prefix: '' },
-            { label: 'Total TDS (YTD)', value: fmt(ytd.totalTDS), color: '#ef4444', prefix: '' },
-            { label: 'Total Net (YTD)', value: fmt(ytd.totalNetSalary), color: '#22c55e', prefix: '' },
-          ].map((s, i) => (
-            <div className="stat-card" key={i}>
-              <div className="stat-label">{s.label}</div>
-              <div className="stat-value" style={{ fontSize: '1.3rem', color: s.color }}>{s.value}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div style={{ display: 'grid', gridTemplateColumns: selectedPayroll ? '340px 1fr' : '1fr', gap: '24px' }}>
         {/* Payslip List */}
         <div>

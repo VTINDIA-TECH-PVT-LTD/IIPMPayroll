@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
 import PayrollManagement from './pages/PayrollManagement';
 import EmployeePortal from './pages/EmployeePortal';
+import EmployeeDashboard from './pages/EmployeeDashboard';
 import Form16Portal from './pages/Form16Portal';
 import ITDeclarationPortal from './pages/ITDeclarationPortal';
 import ITApprovals from './pages/ITApprovals';
@@ -86,7 +87,7 @@ function App() {
     if (role === 'ADMIN_ADMIN' || role === 'ADMIN_OPERATOR') return <AdminDashboard />;
     if (role === 'FA_ADMIN') return <AdminDashboard />; // Pending Salary / Approvals screen later
     if (role === 'FA_OPERATOR') return <PayrollManagement />;
-    return <EmployeePortal />;
+    return <EmployeeDashboard />;
   };
 
   return (
