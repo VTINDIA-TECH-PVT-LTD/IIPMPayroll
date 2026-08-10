@@ -49,12 +49,32 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<UserDTO>>> getAllUsers() {
+    public ResponseEntity<ApiResponse<List<UserDTO>>> getAllUsers(@RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
             List<User> users = userService.getAllUsers();
+            
+            boolean isSuperAdmin = false;
+            if (userId != null) {
+                try {
+                    User caller = userService.getUserById(userId);
+                    if (caller != null && com.iipm.payroll.model.UserRole.SUPER_ADMIN.equals(caller.getRole())) {
+                        isSuperAdmin = true;
+                    }
+                } catch (Exception ignore) {
+                    // Ignore error if user is not found
+                }
+            }
+            
+            if (!isSuperAdmin) {
+                users = users.stream()
+                        .filter(u -> com.iipm.payroll.model.UserRole.EMPLOYEE.equals(u.getRole()))
+                        .toList();
+            }
+
             List<UserDTO> userDTOs = users.stream().map(this::convertToDTO).toList();
             return ResponseEntity.ok(ApiResponse.success("Users retrieved", userDTOs));
         } catch (Exception e) {
+            log.error("Error retrieving users", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Error retrieving users", null));
         }

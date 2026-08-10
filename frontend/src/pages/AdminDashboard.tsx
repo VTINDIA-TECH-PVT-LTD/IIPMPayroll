@@ -17,6 +17,7 @@ const AdminDashboard: React.FC = () => {
     totalGrossThisMonth: 0,
   });
   const [recentPayrolls, setRecentPayrolls] = useState<any[]>([]);
+  const [recentEmployees, setRecentEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const now = new Date();
@@ -53,6 +54,7 @@ const AdminDashboard: React.FC = () => {
       const totalNet = payrollList.reduce((s: number, p: any) => s + (p.netSalary || 0), 0);
       const totalGross = payrollList.reduce((s: number, p: any) => s + (p.grossSalary || 0), 0);
 
+      setRecentEmployees(userList.slice(0, 5));
       setStats({
         totalEmployees: userList.length,
         activePayrolls: payrollList.length,
@@ -266,6 +268,53 @@ const AdminDashboard: React.FC = () => {
               </Link>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Employee List Table */}
+      <div className="dashboard-grid" style={{ marginTop: '24px' }}>
+        <div className="card-iipm" style={{ padding: '24px', gridColumn: '1 / -1' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0 }}>Employee List</h3>
+            <Link to="/users"><button className="btn-outline-iipm" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>View All</button></Link>
+          </div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
+          ) : recentEmployees.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+              <p>No employees found.</p>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table-iipm" style={{ border: 'none' }}>
+                <thead>
+                  <tr>
+                    <th style={{ background: 'var(--bg-hover)' }}>Employee ID</th>
+                    <th style={{ background: 'var(--bg-hover)' }}>Name</th>
+                    <th style={{ background: 'var(--bg-hover)' }}>Department</th>
+                    <th style={{ background: 'var(--bg-hover)' }}>Designation</th>
+                    <th style={{ background: 'var(--bg-hover)' }}>Role</th>
+                    <th style={{ background: 'var(--bg-hover)' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentEmployees.map((u) => (
+                    <tr key={u.id}>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 600 }}>{u.employeeId}</td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{u.firstName} {u.lastName}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
+                      </td>
+                      <td>{u.department || '—'}</td>
+                      <td>{u.designation || '—'}</td>
+                      <td><span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', background: 'var(--bg-body)', borderRadius: '4px' }}>{u.role ? u.role.replace('_', ' ') : '—'}</span></td>
+                      <td><span className={u.isActive ? 'badge-iipm badge-success' : 'badge-iipm badge-danger'}>{u.isActive ? 'ACTIVE' : 'INACTIVE'}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
