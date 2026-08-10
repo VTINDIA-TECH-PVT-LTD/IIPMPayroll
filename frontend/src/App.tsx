@@ -91,7 +91,7 @@ function App() {
 
   return (
     <UserContext.Provider value={{ isAuthenticated, role, userId, username }}>
-      <Router>
+      <Router basename="/IIPMPayroll">
         <div className="App">
           {isAuthenticated && <Navbar onLogout={handleLogout} />}
           <div className={isAuthenticated ? 'main-content' : 'auth-wrapper'} style={!isAuthenticated ? { width: '100%', flex: 1 } : {}}>
