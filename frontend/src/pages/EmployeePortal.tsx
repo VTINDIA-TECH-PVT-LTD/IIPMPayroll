@@ -115,163 +115,282 @@ const EmployeePortal: React.FC = () => {
       ? new Date(u.dateOfJoining).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
       : '';
 
+    const deductionPercentage = totalEarnings > 0 ? ((p.totalDeductions / totalEarnings) * 100).toFixed(2) : '0.00';
+    const logoSrc = window.location.origin + process.env.PUBLIC_URL + '/logo.png';
     const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/>
 <title>Pay Slip - ${monthLabel} ${p.year}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  @page { size: A4; margin: 10mm 15mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; background:#f0f2f5; position:relative; }
+  @page { size: A4; margin: 8mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+  body { font-size: 10px; color: #1e293b; background:#f4f6f8; position:relative; }
   
   .page {
-    max-width: 750px;
+    max-width: 800px;
     margin: 20px auto;
     background: #fff;
-    padding: 30px 40px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    padding: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    border-radius: 8px;
     position: relative;
-    min-height: 900px;
+    min-height: 1000px;
   }
 
-  /* Watermark */
-  .watermark-container {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 60%;
-    opacity: 0.1;
-    z-index: 0;
-    pointer-events: none;
-    text-align: center;
-  }
-  .watermark-container img { width: 100%; max-width: 400px; }
+  /* --- HEADER --- */
+  .header-box { display: flex; justify-content: space-between; margin-bottom: 12px; }
+  .header-left { display: flex; align-items: center; gap: 15px; }
+  .header-left img { width: 85px; height: 85px; object-fit: contain; }
+  .header-text h1 { font-size: 18px; font-weight: 800; color: #0a3161; line-height: 1.2; margin-bottom: 6px; width: 350px;}
+  .header-text p { font-size: 10px; color: #475569; margin-bottom: 2px; }
+  .header-text p span { color: #0a3161; font-weight: 500; }
+  
+  .header-right { width: 220px; display: flex; flex-direction: column; gap: 6px; }
+  .ps-badge { background: #0a3161; color: white; border-radius: 6px; text-align: center; padding: 10px; }
+  .ps-badge .title { font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+  .ps-badge .subtitle { font-size: 10px; font-weight: 500; margin-top: 2px; }
+  
+  .pay-dates { background: #f0f4f8; border: 1px solid #c9d9eb; border-radius: 6px; padding: 8px; }
+  .date-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 10.5px;}
+  .date-row:last-child { margin-bottom: 0; }
+  .date-row .icon { width: 14px; height: 14px; margin-right: 8px; color: #0a3161; }
+  .date-row .lbl { font-weight: 600; width: 70px; color: #0a3161; }
+  .date-row .val { font-weight: 700; color: #0f172a; }
 
-  .content { position:relative; z-index:1; padding-top: 10px; }
+  /* --- DETAILS --- */
+  .details-box { border: 1px solid #c9d9eb; border-radius: 6px; position: relative; padding: 25px 15px 15px 15px; margin-bottom: 15px; }
+  .emp-name-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 15px; font-size: 14px; font-weight: 700; color: #0a3161; }
   
-  /* Header */
-  .header { text-align:center; margin-bottom:15px; }
-  .header h1 { font-size:15px; font-weight:bold; margin-bottom:4px; letter-spacing: 0.2px; }
-  .header .addr { font-size:10px; line-height:1.4; color: #111; }
+  .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 40px; }
+  .detail-row { display: flex; font-size: 10.5px; }
+  .detail-row .lbl { width: 140px; color: #334155; font-weight: 500; }
+  .detail-row .sep { width: 15px; font-weight: 500; color: #94a3b8; }
+  .detail-row .val { flex: 1; font-weight: 600; color: #0f172a; }
+
+  /* --- SALARY TABLES --- */
+  .salary-container { position: relative; margin-bottom: -1px; } /* overlap with net pay */
+  .watermark { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 450px; opacity: 0.05; z-index: 0; pointer-events: none; }
   
-  .ps-title { text-align:center; font-weight:bold; font-size:12px; margin-top:20px; line-height: 1.4; }
-  .emp-name { text-align:center; font-size:13px; font-weight:bold; margin:15px 0 25px 0; }
+  .tables-wrapper { display: flex; gap: 15px; position: relative; z-index: 1; }
   
-  /* Details Table */
-  .detail-table { width:100%; border-collapse:collapse; margin-bottom:20px; }
-  .detail-table td { padding:3px; font-size:10px; vertical-align:top; }
-  .lbl { color:#000; white-space:nowrap; width:140px; }
-  .sep { width:15px; text-align: center; }
-  .detail-val { width: auto; }
+  .sal-table { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.8); }
+  .sal-table .header-row { display: flex; align-items: center; padding: 8px 12px; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
+  .sal-table.earn { border-color: #bbf7d0; }
+  .sal-table.earn .header-row { color: #166534; background: #f0fdf4; border-bottom-color: #bbf7d0; }
+  .sal-table.ded { border-color: #fecaca; }
+  .sal-table.ded .header-row { color: #991b1b; background: #fef2f2; border-bottom-color: #fecaca; }
   
-  /* Salary Table */
-  .sal-table { width:100%; border-collapse:collapse; margin-bottom:20px; border: 1.5px solid #000; }
-  .sal-table th { background:#fff; font-weight:bold; font-size:11px; padding:6px 8px; border:1px solid #000; text-align:left; }
-  .sal-table td { padding:5px 8px; border:1px solid #000; font-size:10px; }
-  .sal-table .amt { text-align:right; width:100px; }
-  .total-row td { font-weight:bold; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
-  .net-row td { font-weight:bold; font-size:11px; }
+  .sal-table table { width: 100%; border-collapse: collapse; }
+  .sal-table th { background: #fafafa; font-size: 9.5px; font-weight: 700; padding: 6px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; }
+  .sal-table th.amt-col { text-align: right; }
+  .sal-table.earn th { color: #166534; }
+  .sal-table.ded th { color: #991b1b; }
+
+  .sal-table td { padding: 7px 12px; font-size: 10.5px; border-bottom: 1px dashed #e2e8f0; color: #334155; font-weight: 500; }
+  .sal-table td.amt-col { text-align: right; color: #0f172a; font-weight: 600; }
   
-  /* Footer */
-  .words { margin-top:20px; font-size:11px; line-height:1.5; }
-  .footer { text-align:center; margin-top:50px; font-size:10px; color:#111; font-style:italic; }
+  .total-row td { font-weight: 700 !important; font-size: 11px !important; border-top: 1px solid #e2e8f0; border-bottom: none !important; }
+  .sal-table.earn .total-row td { color: #166534 !important; }
+  .sal-table.ded .total-row td { color: #991b1b !important; }
+
+  /* --- NET PAY --- */
+  .net-pay-box { margin: 15px auto; width: 350px; text-align: center; border: 1px solid #0a3161; border-radius: 6px; overflow: hidden; position: relative; z-index: 2; box-shadow: 0 4px 10px rgba(0,0,0,0.05); background: #fff; }
+  .net-pay-header { background: #0a3161; color: white; padding: 6px; font-weight: 700; font-size: 12px; letter-spacing: 1px; }
+  .net-pay-body { padding: 12px; }
+  .net-pay-amount { font-size: 24px; font-weight: 800; color: #0a3161; margin-bottom: 4px; }
+  .net-pay-words { font-size: 9.5px; color: #475569; font-weight: 500; font-style: italic; }
+
+  /* --- SUMMARY CARDS --- */
+  .summary-cards { display: flex; justify-content: space-between; border: 1px solid #c9d9eb; border-radius: 6px; padding: 12px 20px; margin-bottom: 15px; }
+  .card { display: flex; align-items: center; gap: 10px; }
+  .card-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .card-icon svg { width: 20px; height: 20px; }
+  .card.earn .card-icon { background: #f0fdf4; color: #166534; }
+  .card.ded .card-icon { background: #fef2f2; color: #991b1b; }
+  .card.net .card-icon { background: #f0f6ff; color: #0a3161; }
+  .card.perc .card-icon { background: #faf5ff; color: #6b21a8; }
+  .card-info .lbl { font-size: 9px; font-weight: 700; color: #64748b; margin-bottom: 2px; text-transform: uppercase; }
+  .card-info .val { font-size: 13px; font-weight: 800; }
+  .card.earn .val { color: #166534; }
+  .card.ded .val { color: #991b1b; }
+  .card.net .val { color: #0a3161; }
+  .card.perc .val { color: #6b21a8; }
+  .card-info .sub { font-size: 8px; color: #94a3b8; }
+
+  /* --- FOOTER --- */
+  .footer-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; }
+  .footer-words { font-size: 10px; font-weight: 600; color: #0f172a; }
+  .footer-words span { font-weight: 500; color: #475569; display: block; margin-top: 4px; }
   
-  /* Print overrides */
+  .auth-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 15px; display: flex; align-items: center; gap: 12px; background: #f8fafc; }
+  .auth-box svg { width: 24px; height: 24px; color: #0ea5e9; }
+  .auth-box div { font-size: 9.5px; color: #334155; font-weight: 500; }
+  
+  .bottom-note { text-align: center; margin-top: 30px; font-size: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .bottom-note svg { width: 14px; height: 14px; }
+
   @media print {
     body { background: #fff; }
-    .page { margin: 0; padding: 0; box-shadow: none; max-width: none; min-height: auto; }
+    .page { margin: 0; padding: 0; box-shadow: none; max-width: none; min-height: auto; border-radius: 0; }
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 </style></head>
 <body>
 <div class="page">
-<div class="watermark-container">
-  <img src="${logoUrl}" alt="watermark" onerror="this.style.display='none'"/>
-</div>
-<div class="content">
-  <div class="header">
-    <h1>Indian Institute of Petroleum and Energy</h1>
-    <div class="addr">FAB, Vangal<br/>Sabbavaram<br/>Anakapalle<br/>531035<br/>E-Mail : pr@iipe.ac.in, fa@iipe.ac.in</div>
+  
+  <!-- Header -->
+  <div class="header-box">
+    <div class="header-left">
+      <img src="${logoSrc}" alt="Logo" onerror="this.style.display='none'"/>
+      <div class="header-text">
+        <h1>INDIAN INSTITUTE OF PETROLEUM AND ENERGY</h1>
+        <p>FAB, Vangal, Sabbavaram, Anakapalle &ndash; 531035</p>
+        <p>Visakhapatnam, Andhra Pradesh, India</p>
+        <p style="margin-top:4px;"><span>E-mail:</span> pr@iipe.ac.in, fa@iipe.ac.in &nbsp;|&nbsp; <span>Website:</span> www.iipe.ac.in</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="ps-badge">
+        <div class="title">PAY SLIP</div>
+        <div class="subtitle">for ${monthLabel}-${p.year}</div>
+      </div>
+      <div class="pay-dates">
+        <div class="date-row">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          <div class="lbl">Pay Date</div>
+          <div class="val">01-${months[p.month === 12 ? 0 : p.month].substring(0,3)}-${p.month === 12 ? p.year + 1 : p.year}</div>
+        </div>
+        <div class="date-row">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <div class="lbl">Pay Period</div>
+          <div class="val">01-${monthLabel.substring(0,3)}-${p.year} to ${new Date(p.year, p.month, 0).getDate()}-${monthLabel.substring(0,3)}-${p.year}</div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="ps-title">Pay Slip<br/>for ${monthLabel}-${p.year}</div>
-  <div class="emp-name">Mr/Ms. ${name}</div>
 
-  <table class="detail-table">
-    <tr>
-      <td class="lbl">Employee Number</td><td class="sep">:</td><td class="detail-val">${p.employeeId||''}</td>
-      <td width="40"></td>
-      <td class="lbl">Tax Regime</td><td class="sep">:</td><td class="detail-val">${u?.taxRegime||'Regular Tax Regime'}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Function</td><td class="sep">:</td><td class="detail-val">${u?.function||'NPS'}</td>
-      <td></td>
-      <td class="lbl">Income Tax Number (PAN)</td><td class="sep">:</td><td class="detail-val">${u?.pan||''}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Designation</td><td class="sep">:</td><td class="detail-val">${u?.designation||''}</td>
-      <td></td>
-      <td class="lbl">Pay Level</td><td class="sep">:</td><td class="detail-val">Level-${u?.payLevel||p.payLevel||''}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Location</td><td class="sep">:</td><td class="detail-val">${u?.location||'Visakhapatnam'}</td>
-      <td></td>
-      <td class="lbl">PF account number</td><td class="sep">:</td><td class="detail-val">${u?.pfAccountNumber||''}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Bank Details</td><td class="sep">:</td><td class="detail-val">${u?.bankName?`${u.bankName}${u.bankAccountNumber?' (****'+String(u.bankAccountNumber).slice(-4)+')':''}`:''}</td>
-      <td></td>
-      <td class="lbl">Department</td><td class="sep">:</td><td class="detail-val">${u?.department||''}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Date of joining</td><td class="sep">:</td><td class="detail-val">${doj}</td>
-      <td></td>
-      <td class="lbl">PR Account Number (IPRAN)</td><td class="sep">:</td><td class="detail-val">${u?.pranAccountNumber||''}</td>
-    </tr>
-  </table>
+  <!-- Details Box -->
+  <div class="details-box">
+    <div class="emp-name-badge">Mr/Ms. ${name}</div>
+    <div class="details-grid">
+      <!-- Col 1 -->
+      <div class="detail-row"><div class="lbl">Employee Number</div><div class="sep">:</div><div class="val">${p.employeeId||'-'}</div></div>
+      <div class="detail-row"><div class="lbl">PAN Number</div><div class="sep">:</div><div class="val">${u?.pan||'-'}</div></div>
+      
+      <div class="detail-row"><div class="lbl">Designation</div><div class="sep">:</div><div class="val">${u?.designation||'-'}</div></div>
+      <div class="detail-row"><div class="lbl">PF Account Number</div><div class="sep">:</div><div class="val">${u?.pfAccountNumber||'-'}</div></div>
+      
+      <div class="detail-row"><div class="lbl">Department</div><div class="sep">:</div><div class="val">${u?.department||'-'}</div></div>
+      <div class="detail-row"><div class="lbl">PRAN (PF) Number</div><div class="sep">:</div><div class="val">${u?.pranAccountNumber||'-'}</div></div>
+      
+      <div class="detail-row"><div class="lbl">Location</div><div class="sep">:</div><div class="val">${u?.location||'Visakhapatnam'}</div></div>
+      <div class="detail-row"><div class="lbl">Tax Regime</div><div class="sep">:</div><div class="val">${u?.taxRegime||'Regular Tax Regime'}</div></div>
+      
+      <div class="detail-row"><div class="lbl">Date of Joining</div><div class="sep">:</div><div class="val">${doj||'-'}</div></div>
+      <div class="detail-row"><div class="lbl">Income Tax Status</div><div class="sep">:</div><div class="val">${p.tds > 0 ? 'Taxable' : 'Non-Taxable'}</div></div>
+      
+      <div class="detail-row"><div class="lbl">Bank Details</div><div class="sep">:</div><div class="val">${u?.bankName?`${u.bankName} ${u.bankAccountNumber?'(****'+String(u.bankAccountNumber).slice(-4)+')':''}`:'-'}</div></div>
+      <div class="detail-row"><div class="lbl">Pay Level</div><div class="sep">:</div><div class="val">Level-${u?.payLevel||p.payLevel||'-'}</div></div>
+      
+      <div class="detail-row"><div class="lbl">Payment Mode</div><div class="sep">:</div><div class="val">Bank Transfer</div></div>
+      <div class="detail-row"><div class="lbl">PR Account Number (IPRAN)</div><div class="sep">:</div><div class="val">${u?.pranAccountNumber||'-'}</div></div>
+    </div>
+  </div>
 
-  <table class="sal-table">
-    <thead><tr>
-      <th>Earnings</th><th class="amt">Amount</th>
-      <th>Deductions</th><th class="amt">Amount</th>
-    </tr></thead>
-    <tbody>
-      <tr>
-        <td>Basic Pay</td><td class="amt">${fmt(p.basicPay)}</td>
-        <td>NPS (Employee)</td><td class="amt">${fmt(p.npsEmployeeShare)}</td>
-      </tr>
-      <tr>
-        <td>Dearness Allowance (DA)</td><td class="amt">${fmt(p.da)}</td>
-        <td>Provident Fund (PF)</td><td class="amt">0.00</td>
-      </tr>
-      <tr>
-        <td>House Rent Allowance (HRA)</td><td class="amt">${fmt(p.hra)}</td>
-        <td>NPS EMP D</td><td class="amt">${fmt(npsEmpD)}</td>
-      </tr>
-      <tr>
-        <td>Transport Allowance (TA)</td><td class="amt">${fmt(p.ta)}</td>
-        <td>Professional Tax</td><td class="amt">${fmt(p.professionalTax)}</td>
-      </tr>
-      <tr>
-        <td>NPS EMP</td><td class="amt">${fmt(npsEmpE)}</td>
-        <td>CGHS</td><td class="amt">${fmt(p.cghs)}</td>
-      </tr>
-      ${p.tds > 0 ? `<tr><td></td><td></td><td>Income Tax (TDS)</td><td class="amt">${fmt(p.tds)}</td></tr>` : ''}
-      ${p.otherDeductions > 0 ? `<tr><td></td><td></td><td>Other Deductions</td><td class="amt">${fmt(p.otherDeductions)}</td></tr>` : ''}
-      <tr class="total-row">
-        <td>Total Earnings</td><td class="amt">${fmt(totalEarnings)}</td>
-        <td>Total Deductions</td><td class="amt">${fmt(p.totalDeductions)}</td>
-      </tr>
-      <tr class="net-row">
-        <td colspan="2" style="border:none; border-right:1px solid #000;"></td>
-        <td>Net Amount</td><td class="amt">${fmt(p.netSalary)}</td>
-      </tr>
-    </tbody>
-  </table>
+  <!-- Salary Tables -->
+  <div class="salary-container">
+    <img src="${logoSrc}" class="watermark" onerror="this.style.display='none'"/>
+    
+    <div class="tables-wrapper">
+      <!-- Earnings -->
+      <div class="sal-table earn">
+        <div class="header-row">
+          <svg style="width:16px;height:16px;margin-right:8px;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
+          EARNINGS
+        </div>
+        <table>
+          <thead><tr><th>Particulars</th><th class="amt-col">Amount (INR)</th></tr></thead>
+          <tbody>
+            <tr><td>Basic Pay</td><td class="amt-col">${fmt(p.basicPay)}</td></tr>
+            <tr><td>Dearness Allowance (DA)</td><td class="amt-col">${fmt(p.da)}</td></tr>
+            <tr><td>House Rent Allowance (HRA)</td><td class="amt-col">${fmt(p.hra)}</td></tr>
+            <tr><td>Transport Allowance (TA)</td><td class="amt-col">${fmt(p.ta)}</td></tr>
+            <tr><td>NPS (Employer)</td><td class="amt-col">${fmt(npsEmpE)}</td></tr>
+            <tr class="total-row"><td>TOTAL EARNINGS</td><td class="amt-col">${fmt(totalEarnings)}</td></tr>
+          </tbody>
+        </table>
+      </div>
 
-  <div class="words"><b>Amount (in words):</b><br/>INR ${words} Only</div>
-  <div class="footer">This is a Computer Generated Pay Slip</div>
-</div>
+      <!-- Deductions -->
+      <div class="sal-table ded">
+        <div class="header-row">
+          <svg style="width:16px;height:16px;margin-right:8px;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
+          DEDUCTIONS
+        </div>
+        <table>
+          <thead><tr><th>Particulars</th><th class="amt-col">Amount (INR)</th></tr></thead>
+          <tbody>
+            <tr><td>NPS (Employee)</td><td class="amt-col">${fmt(p.npsEmployeeShare)}</td></tr>
+            <tr><td>Provident Fund (PF)</td><td class="amt-col">0.00</td></tr>
+            <tr><td>NPS EMP D</td><td class="amt-col">${fmt(npsEmpD)}</td></tr>
+            <tr><td>Professional Tax</td><td class="amt-col">${fmt(p.professionalTax)}</td></tr>
+            <tr><td>CGHS</td><td class="amt-col">${fmt(p.cghs)}</td></tr>
+            ${p.tds > 0 ? `<tr><td>Income Tax (TDS)</td><td class="amt-col">${fmt(p.tds)}</td></tr>` : ''}
+            ${p.otherDeductions > 0 ? `<tr><td>Other Deductions</td><td class="amt-col">${fmt(p.otherDeductions)}</td></tr>` : ''}
+            <tr class="total-row"><td>TOTAL DEDUCTIONS</td><td class="amt-col">${fmt(p.totalDeductions)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Net Pay Box -->
+  <div class="net-pay-box">
+    <div class="net-pay-header">NET PAY</div>
+    <div class="net-pay-body">
+      <div class="net-pay-amount">₹ ${fmt(p.netSalary)}</div>
+      <div class="net-pay-words">(${words} Only)</div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="card earn">
+      <div class="card-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></div>
+      <div class="card-info"><div class="lbl">Total Earnings</div><div class="val">₹ ${fmt(totalEarnings)}</div></div>
+    </div>
+    <div class="card ded">
+      <div class="card-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg></div>
+      <div class="card-info"><div class="lbl">Total Deductions</div><div class="val">₹ ${fmt(p.totalDeductions)}</div></div>
+    </div>
+    <div class="card net">
+      <div class="card-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+      <div class="card-info"><div class="lbl">Net Pay</div><div class="val">₹ ${fmt(p.netSalary)}</div></div>
+    </div>
+    <div class="card perc">
+      <div class="card-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg></div>
+      <div class="card-info"><div class="lbl">Deductions (%)</div><div class="val">${deductionPercentage}%</div><div class="sub">of Gross Earnings</div></div>
+    </div>
+  </div>
+
+  <!-- Footer Area -->
+  <div class="footer-row">
+    <div class="footer-words">
+      Amount in words:
+      <span>INR ${words} Only</span>
+    </div>
+    <div class="auth-box">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      <div>This is a computer generated pay slip<br>and does not require signature.</div>
+    </div>
+  </div>
+
+  <div class="bottom-note">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    For any queries, please contact the Accounts Department.
+  </div>
+
 </div>
 </body></html>`;
 
