@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/IIPMPayroll/static/css/main.dccd8d68.css",
-    "main.js": "/IIPMPayroll/static/js/main.13d391df.js",
+    "main.js": "/IIPMPayroll/static/js/main.50fd05a5.js",
     "static/media/fa-solid-900.ttf": "/IIPMPayroll/static/media/fa-solid-900.2582b0e4bcf85eceead0.ttf",
     "static/media/fa-brands-400.ttf": "/IIPMPayroll/static/media/fa-brands-400.1815e00441357e01619e.ttf",
     "static/media/fa-solid-900.woff2": "/IIPMPayroll/static/media/fa-solid-900.2463b90d9a316e4e5294.woff2",
@@ -12,10 +12,10 @@
     "static/media/fa-v4compatibility.woff2": "/IIPMPayroll/static/media/fa-v4compatibility.ea8f94e1d22e0d35ccd4.woff2",
     "index.html": "/IIPMPayroll/index.html",
     "main.dccd8d68.css.map": "/IIPMPayroll/static/css/main.dccd8d68.css.map",
-    "main.13d391df.js.map": "/IIPMPayroll/static/js/main.13d391df.js.map"
+    "main.50fd05a5.js.map": "/IIPMPayroll/static/js/main.50fd05a5.js.map"
   },
   "entrypoints": [
     "static/css/main.dccd8d68.css",
-    "static/js/main.13d391df.js"
+    "static/js/main.50fd05a5.js"
   ]
 }
