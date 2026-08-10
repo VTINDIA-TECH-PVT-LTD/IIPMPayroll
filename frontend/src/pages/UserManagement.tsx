@@ -113,6 +113,9 @@ const UserManagement: React.FC = () => {
       .toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const currentData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) setSelectedUsers(filtered.map(u => u.id));
     else setSelectedUsers([]);
