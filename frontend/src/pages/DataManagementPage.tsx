@@ -8,17 +8,19 @@ const DataManagementPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
     if (message) {
-      const timer = setTimeout(() => setMessage(''), 5000);
-      return () => clearTimeout(timer);
+      timer = setTimeout(() => setMessage(''), 5000);
     }
+    return () => clearTimeout(timer);
   }, [message]);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
     if (error) {
-      const timer = setTimeout(() => setError(''), 5000);
-      return () => clearTimeout(timer);
+      timer = setTimeout(() => setError(''), 5000);
     }
+    return () => clearTimeout(timer);
   }, [error]);
 
   const handleImport = async (e: React.FormEvent) => {
