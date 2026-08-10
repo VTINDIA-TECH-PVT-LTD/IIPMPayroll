@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import apiService from '../services/api';
 import { UserContext } from '../App';
+import { Link } from 'react-router-dom';
 
 const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -655,7 +656,7 @@ const EmployeePortal: React.FC = () => {
           <div style={{ fontWeight: 700, color: 'var(--primary)' }}>💼 Submit IT Declaration</div>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>Declare your investments for TDS calculations (Form 12BB / Form 16 setup).</div>
         </div>
-        <a href="/form16" className="btn-primary-iipm" style={{ textDecoration: 'none' }}>Go to Declarations</a>
+        <Link to="/it-declaration" className="btn-primary-iipm" style={{ textDecoration: 'none' }}>Go to Declarations</Link>
       </div>
 
     </div>
@@ -663,3 +664,4 @@ const EmployeePortal: React.FC = () => {
 };
 
 export default EmployeePortal;
+
