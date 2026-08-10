@@ -341,14 +341,15 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
           </div>
 
           {rows.length > 0 && (
-            <div className="card-iipm" style={{ padding: '0', overflowX: 'auto' }}>
+            <div className="card-iipm" style={{ padding: '0' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ fontWeight: 600 }}>{rows.length} employees</div>
                 <button className="btn-accent-iipm" onClick={submitBulkPayroll} disabled={loading}>
-                  {loading ? '⏳ Processing...' : 'Submit For Approval & Export'}
+                  {loading ? 'Processing...' : 'Submit For Approval & Export'}
                 </button>
               </div>
-              <table className="table-iipm" style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table-iipm" style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
                     <th>Sl.no</th>
@@ -508,6 +509,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                   </tr>
                 </tfoot>
               </table>
+              </div>
             </div>
           )}
 
