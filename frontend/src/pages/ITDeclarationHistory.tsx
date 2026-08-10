@@ -68,7 +68,13 @@ const ITDeclarationHistory = () => {
 
   const fmtDate = (val: any, full = false) => {
     if (!val) return 'N/A';
-    const d = new Date(val);
+    let d: Date;
+    if (Array.isArray(val)) {
+      // Java LocalDateTime array: [year, month(1-based), day, hour?, min?, sec?]
+      d = new Date(val[0], (val[1] ?? 1) - 1, val[2] ?? 1, val[3] ?? 0, val[4] ?? 0, val[5] ?? 0);
+    } else {
+      d = new Date(val);
+    }
     if (isNaN(d.getTime()) || d.getFullYear() < 2000) return 'N/A';
     return full ? d.toLocaleString('en-IN') : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
