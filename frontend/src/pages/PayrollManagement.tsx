@@ -346,22 +346,25 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
                     <th>Sl.no</th>
-                    <th>Name</th>
-                    <th>Pay level</th>
+                    <th>Emp ID</th>
+                    <th>Employee Name</th>
+                    <th>Designation</th>
+                    <th>Pay Scale</th>
                     <th>Basic</th>
                     <th>DA {settings.DA_PERCENTAGE || 62}%</th>
                     <th>TA</th>
                     <th>HRA {settings.HRA_PERCENTAGE || 20}%</th>
-                    <th>Allowance</th>
-                    <th>NPS Employer</th>
-                    <th>Gross Salary</th>
+                    <th>Dean / Warden Allowance</th>
+                    <th>NPS Employer Share</th>
+                    <th style={{ background: '#e2e8f0' }}>Gross Salary</th>
                     <th>PT</th>
                     <th style={{ color: 'var(--warning)' }}>TDS</th>
-                    <th>NPS Employee</th>
-                    <th>CGHS</th>
-                    <th>Other deductions</th>
-                    <th>Total Deductions</th>
-                    <th>Net Salary</th>
+                    <th>NPS Employee share</th>
+                    <th>NPS Employer share</th>
+                    <th>CGHS Contribution</th>
+                    <th>Other Recovery</th>
+                    <th style={{ background: '#fee2e2' }}>Total Deductions</th>
+                    <th style={{ background: '#dcfce7', color: 'var(--success)' }}>Net Salary</th>
                     <th>Remark</th>
                   </tr>
                 </thead>
@@ -396,15 +399,17 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                     return (
                       <tr key={u.id}>
                         <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                        <td>{u.employeeId || '-'}</td>
                         <td style={{ fontWeight: 600 }}>{u.firstName} {u.lastName}</td>
-                        <td>{u.payLevel}</td>
+                        <td>{u.designation || '-'}</td>
+                        <td>Level-{u.payLevel}</td>
                         <td>{fmt(bp)}</td>
                         <td>{fmt(da)}</td>
                         <td>{fmt(ta)}</td>
                         <td>{fmt(hra)}</td>
-                        <td>{fmt(0)}</td>
+                        <td>{fmt(0)}</td> {/* Dean/Warden Allowance - can be updated later if needed */}
                         <td>{fmt(npsEmployer)}</td>
-                        <td style={{ fontWeight: 600 }}>{fmt(gross)}</td>
+                        <td style={{ fontWeight: 600, background: '#f8fafc' }}>{fmt(gross)}</td>
                         <td>{fmt(pt)}</td>
                         <td>
                           <input type={row.tds === '' ? 'text' : 'number'} value={row.tds} placeholder="Auto"
@@ -412,14 +417,15 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                             style={{ width: '70px', padding: '4px', fontSize: '0.8rem' }} />
                         </td>
                         <td>{fmt(npsEmp)}</td>
+                        <td>{fmt(npsEmployer)}</td>
                         <td>{fmt(cghs)}</td>
                         <td>
                           <input type="number" value={row.otherDeductions}
                             onChange={e => updateRow(u.id, 'otherDeductions', +e.target.value)}
                             style={{ width: '70px', padding: '4px', fontSize: '0.8rem' }} />
                         </td>
-                        <td style={{ color: '#ef4444' }}>{fmt(totalDed)}</td>
-                        <td style={{ color: 'var(--success)', fontWeight: 700 }}>{fmt(net)}</td>
+                        <td style={{ color: '#ef4444', background: '#fef2f2' }}>{fmt(totalDed)}</td>
+                        <td style={{ color: 'var(--success)', fontWeight: 700, background: '#f0fdf4' }}>{fmt(net)}</td>
                         <td>
                           <input type="text" value={row.remark} placeholder="Enter remark..."
                             onChange={e => updateRow(u.id, 'remark', e.target.value)}
@@ -429,6 +435,72 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                     );
                   })}
                 </tbody>
+                <tfoot>
+                  <tr style={{ fontWeight: 'bold', background: '#e2e8f0' }}>
+                    <td colSpan={5} style={{ textAlign: 'right', paddingRight: '20px' }}>Total</td>
+                    <td>{fmt(rows.reduce((sum, row) => sum + (row.user.basicPay || 0), 0))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => sum + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100)), 0))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => {
+                      const level = parseInt(row.user.payLevel || '10');
+                      const taBase = level >= 10 ? (settings.TA_FIXED_AMOUNT || 3600) : (settings.TA_FIXED_AMOUNT ? settings.TA_FIXED_AMOUNT / 2 : 1800);
+                      return sum + Math.round(taBase * (1 + ((settings.TA_DA_PERCENTAGE || 62) / 100)));
+                    }, 0))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => sum + Math.round((row.user.basicPay || 0) * ((settings.HRA_PERCENTAGE || 20) / 100)), 0))}</td>
+                    <td>{fmt(0)}</td>
+                    <td>{fmt(rows.reduce((sum, row) => sum + Math.round(((row.user.basicPay || 0) + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100))) * ((settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100)), 0))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => {
+                      const bp = row.user.basicPay || 0;
+                      const da = Math.round(bp * ((settings.DA_PERCENTAGE || 62) / 100));
+                      const hra = Math.round(bp * ((settings.HRA_PERCENTAGE || 20) / 100));
+                      const level = parseInt(row.user.payLevel || '10');
+                      const taBase = level >= 10 ? (settings.TA_FIXED_AMOUNT || 3600) : (settings.TA_FIXED_AMOUNT ? settings.TA_FIXED_AMOUNT / 2 : 1800);
+                      const ta = Math.round(taBase * (1 + ((settings.TA_DA_PERCENTAGE || 62) / 100)));
+                      const npsEmp = Math.round((bp + da) * ((settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100));
+                      return sum + bp + da + hra + ta + npsEmp;
+                    }, 0))}</td>
+                    <td>{fmt(rows.length * (settings.PT_AMOUNT || 200))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => sum + (row.tds === '' ? 0 : Number(row.tds)), 0))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => sum + Math.round(((row.user.basicPay || 0) + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100))) * ((settings.NPS_EMPLOYEE_PERCENTAGE || 10) / 100)), 0))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => sum + Math.round(((row.user.basicPay || 0) + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100))) * ((settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100)), 0))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => {
+                      const level = parseInt(row.user.payLevel || '10');
+                      const baseCghs = settings.CGHS_AMOUNT || 1000;
+                      const cghs = level >= 12 ? baseCghs : (level >= 7 ? baseCghs * 0.65 : (level === 6 ? baseCghs * 0.45 : baseCghs * 0.25));
+                      return sum + cghs;
+                    }, 0))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => sum + row.otherDeductions, 0))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => {
+                      const bp = row.user.basicPay || 0;
+                      const da = Math.round(bp * ((settings.DA_PERCENTAGE || 62) / 100));
+                      const pt = settings.PT_AMOUNT || 200;
+                      const tds = row.tds === '' ? 0 : Number(row.tds);
+                      const npsEmp = Math.round((bp + da) * ((settings.NPS_EMPLOYEE_PERCENTAGE || 10) / 100));
+                      const npsEmployer = Math.round((bp + da) * ((settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100));
+                      const level = parseInt(row.user.payLevel || '10');
+                      const baseCghs = settings.CGHS_AMOUNT || 1000;
+                      const cghs = level >= 12 ? baseCghs : (level >= 7 ? baseCghs * 0.65 : (level === 6 ? baseCghs * 0.45 : baseCghs * 0.25));
+                      return sum + tds + pt + npsEmp + npsEmployer + cghs + row.otherDeductions;
+                    }, 0))}</td>
+                    <td>{fmt(rows.reduce((sum, row) => {
+                      const bp = row.user.basicPay || 0;
+                      const da = Math.round(bp * ((settings.DA_PERCENTAGE || 62) / 100));
+                      const hra = Math.round(bp * ((settings.HRA_PERCENTAGE || 20) / 100));
+                      const level = parseInt(row.user.payLevel || '10');
+                      const taBase = level >= 10 ? (settings.TA_FIXED_AMOUNT || 3600) : (settings.TA_FIXED_AMOUNT ? settings.TA_FIXED_AMOUNT / 2 : 1800);
+                      const ta = Math.round(taBase * (1 + ((settings.TA_DA_PERCENTAGE || 62) / 100)));
+                      const npsEmp = Math.round((bp + da) * ((settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100));
+                      const gross = bp + da + hra + ta + npsEmp;
+                      const pt = settings.PT_AMOUNT || 200;
+                      const tds = row.tds === '' ? 0 : Number(row.tds);
+                      const npsEmployee = Math.round((bp + da) * ((settings.NPS_EMPLOYEE_PERCENTAGE || 10) / 100));
+                      const baseCghs = settings.CGHS_AMOUNT || 1000;
+                      const cghs = level >= 12 ? baseCghs : (level >= 7 ? baseCghs * 0.65 : (level === 6 ? baseCghs * 0.45 : baseCghs * 0.25));
+                      const ded = tds + pt + npsEmployee + npsEmp + cghs + row.otherDeductions;
+                      return sum + (gross - ded);
+                    }, 0))}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}

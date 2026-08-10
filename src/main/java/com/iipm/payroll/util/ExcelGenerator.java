@@ -1,8 +1,12 @@
 package com.iipm.payroll.util;
 
 import com.iipm.payroll.model.Payroll;
+import com.iipm.payroll.model.User;
+import com.iipm.payroll.repository.UserRepository;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -11,6 +15,9 @@ import java.util.List;
 
 @Component
 public class ExcelGenerator {
+
+    @Autowired
+    private UserRepository userRepository;
 
     public byte[] generateApprovalSheetExcel(List<Payroll> payrolls, int month, int year) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -47,73 +54,110 @@ public class ExcelGenerator {
             Cell titleCell = titleRow.createCell(0);
             titleCell.setCellValue("INDIAN INSTITUTE OF PETROLEUM AND ENERGY - Salary Statement for " + month + "/" + year);
             titleCell.setCellStyle(titleStyle);
-            sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 16));
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 20));
 
             // Row 1: Headers
             Row headerRow = sheet.createRow(1);
             String[] headers = {
-                    "Sl.no", "Emp ID", "Pay level", "Basic", "DA", "TA", "HRA 20 %", 
-                    "Dean / Warden Allowance", "NPS Employer share", "Gross \nSalary",
+                    "Sl.no", "Emp ID", "Employee Name", "Designation", "Pay Scale", "Basic", "DA", "TA", "HRA 20%", 
+                    "Dean / Warden Allowance", "NPS Employer share", "Gross Salary",
                     "PT", "TDS", "NPS Employee share", "NPS Employer share", "CGHS Contribution",
-                    "Other deductions", "Total Deductions", "Net Salary"
+                    "Other deductions", "Total Deductions", "Net Salary", "Remark"
             };
 
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
                 cell.setCellStyle(headerStyle);
-                sheet.setColumnWidth(i, 4000);
+                sheet.setColumnWidth(i, i == 2 ? 6000 : 4000); // make name column wider
             }
 
             // Data rows
             int rowIdx = 2;
             int slNo = 1;
+            
+            // Totals
+            double[] totals = new double[15];
+
             for (Payroll p : payrolls) {
+                User user = userRepository.findById(p.getUserId()).orElse(new User());
+
                 Row row = sheet.createRow(rowIdx++);
                 int col = 0;
                 
-                // Sl.no
                 row.createCell(col++).setCellValue(slNo++);
-                // Emp ID
                 row.createCell(col++).setCellValue(p.getEmployeeId());
-                // Pay level
-                row.createCell(col++).setCellValue(""); // Need pay level from user, or just leave blank
-                // Basic
+                row.createCell(col++).setCellValue((user.getFirstName() != null ? user.getFirstName() : "") + " " + (user.getLastName() != null ? user.getLastName() : ""));
+                row.createCell(col++).setCellValue(user.getDesignation() != null ? user.getDesignation() : "");
+                row.createCell(col++).setCellValue("Level-" + (user.getPayLevel() != null ? user.getPayLevel() : ""));
+                
                 row.createCell(col++).setCellValue(p.getBasicPay());
-                // DA
+                totals[0] += p.getBasicPay();
                 row.createCell(col++).setCellValue(p.getDa());
-                // TA
+                totals[1] += p.getDa();
                 row.createCell(col++).setCellValue(p.getTa());
-                // HRA
+                totals[2] += p.getTa();
                 row.createCell(col++).setCellValue(p.getHra());
-                // Dean/Warden Allowance
-                row.createCell(col++).setCellValue(0); // Not mapped in model yet, default 0
-                // NPS Employer Earning
+                totals[3] += p.getHra();
+                row.createCell(col++).setCellValue(0); // Dean/Warden Allowance
+                totals[4] += 0;
                 row.createCell(col++).setCellValue(p.getNpsEmployerShare());
-                // Gross
+                totals[5] += p.getNpsEmployerShare();
                 row.createCell(col++).setCellValue(p.getGrossSalary());
-                // PT
+                totals[6] += p.getGrossSalary();
                 row.createCell(col++).setCellValue(p.getProfessionalTax());
-                // TDS
+                totals[7] += p.getProfessionalTax();
                 row.createCell(col++).setCellValue(p.getTds());
-                // NPS Employee
+                totals[8] += p.getTds();
                 row.createCell(col++).setCellValue(p.getNpsEmployeeShare());
-                // NPS Employer Deduction
+                totals[9] += p.getNpsEmployeeShare();
                 row.createCell(col++).setCellValue(p.getNpsEmployerShare());
-                // CGHS
+                totals[10] += p.getNpsEmployerShare();
                 row.createCell(col++).setCellValue(p.getCghs());
-                // Other Deductions
+                totals[11] += p.getCghs();
                 row.createCell(col++).setCellValue(p.getOtherDeductions());
-                // Total Deductions
+                totals[12] += p.getOtherDeductions();
                 row.createCell(col++).setCellValue(p.getTotalDeductions());
-                // Net Salary
+                totals[13] += p.getTotalDeductions();
                 row.createCell(col++).setCellValue(p.getNetSalary());
+                totals[14] += p.getNetSalary();
+                
+                row.createCell(col++).setCellValue(p.getRemark() != null ? p.getRemark() : "");
 
                 // Apply style
                 for(int i=0; i<col; i++) {
                     row.getCell(i).setCellStyle(dataStyle);
                 }
             }
+
+            // Totals Row
+            Row totalsRow = sheet.createRow(rowIdx++);
+            Cell totalLabel = totalsRow.createCell(4);
+            totalLabel.setCellValue("Total");
+            totalLabel.setCellStyle(headerStyle);
+            
+            for (int i = 0; i < totals.length; i++) {
+                Cell cell = totalsRow.createCell(5 + i);
+                cell.setCellValue(totals[i]);
+                cell.setCellStyle(headerStyle);
+            }
+            totalsRow.createCell(20).setCellStyle(headerStyle);
+
+            rowIdx += 3;
+            // Signatures Row 1
+            Row sigRow1 = sheet.createRow(rowIdx++);
+            sigRow1.createCell(1).setCellValue("Prepared By");
+            sigRow1.createCell(5).setCellValue("Checked By");
+            sigRow1.createCell(9).setCellValue("Verified By");
+            sigRow1.createCell(13).setCellValue("Approved By");
+
+            rowIdx += 2;
+            // Signatures Row 2
+            Row sigRow2 = sheet.createRow(rowIdx++);
+            sigRow2.createCell(1).setCellValue("F&A Operator");
+            sigRow2.createCell(5).setCellValue("Officer (F&A)");
+            sigRow2.createCell(9).setCellValue("Deputy Registrar");
+            sigRow2.createCell(13).setCellValue("Registrar / Director");
 
             workbook.write(out);
             return out.toByteArray();
