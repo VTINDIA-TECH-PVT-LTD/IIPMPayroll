@@ -141,6 +141,10 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
       
       await apiService.api.post('/payroll/bulk', payload);
       setMsg({ type: 'success', text: `✓ Payroll records submitted for approval successfully!` });
+      
+      // Also automatically export the approval sheet
+      await handleExportApprovalSheet();
+
       loadPayrolls();
       setTab('view');
     } catch (e: any) {
@@ -267,7 +271,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   const isAdmin = apiService.isSuperAdmin() || apiService.isFAAdmin();
 
   return (
-    <div className="page-container">
+    <div className="page-container" style={{ padding: '24px 32px', width: '100%', overflowX: 'hidden' }}>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1>Salary Processing</h1>
