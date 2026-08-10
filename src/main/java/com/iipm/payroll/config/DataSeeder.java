@@ -34,7 +34,7 @@ public class DataSeeder {
                     .firstName(firstName)
                     .lastName(lastName)
                     .email(username.toLowerCase() + "@iipm.ac.in")
-                    .status("ACTIVE")
+                    .isActive(true)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
