@@ -105,7 +105,11 @@ const AdminDashboard: React.FC = () => {
 
   const fmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
+  const isSuperAdmin = userCtx?.role === 'SUPER_ADMIN';
   const isFaAdmin = userCtx?.role === 'FA_ADMIN';
+  const isFaOp = userCtx?.role === 'FA_OPERATOR';
+  const isAdminAdmin = userCtx?.role === 'ADMIN_ADMIN';
+  const isAdminOp = userCtx?.role === 'ADMIN_OPERATOR';
 
   const statCards = isFaAdmin ? [
     { title: 'Pending Approvals', amount: stats.pendingApprovals.toString(), icon: <FileCheck size={24} />, color: '#f59e0b', trend: '', up: true, link: '/approvals' },
@@ -118,12 +122,12 @@ const AdminDashboard: React.FC = () => {
   ];
 
   const quickActions = [
-    { title: 'Process Payroll', desc: 'Create salary for this month', icon: <HandCoins size={24} />, link: '/payroll', color: '#153C7D', show: !isFaAdmin },
-    { title: 'Approve Payroll', desc: 'Approve pending salaries', icon: <FileCheck size={24} />, link: '/approvals', color: '#153C7D', show: isFaAdmin },
-    { title: 'Manage Employees', desc: 'Add or update employee records', icon: <Users size={24} />, link: '/users', color: '#F47C20', show: !isFaAdmin },
-    { title: 'Arrears', desc: 'DA & promotion arrears', icon: <IndianRupee size={24} />, link: '/arrears', color: '#388E3C', show: !isFaAdmin },
-    { title: 'Settings', desc: 'Configure DA%, HRA%, NPS%', icon: <Settings size={24} />, link: '/settings', color: '#64748b', show: !isFaAdmin },
-    { title: 'Reports', desc: 'View and export reports', icon: <FileText size={24} />, link: '/reports', color: '#8b5cf6', show: isFaAdmin },
+    { title: 'Process Payroll', desc: 'Create salary for this month', icon: <HandCoins size={24} />, link: '/payroll', color: '#153C7D', show: isSuperAdmin || isFaOp },
+    { title: 'Approve Payroll', desc: 'Approve pending salaries', icon: <FileCheck size={24} />, link: '/approvals', color: '#153C7D', show: isSuperAdmin || isFaAdmin },
+    { title: 'Manage Employees', desc: 'Add or update employee records', icon: <Users size={24} />, link: '/users', color: '#F47C20', show: isSuperAdmin || isAdminAdmin || isAdminOp },
+    { title: 'Arrears', desc: 'DA & promotion arrears', icon: <IndianRupee size={24} />, link: '/arrears', color: '#388E3C', show: isSuperAdmin || isFaOp },
+    { title: 'Settings', desc: 'Configure DA%, HRA%, NPS%', icon: <Settings size={24} />, link: '/settings', color: '#64748b', show: isSuperAdmin || isAdminAdmin },
+    { title: 'Reports', desc: 'View and export reports', icon: <FileText size={24} />, link: '/reports', color: '#8b5cf6', show: isSuperAdmin || isFaAdmin || isFaOp },
   ].filter(q => q.show !== false);
 
   const getStatusBadge = (status: string) => {
@@ -170,92 +174,93 @@ const AdminDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Main Grid: Charts + Quick Actions */}
-      <div className="dashboard-grid">
-        <div className="chart-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0 }}>Payroll Cost Overview</h3>
-            <div style={{ background: 'var(--bg-hover)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>2026</div>
+      {/* Main Grid: Charts */}
+      {(isSuperAdmin || isFaAdmin || isFaOp) && (
+        <div className="dashboard-grid">
+          <div className="chart-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Payroll Cost Overview</h3>
+              <div style={{ background: 'var(--bg-hover)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>2026</div>
+            </div>
+            <div style={{ height: '300px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} tickFormatter={(value) => `₹${value >= 1000 ? value / 1000 + 'k' : value}`} />
+                  <Tooltip cursor={{ fill: 'var(--bg-hover)' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Bar dataKey="cost" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                    {barData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === barData.length - 1 ? 'var(--primary)' : '#94a3b8'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div style={{ height: '300px', width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} tickFormatter={(value) => `₹${value >= 1000 ? value / 1000 + 'k' : value}`} />
-                <Tooltip cursor={{ fill: 'var(--bg-hover)' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                <Bar dataKey="cost" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                  {barData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === barData.length - 1 ? 'var(--primary)' : '#94a3b8'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
 
-        <div className="chart-card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '16px' }}>Department Distribution</h3>
-          <div style={{ height: '180px', width: '100%', marginBottom: '16px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
-                  {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {pieData.map(d => (
-              <div key={d.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', fontWeight: 600 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: d.color }}></div>
-                  <span style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
+          <div className="chart-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ marginBottom: '16px' }}>Department Distribution</h3>
+            <div style={{ height: '180px', width: '100%', marginBottom: '16px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
+                    {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
+              {pieData.map((entry, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: entry.color }}></div>
+                  {entry.name}
                 </div>
-                <span>{d.value}%</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Bottom Grid: Recent Payrolls + Quick Actions */}
       <div className="dashboard-grid">
-        <div className="card-iipm" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0 }}>Recent Payroll List</h3>
-            <Link to="/payroll"><button className="btn-outline-iipm" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>View All</button></Link>
-          </div>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
-          ) : recentPayrolls.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              <p>No payrolls processed this month.</p>
+        {(isSuperAdmin || isFaAdmin || isFaOp) && (
+          <div className="card-iipm" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Recent Payroll List</h3>
+              <Link to="/payroll"><button className="btn-outline-iipm" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>View All</button></Link>
             </div>
-          ) : (
-            <table className="table-iipm" style={{ border: 'none' }}>
-              <thead>
-                <tr>
-                  <th style={{ background: 'var(--bg-hover)' }}>Employee ID</th>
-                  <th style={{ background: 'var(--bg-hover)' }}>Gross</th>
-                  <th style={{ background: 'var(--bg-hover)' }}>Net Salary</th>
-                  <th style={{ background: 'var(--bg-hover)' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentPayrolls.map((p) => (
-                  <tr key={p.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 600 }}>{p.employeeId}</td>
-                    <td>{fmt(p.grossSalary || 0)}</td>
-                    <td style={{ color: 'var(--success)', fontWeight: 700 }}>{fmt(p.netSalary || 0)}</td>
-                    <td><span className={getStatusBadge(p.status)}>{p.status}</span></td>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
+            ) : recentPayrolls.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                <p>No payrolls processed this month.</p>
+              </div>
+            ) : (
+              <table className="table-iipm" style={{ border: 'none' }}>
+                <thead>
+                  <tr>
+                    <th style={{ background: 'var(--bg-hover)' }}>Employee ID</th>
+                    <th style={{ background: 'var(--bg-hover)' }}>Gross</th>
+                    <th style={{ background: 'var(--bg-hover)' }}>Net Salary</th>
+                    <th style={{ background: 'var(--bg-hover)' }}>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody>
+                  {recentPayrolls.map((p) => (
+                    <tr key={p.id}>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 600 }}>{p.employeeId}</td>
+                      <td>{fmt(p.grossSalary || 0)}</td>
+                      <td style={{ color: 'var(--success)', fontWeight: 700 }}>{fmt(p.netSalary || 0)}</td>
+                      <td><span className={getStatusBadge(p.status)}>{p.status}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
 
         <div className="card-iipm" style={{ padding: '24px' }}>
           <h3 style={{ marginBottom: '20px' }}>Quick Actions</h3>
