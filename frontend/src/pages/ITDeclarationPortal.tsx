@@ -411,7 +411,7 @@ const ITDeclarationPortal = () => {
                 </div>
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Status</div>
-                  <div style={{ fontWeight: 600 }} className={	ext-}>{viewModal.status}</div>
+                  <div style={{ fontWeight: 600 }} className={`text-${viewModal.status.toLowerCase()}`}>{viewModal.status}</div>
                 </div>
               </div>
 
