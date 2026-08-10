@@ -359,7 +359,7 @@ const ITDeclarationPortal = () => {
                   <td style={{ fontWeight: 600 }}>{d.financialYear}</td>
                   <td>{d.taxRegime === 'OLD' ? 'Old Regime' : 'New Regime'}</td>
                   <td>
-                    <span className={status-badge }>
+                    <span className={`status-badge ${d.status.toLowerCase()}`}>
                       {d.status}
                     </span>
                   </td>
