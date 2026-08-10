@@ -24,12 +24,13 @@
   text-align: center;
 }
 .sidebar-brand-logo {
-  width: 80px;
-  height: 80px;
+  width: 110px;
+  height: auto;
+  max-height: 110px;
   object-fit: contain;
-  border-radius: 50%;
+  border-radius: 8px;
   background: #ffffff;
-  padding: 6px;
+  padding: 8px;
   flex-shrink: 0;
   border: 2px solid var(--accent);
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
