@@ -15,19 +15,24 @@ public class ItDeclaration {
     private String id;
     private String userId;
     private String financialYear;
-    
+
     private double section80C;
     private double section80D;
     private double hraExemption;
     private double homeLoanInterest;
-    
+
     private String status; // PENDING/APPROVED/REJECTED
-    
+
     private String taxRegime; // OLD or NEW
-    
+
+    // Rejection details
+    private String rejectionReason;
+    private String reviewedBy;
+    private LocalDateTime reviewedAt;
+
     @CreatedDate
     private LocalDateTime createdAt;
-    
+
     @LastModifiedDate
     private LocalDateTime updatedAt;
 }

@@ -34,10 +34,17 @@ public class ItDeclarationController {
         item.put("hraExemption", d.getHraExemption());
         item.put("homeLoanInterest", d.getHomeLoanInterest());
         item.put("status", d.getStatus());
+        item.put("taxRegime", d.getTaxRegime());
+        item.put("rejectionReason", d.getRejectionReason());
+        item.put("reviewedBy", d.getReviewedBy());
+        item.put("reviewedAt", d.getReviewedAt());
+        item.put("createdAt", d.getCreatedAt());
         try {
             User user = userService.getUserById(d.getUserId());
             item.put("employeeName", user.getFirstName() + " " + (user.getLastName() != null ? user.getLastName() : ""));
             item.put("employeeId", user.getEmployeeId());
+            item.put("department", user.getDepartment());
+            item.put("designation", user.getDesignation());
         } catch (Exception ex) {
             item.put("employeeName", d.getUserId());
             item.put("employeeId", d.getUserId());
@@ -67,10 +74,10 @@ public class ItDeclarationController {
     }
 
     @GetMapping("/year/{userId}/{financialYear}")
-    public ResponseEntity<ItDeclaration> getItDeclarationByYear(@PathVariable String userId, @PathVariable String financialYear) {
+    public ResponseEntity<ApiResponse<ItDeclaration>> getItDeclarationByYear(@PathVariable String userId, @PathVariable String financialYear) {
         return itDeclarationService.getByUserIdAndFinancialYear(userId, financialYear)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .map(d -> ResponseEntity.ok(ApiResponse.success("Found", d)))
+                .orElse(ResponseEntity.ok(ApiResponse.success("Not found", null)));
     }
 
     @PostMapping
@@ -79,13 +86,17 @@ public class ItDeclarationController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<ItDeclaration> updateStatus(@PathVariable String id, @RequestBody Map<String, String> payload) {
+    public ResponseEntity<ApiResponse<ItDeclaration>> updateStatus(
+            @PathVariable String id,
+            @RequestBody Map<String, String> payload,
+            @RequestHeader(value = "X-User-Id", required = false) String reviewerUserId) {
         String status = payload.get("status");
+        String reason = payload.get("rejectionReason");
         if (status == null || status.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(ApiResponse.error("Status is required", null));
         }
-        return itDeclarationService.updateStatus(id, status)
-                .map(ResponseEntity::ok)
+        return itDeclarationService.updateStatus(id, status, reason, reviewerUserId)
+                .map(d -> ResponseEntity.ok(ApiResponse.success("Status updated", d)))
                 .orElse(ResponseEntity.notFound().build());
     }
 

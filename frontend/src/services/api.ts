@@ -135,6 +135,9 @@ class ApiService {
   async getItDeclarations(userId: string): Promise<any> { return (await this.api.get(`/it-declarations/${userId}`)).data; }
   async getItDeclaration(userId: string, year: string): Promise<any> { return (await this.api.get(`/it-declarations/year/${userId}/${year}`)).data; }
   async saveItDeclaration(data: any): Promise<any> { return (await this.api.post('/it-declarations', data)).data; }
+  async updateItDeclarationStatus(id: string, status: string, rejectionReason?: string): Promise<any> {
+    return (await this.api.put(`/it-declarations/${id}/status`, { status, rejectionReason })).data;
+  }
   async getForm16(userId: string, year: number): Promise<any> { return (await this.api.get(`/form16/${userId}/${year}`)).data.data; }
   async importData(type: string, file: File): Promise<any> {
     const formData = new FormData();

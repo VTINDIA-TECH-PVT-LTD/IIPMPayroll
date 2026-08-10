@@ -1,37 +1,56 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { UserContext } from '../App';
 import apiService from '../services/api';
+import { CheckCircle, Clock, XCircle, FileText, Send, RotateCcw, Printer } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const ITDeclarationPortal = () => {
   const userCtx = useContext(UserContext);
   const userId = userCtx?.userId;
-  
-  const [section80C, setSection80C] = useState<number | ''>('');
-  const [section80D, setSection80D] = useState<number | ''>('');
-  const [hraExemption, setHraExemption] = useState<number | ''>('');
-  const [homeLoanInterest, setHomeLoanInterest] = useState<number | ''>('');
-  const [status, setStatus] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const navigate = useNavigate();
+
+  const [declaration, setDeclaration] = useState<any>(null);
+  const [form, setForm] = useState({
+    taxRegime: 'NEW',
+    section80C: '',
+    section80D: '',
+    hraExemption: '',
+    homeLoanInterest: '',
+    financialYear: '',
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  const currentFY = (() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    return m >= 4 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
+  })();
 
   useEffect(() => {
-    if (userId) {
-      loadDeclaration();
-    }
+    if (userId) loadDeclaration();
   }, [userId]);
 
   const loadDeclaration = async () => {
     try {
       setLoading(true);
-      const currentYear = new Date().getFullYear().toString();
-      const res = await apiService.getItDeclaration(userId as string, currentYear);
-      if (res && res.data) {
-        const dec = res.data;
-        setSection80C(dec.section80C || '');
-        setSection80D(dec.section80D || '');
-        setHraExemption(dec.hraExemption || '');
-        setHomeLoanInterest(dec.homeLoanInterest || '');
-        setStatus(dec.status || 'PENDING');
+      const res = await apiService.getItDeclaration(userId as string, currentFY);
+      const dec = res?.data;
+      if (dec && dec.id) {
+        setDeclaration(dec);
+        setForm({
+          taxRegime: dec.taxRegime || 'NEW',
+          section80C: dec.section80C || '',
+          section80D: dec.section80D || '',
+          hraExemption: dec.hraExemption || '',
+          homeLoanInterest: dec.homeLoanInterest || '',
+          financialYear: dec.financialYear || currentFY,
+        });
+      } else {
+        setDeclaration(null);
+        setForm(f => ({ ...f, financialYear: currentFY }));
       }
     } catch (e) {
       console.error(e);
@@ -43,93 +62,279 @@ const ITDeclarationPortal = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
+    if (!form.taxRegime) {
+      setMessage({ text: 'Please select a Tax Regime (Old or New).', type: 'error' });
+      return;
+    }
     try {
-      setLoading(true);
-      const data = {
+      setSaving(true);
+      const payload: any = {
         userId,
-        financialYear: new Date().getFullYear().toString(),
-        section80C: Number(section80C),
-        section80D: Number(section80D),
-        hraExemption: Number(hraExemption),
-        homeLoanInterest: Number(homeLoanInterest),
-        status: 'PENDING'
+        financialYear: currentFY,
+        taxRegime: form.taxRegime,
+        section80C: Number(form.section80C) || 0,
+        section80D: Number(form.section80D) || 0,
+        hraExemption: Number(form.hraExemption) || 0,
+        homeLoanInterest: Number(form.homeLoanInterest) || 0,
+        status: 'PENDING',
       };
-      await apiService.saveItDeclaration(data);
-      setMessage('IT Declaration submitted successfully.');
-      setStatus('PENDING');
-    } catch (error) {
-      console.error(error);
-      setMessage('Error submitting IT Declaration.');
+      // If resubmitting after rejection, carry ID
+      if (declaration?.id && declaration?.status === 'REJECTED') {
+        payload.id = declaration.id;
+      }
+      await apiService.saveItDeclaration(payload);
+      setMessage({ text: 'IT Declaration submitted successfully! Pending FA Operator review.', type: 'success' });
+      await loadDeclaration();
+    } catch (err) {
+      setMessage({ text: 'Error submitting IT Declaration. Please try again.', type: 'error' });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  if (loading) return <div className="page-container">Loading...</div>;
+  const fmt = (n: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
 
-  const isReadOnly = status === 'APPROVED' || status === 'PENDING';
+  const status = declaration?.status;
+  const isRejected = status === 'REJECTED';
+  const isPending = status === 'PENDING';
+  const isApproved = status === 'APPROVED';
+  const canEdit = !declaration || isRejected; // can submit/resubmit if never submitted OR rejected
+  const isOldRegime = form.taxRegime === 'OLD';
+
+  if (loading) return (
+    <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+      <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+        <div style={{ fontSize: '2rem', marginBottom: '12px' }}>⏳</div>
+        <p>Loading IT Declaration...</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="page-container">
-      <h2>IT Declaration</h2>
-      {message && <div style={{ marginBottom: '1rem', color: 'blue' }}>{message}</div>}
-      <div style={{ marginBottom: '1rem' }}>
-        <strong>Status: </strong> 
-        <span>{status || 'NOT SUBMITTED'}</span>
+    <div className="page-container" style={{ maxWidth: '760px', margin: '0 auto' }}>
+      {/* Page Header */}
+      <div style={{ marginBottom: '28px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)' }}>IT Declaration</h2>
+        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          Financial Year: <strong>{currentFY}</strong> — Submit your tax regime and deductions for TDS calculation
+        </p>
       </div>
-      
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '400px' }}>
-        <div className="form-group">
-          <label>Section 80C Amount:</label>
-          <input 
-            type="number" 
-            value={section80C} 
-            onChange={(e) => setSection80C(Number(e.target.value))}
-            disabled={isReadOnly}
-            required
-            className="form-control"
-          />
+
+      {/* Status Banner */}
+      {declaration && (
+        <div style={{
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '14px',
+          border: `2px solid ${isApproved ? '#22c55e' : isPending ? '#f59e0b' : '#ef4444'}`,
+          background: isApproved ? '#f0fdf4' : isPending ? '#fffbeb' : '#fef2f2',
+        }}>
+          <div style={{ flexShrink: 0, marginTop: '2px' }}>
+            {isApproved && <CheckCircle size={22} color="#22c55e" />}
+            {isPending && <Clock size={22} color="#f59e0b" />}
+            {isRejected && <XCircle size={22} color="#ef4444" />}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: isApproved ? '#15803d' : isPending ? '#b45309' : '#b91c1c' }}>
+              {isApproved && '✅ Declaration Approved'}
+              {isPending && '⏳ Pending Review'}
+              {isRejected && '❌ Declaration Rejected — Please Resubmit'}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              {isApproved && 'Your IT Declaration has been approved by the FA Operator. Your deductions will be applied during payroll processing.'}
+              {isPending && 'Your declaration has been submitted and is currently under review by the FA Operator.'}
+              {isRejected && (
+                <>
+                  <span>Reason: </span>
+                  <strong style={{ color: '#b91c1c' }}>{declaration.rejectionReason || 'No reason provided'}</strong>
+                  <br />
+                  <span>Please update your declaration and resubmit below.</span>
+                </>
+              )}
+            </div>
+            {isApproved && (
+              <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => navigate('/form16')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: '#153C7D', color: '#fff', border: 'none',
+                    borderRadius: '8px', padding: '8px 16px', fontWeight: 600,
+                    fontSize: '0.85rem', cursor: 'pointer',
+                  }}
+                >
+                  <Printer size={16} /> View & Print Form 16
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="form-group">
-          <label>Section 80D Amount:</label>
-          <input 
-            type="number" 
-            value={section80D} 
-            onChange={(e) => setSection80D(Number(e.target.value))}
-            disabled={isReadOnly}
-            required
-            className="form-control"
-          />
+      )}
+
+      {/* Alert message */}
+      {message && (
+        <div style={{
+          borderRadius: '10px',
+          padding: '12px 16px',
+          marginBottom: '20px',
+          background: message.type === 'success' ? '#f0fdf4' : '#fef2f2',
+          border: `1px solid ${message.type === 'success' ? '#86efac' : '#fca5a5'}`,
+          color: message.type === 'success' ? '#15803d' : '#b91c1c',
+          fontWeight: 600, fontSize: '0.9rem',
+        }}>
+          {message.text}
         </div>
-        <div className="form-group">
-          <label>HRA Exemption:</label>
-          <input 
-            type="number" 
-            value={hraExemption} 
-            onChange={(e) => setHraExemption(Number(e.target.value))}
-            disabled={isReadOnly}
-            required
-            className="form-control"
-          />
+      )}
+
+      {/* Declaration Summary (read-only when pending or approved) */}
+      {(isPending || isApproved) && declaration && (
+        <div className="card-iipm" style={{ padding: '24px', marginBottom: '24px' }}>
+          <h4 style={{ margin: '0 0 16px', color: 'var(--text-main)', fontWeight: 700 }}>Submitted Declaration</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <SummaryRow label="Tax Regime" value={declaration.taxRegime === 'OLD' ? '🏛️ Old Regime' : '🆕 New Regime'} />
+            <SummaryRow label="Section 80C" value={fmt(declaration.section80C)} />
+            <SummaryRow label="Section 80D" value={fmt(declaration.section80D)} />
+            <SummaryRow label="HRA Exemption" value={fmt(declaration.hraExemption)} />
+            <SummaryRow label="Home Loan Interest" value={fmt(declaration.homeLoanInterest)} />
+          </div>
+          <p style={{ margin: '16px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Submitted on {new Date(declaration.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </p>
         </div>
-        <div className="form-group">
-          <label>Home Loan Interest:</label>
-          <input 
-            type="number" 
-            value={homeLoanInterest} 
-            onChange={(e) => setHomeLoanInterest(Number(e.target.value))}
-            disabled={isReadOnly}
-            required
-            className="form-control"
-          />
+      )}
+
+      {/* Form — only editable when not submitted OR when rejected */}
+      {canEdit && (
+        <div className="card-iipm" style={{ padding: '28px' }}>
+          <h4 style={{ margin: '0 0 8px', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileText size={18} />
+            {isRejected ? 'Update & Resubmit Declaration' : 'Submit IT Declaration'}
+          </h4>
+          <p style={{ margin: '0 0 24px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            Select your tax regime first. For Old Regime, fill the deduction details. New Regime uses standard deduction only.
+          </p>
+
+          <form onSubmit={handleSubmit}>
+            {/* Tax Regime Selector */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '10px' }}>
+                Select Tax Regime <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {[
+                  { value: 'NEW', label: 'New Regime', desc: 'Standard Deduction ₹75,000. No 80C/80D.', badge: 'Default' },
+                  { value: 'OLD', label: 'Old Regime', desc: 'Standard Deduction ₹50,000. Allows 80C, 80D, HRA, Home Loan.', badge: null },
+                ].map(opt => (
+                  <div
+                    key={opt.value}
+                    onClick={() => setForm(f => ({ ...f, taxRegime: opt.value }))}
+                    style={{
+                      border: `2px solid ${form.taxRegime === opt.value ? '#153C7D' : 'var(--border)'}`,
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      cursor: 'pointer',
+                      background: form.taxRegime === opt.value ? '#eef2ff' : 'var(--bg-surface)',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <div style={{
+                        width: '18px', height: '18px', borderRadius: '50%',
+                        border: `2px solid ${form.taxRegime === opt.value ? '#153C7D' : 'var(--border)'}`,
+                        background: form.taxRegime === opt.value ? '#153C7D' : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>
+                        {form.taxRegime === opt.value && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fff' }} />}
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>{opt.label}</span>
+                      {opt.badge && (
+                        <span style={{ background: '#153C7D', color: '#fff', borderRadius: '20px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>
+                          {opt.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)', paddingLeft: '26px' }}>{opt.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Deduction Fields — only for OLD regime */}
+            {isOldRegime && (
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{
+                  padding: '10px 14px', background: '#fffbeb', borderRadius: '8px',
+                  border: '1px solid #fcd34d', fontSize: '0.82rem', color: '#92400e',
+                  marginBottom: '16px', fontWeight: 600,
+                }}>
+                  💡 Old Regime selected — enter your deduction amounts below. Caps: 80C max ₹1,50,000 | Home Loan max ₹2,00,000
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <FormField label="Section 80C (EPF, ELSS, PPF, LIC)" value={form.section80C} onChange={v => setForm(f => ({ ...f, section80C: v }))} max={150000} />
+                  <FormField label="Section 80D (Health Insurance Premium)" value={form.section80D} onChange={v => setForm(f => ({ ...f, section80D: v }))} />
+                  <FormField label="HRA Exemption" value={form.hraExemption} onChange={v => setForm(f => ({ ...f, hraExemption: v }))} />
+                  <FormField label="Home Loan Interest (max ₹2,00,000)" value={form.homeLoanInterest} onChange={v => setForm(f => ({ ...f, homeLoanInterest: v }))} max={200000} />
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '8px' }}>
+              <button
+                type="submit"
+                disabled={saving}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  background: saving ? '#94a3b8' : '#153C7D',
+                  color: '#fff', border: 'none', borderRadius: '10px',
+                  padding: '12px 24px', fontWeight: 700, fontSize: '0.9rem',
+                  cursor: saving ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+                }}
+              >
+                {isRejected ? <RotateCcw size={16} /> : <Send size={16} />}
+                {saving ? 'Submitting...' : isRejected ? 'Resubmit Declaration' : 'Submit Declaration'}
+              </button>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                You can resubmit if rejected by the FA Operator.
+              </span>
+            </div>
+          </form>
         </div>
-        {!isReadOnly && <button type="submit" className="btn btn-primary">Submit Declaration</button>}
-        {status === 'PENDING' && <p>Your declaration is under review and cannot be modified.</p>}
-        {status === 'APPROVED' && <p style={{ color: 'green' }}>Your declaration has been approved.</p>}
-        {status === 'REJECTED' && <p style={{ color: 'red' }}>Your declaration was rejected. Please update and resubmit.</p>}
-      </form>
+      )}
     </div>
   );
 };
+
+const SummaryRow = ({ label, value }: { label: string; value: string }) => (
+  <div style={{ background: 'var(--bg-hover)', borderRadius: '8px', padding: '10px 14px' }}>
+    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>{label}</div>
+    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>{value}</div>
+  </div>
+);
+
+const FormField = ({ label, value, onChange, max }: { label: string; value: any; onChange: (v: string) => void; max?: number }) => (
+  <div>
+    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+      {label} {max && <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(max ₹{max.toLocaleString('en-IN')})</span>}
+    </label>
+    <input
+      type="number"
+      min="0"
+      max={max}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder="0"
+      style={{
+        width: '100%', padding: '10px 12px', borderRadius: '8px',
+        border: '1.5px solid var(--border)', fontSize: '0.9rem',
+        background: 'var(--bg-surface)', color: 'var(--text-main)',
+        outline: 'none', boxSizing: 'border-box',
+      }}
+    />
+  </div>
+);
 
 export default ITDeclarationPortal;
