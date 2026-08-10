@@ -14,8 +14,11 @@ const UserManagement: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState<any | null>(null);
   const [search, setSearch] = useState('');
+  useEffect(() => { setCurrentPage(1); }, [search]);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -280,7 +283,7 @@ const UserManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(u => (
+                {currentData.map(u => (
                   <tr key={u.id} style={{ background: selectedUsers.includes(u.id) ? 'var(--bg-hover)' : '' }}>
                     <td>
                       <input type="checkbox" checked={selectedUsers.includes(u.id)} onChange={() => handleSelect(u.id)} />

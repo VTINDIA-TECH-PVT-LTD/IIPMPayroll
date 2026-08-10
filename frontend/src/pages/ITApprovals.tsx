@@ -141,6 +141,8 @@ const ITApprovals = () => {
   const [activeTab, setActiveTab] = useState('PENDING');
   const [rejectTarget, setRejectTarget] = useState<any>(null);
   const [detailTarget, setDetailTarget] = useState<any>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
   useEffect(() => { loadAll(); }, []);
 
@@ -205,7 +207,7 @@ const ITApprovals = () => {
           {STATUS_TABS.map(tab => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
               style={{
                 padding: '14px 18px', border: 'none',
                 borderBottom: activeTab === tab ? '3px solid var(--primary)' : '3px solid transparent',

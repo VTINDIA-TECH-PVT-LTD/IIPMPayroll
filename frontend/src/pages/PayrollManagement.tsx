@@ -45,6 +45,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedPayrolls, setSelectedPayrolls] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Reject / Forward Modal
   const [rejectModal, setRejectModal] = useState<{ id: string } | null>(null);
@@ -108,6 +110,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     try {
       const data = await apiService.getPayrollsByMonth(month, year);
       setPayrolls(data);
+        setCurrentPage(1);
     } catch { setPayrolls([]); }
   };
 
@@ -179,6 +182,9 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   const statusBadge: Record<string, string> = {
     PENDING: '#f59e0b', APPROVED: '#22c55e', REJECTED: '#ef4444', LOCKED: '#8b5cf6', SUBMITTED: '#3b82f6'
   };
+
+  const totalPages = Math.max(1, Math.ceil(payrolls.length / itemsPerPage));
+  const currentPayrolls = payrolls.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleSelectAllPayrolls = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) setSelectedPayrolls(payrolls.map(p => p.id));
@@ -573,7 +579,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                     </tr>
                   </thead>
                   <tbody>
-                    {payrolls.map((p: any) => (
+                    {currentPayrolls.map((p: any) => (
                       <tr key={p.id} style={{ background: selectedPayrolls.includes(p.id) ? 'var(--bg-hover)' : '' }}>
                         <td>
                           <input type="checkbox" checked={selectedPayrolls.includes(p.id)} onChange={() => handleSelectPayroll(p.id)} />
