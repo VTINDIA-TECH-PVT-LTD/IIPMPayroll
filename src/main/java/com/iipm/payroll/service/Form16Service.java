@@ -97,7 +97,7 @@ public class Form16Service {
 
         if ("OLD".equals(regime)) {
             dto.setStandardDeduction(STANDARD_DEDUCTION_OLD);
-            if (declaration != null && "APPROVED".equalsIgnoreCase(declaration.getStatus())) {
+            if (declaration != null && ("APPROVED".equalsIgnoreCase(declaration.getStatus()) || "PENDING".equalsIgnoreCase(declaration.getStatus()))) {
                 exemptHra = declaration.getHraExemption();
                 sec80C = Math.min(declaration.getSection80C(), 150000.0);
                 sec80D = declaration.getSection80D();

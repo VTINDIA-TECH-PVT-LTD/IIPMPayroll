@@ -105,6 +105,13 @@ const ITDeclarationPortal = () => {
   const fmt = (n: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
 
+  const fmtDate = (val: any, full = false) => {
+    if (!val) return 'N/A';
+    const d = new Date(val);
+    if (isNaN(d.getTime()) || d.getFullYear() < 2000) return 'N/A';
+    return full ? d.toLocaleString('en-IN') : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
   const status = declaration?.status;
   const isRejected = status === 'REJECTED';
   const isPending = status === 'PENDING';
@@ -212,7 +219,7 @@ const ITDeclarationPortal = () => {
             <SummaryRow label="Home Loan Interest" value={fmt(declaration.homeLoanInterest)} />
           </div>
           <p style={{ margin: '16px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Submitted on {new Date(declaration.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            Submitted on {fmtDate(declaration.createdAt)}
           </p>
         </div>
       )}
@@ -363,7 +370,7 @@ const ITDeclarationPortal = () => {
                       {d.status}
                     </span>
                   </td>
-                  <td>{new Date(d.createdAt).toLocaleDateString('en-IN')}</td>
+                  <td>{fmtDate(d.createdAt)}</td>
                   <td style={{ textAlign: 'right' }}>
                     <button className="btn-secondary-iipm" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => setViewModal(d)}>
                       <Eye size={14} style={{ marginRight: '6px' }}/> View
@@ -449,8 +456,8 @@ const ITDeclarationPortal = () => {
               )}
               
               <div style={{ marginTop: '24px', fontSize: '0.8rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                <div>Submitted On: {new Date(viewModal.createdAt).toLocaleString('en-IN')}</div>
-                {viewModal.reviewedBy && <div>Reviewed By: {viewModal.reviewedBy} at {new Date(viewModal.reviewedAt).toLocaleString('en-IN')}</div>}
+                <div>Submitted On: {fmtDate(viewModal.createdAt, true)}</div>
+                {viewModal.reviewedBy && <div>Reviewed By: {viewModal.reviewedBy} at {fmtDate(viewModal.reviewedAt, true)}</div>}
               </div>
             </div>
           </div>

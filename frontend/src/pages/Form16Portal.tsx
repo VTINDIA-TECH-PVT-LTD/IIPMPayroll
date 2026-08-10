@@ -12,8 +12,10 @@ const Form16Portal: React.FC = () => {
   useEffect(() => {
     if (userCtx?.userId) {
       setLoading(true);
-      const year = new Date().getFullYear();
-      api.getForm16(userCtx.userId, year)
+      const now = new Date();
+      // FY starts April. If month >= April use current year, else use previous year
+      const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+      api.getForm16(userCtx.userId, fyStartYear)
         .then(res => {
           if (res) setForm16Data(res);
         })
