@@ -21,6 +21,8 @@ public class UserDTO {
     @NotBlank(message = "Username is required")
     private String username;
 
+    private String password;
+
     @NotBlank(message = "Employee ID is required")
     private String employeeId;
 

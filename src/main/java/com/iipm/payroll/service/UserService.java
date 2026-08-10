@@ -37,9 +37,13 @@ public class UserService {
             throw new RuntimeException("Employee ID already exists");
         }
 
+        String passwordToUse = (userDTO.getPassword() != null && !userDTO.getPassword().trim().isEmpty()) 
+                ? userDTO.getPassword() 
+                : "defaultPassword123";
+
         User user = User.builder()
                 .username(userDTO.getUsername())
-                .password(passwordEncoder.encode("defaultPassword123")) // Default password - should be changed on first login
+                .password(passwordEncoder.encode(passwordToUse)) // Use provided or default
                 .employeeId(userDTO.getEmployeeId())
                 .firstName(userDTO.getFirstName())
                 .lastName(userDTO.getLastName())

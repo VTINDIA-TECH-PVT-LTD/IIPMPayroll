@@ -82,8 +82,8 @@ const UserManagement: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.username || !form.firstName || !form.employeeId) {
-      setMsg({ type: 'error', text: 'Username, First Name, and Employee ID are required.' }); return;
+    if (!form.username || !form.firstName || !form.employeeId || (!editUser && !form.password)) {
+      setMsg({ type: 'error', text: 'Username, Password, First Name, and Employee ID are required.' }); return;
     }
     try {
       setLoading(true);
