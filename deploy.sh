@@ -16,11 +16,13 @@ else
 fi
 
 # 2. Update backend
-# NOTE: These lines are commented out because you got a "Not a directory" error earlier.
-# Once you run `ps aux | grep java` and find the exact path of your running JAR file,
-# replace the path below and remove the '#' to uncomment these lines!
-
-# \cp target/iipm-payroll-system-0.0.1-SNAPSHOT.jar /EXACT/PATH/TO/YOUR/RUNNING/JAR/FILE.jar
-# sudo systemctl restart iipm-payroll
+echo "Restarting backend..."
+# Kill any existing backend process running this specific JAR
+pkill -f "target/iipm-payroll-system-0.0.1-SNAPSHOT.jar" || true
+# Wait a couple of seconds for the process to fully stop
+sleep 2
+# Start the new backend process
+nohup java -jar target/iipm-payroll-system-0.0.1-SNAPSHOT.jar > backend.log 2>&1 &
+echo "Backend restarted successfully."
 
 echo "Deployment script finished."
