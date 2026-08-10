@@ -145,7 +145,7 @@ const EmployeePortal: React.FC = () => {
   .header-text p { font-size: 10px; color: #475569; margin-bottom: 2px; }
   .header-text p span { color: #0a3161; font-weight: 500; }
   
-  .header-right { width: 220px; display: flex; flex-direction: column; gap: 6px; }
+  .header-right { width: 250px; display: flex; flex-direction: column; gap: 6px; }
   .ps-badge { background: #0a3161; color: white; border-radius: 6px; text-align: center; padding: 10px; }
   .ps-badge .title { font-size: 16px; font-weight: 700; letter-spacing: 1px; }
   .ps-badge .subtitle { font-size: 10px; font-weight: 500; margin-top: 2px; }
@@ -155,7 +155,7 @@ const EmployeePortal: React.FC = () => {
   .date-row:last-child { margin-bottom: 0; }
   .date-row .icon { width: 14px; height: 14px; margin-right: 8px; color: #0a3161; }
   .date-row .lbl { font-weight: 600; width: 70px; color: #0a3161; }
-  .date-row .val { font-weight: 700; color: #0f172a; }
+  .date-row .val { font-weight: 700; color: #0f172a; white-space: nowrap; }
 
   /* --- DETAILS --- */
   .details-box { border: 1px solid #c9d9eb; border-radius: 6px; position: relative; padding: 25px 15px 15px 15px; margin-bottom: 15px; }
@@ -169,7 +169,7 @@ const EmployeePortal: React.FC = () => {
 
   /* --- SALARY TABLES --- */
   .salary-container { position: relative; margin-bottom: -1px; } /* overlap with net pay */
-  .watermark { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 450px; opacity: 0.05; z-index: 0; pointer-events: none; }
+  .watermark { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 450px; opacity: 0.25; z-index: 0; pointer-events: none; }
   
   .tables-wrapper { display: flex; gap: 15px; position: relative; z-index: 1; }
   
