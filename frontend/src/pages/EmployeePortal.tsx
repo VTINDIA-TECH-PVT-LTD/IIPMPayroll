@@ -396,7 +396,7 @@ const EmployeePortal: React.FC = () => {
             </tr>
             <tr>
               <td>3.</td><td class="bold">Total amount of salary received from current employer [1(d)-2(i)]</td>
-              <td class="text-right"></td><td class="text-right bold">${data.balance.toFixed(2)}</td>
+              <td class="text-right"></td><td class="text-right bold">${((data.grossSalary || 0) - (data.allowancesExemptUpto10 || 0)).toFixed(2)}</td>
             </tr>
             <tr>
               <td>4.</td><td colspan="3">Less: Deductions under section 16</td>
@@ -419,7 +419,7 @@ const EmployeePortal: React.FC = () => {
             </tr>
             <tr class="bg-light">
               <td>9.</td><td class="bold">Gross total income (6+8)</td>
-              <td class="text-right"></td><td class="text-right bold">${data.grossTotalIncome.toFixed(2)}</td>
+              <td class="text-right"></td><td class="text-right bold">${(data.incomeChargeableUnderSalaries || 0).toFixed(2)}</td>
             </tr>
             <tr>
               <td>10.</td><td class="bold">Deductions under Chapter VI-A</td>
@@ -463,11 +463,11 @@ const EmployeePortal: React.FC = () => {
             </tr>
             <tr>
               <td>19.</td><td>Less: Tax deducted at source</td>
-              <td class="text-right"></td><td class="text-right">${data.taxDeductedAtSource.toFixed(2)}</td>
+              <td class="text-right"></td><td class="text-right">${(data.totalTdsDeposited || 0).toFixed(2)}</td>
             </tr>
             <tr class="bg-light">
               <td>21.</td><td class="bold">Net tax payable (17-18-19-20)</td>
-              <td class="text-right"></td><td class="text-right bold">${Math.max(0, data.taxPayableOrRefundable).toFixed(2)}</td>
+              <td class="text-right"></td><td class="text-right bold">${Math.max(0, data.taxPayableOrRefundable || 0).toFixed(2)}</td>
             </tr>
           </table>
 
