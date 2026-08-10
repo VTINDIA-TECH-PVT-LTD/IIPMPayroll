@@ -2,8 +2,11 @@ package com.iipm.payroll.service;
 
 import com.iipm.payroll.model.ItDeclaration;
 import com.iipm.payroll.model.Notification;
+import com.iipm.payroll.model.User;
+import com.iipm.payroll.model.UserRole;
 import com.iipm.payroll.repository.ItDeclarationRepository;
 import com.iipm.payroll.repository.NotificationRepository;
+import com.iipm.payroll.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +22,9 @@ public class ItDeclarationService {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public List<ItDeclaration> getByUserId(String userId) {
         return itDeclarationRepository.findByUserId(userId);
@@ -37,8 +43,10 @@ public class ItDeclarationService {
     }
 
     public ItDeclaration saveOrUpdate(ItDeclaration declaration) {
+        boolean isNew = (declaration.getId() == null);
+
         // If re-submitting after rejection, reset status to PENDING
-        if (declaration.getId() != null) {
+        if (!isNew) {
             Optional<ItDeclaration> existing = itDeclarationRepository.findById(declaration.getId());
             if (existing.isPresent() && "REJECTED".equals(existing.get().getStatus())) {
                 declaration.setStatus("PENDING");
@@ -50,7 +58,44 @@ public class ItDeclarationService {
         if (declaration.getStatus() == null) {
             declaration.setStatus("PENDING");
         }
-        return itDeclarationRepository.save(declaration);
+        ItDeclaration saved = itDeclarationRepository.save(declaration);
+
+        // Notify FA_ADMIN and FA_OPERATOR users when employee submits/re-submits
+        try {
+            // Look up employee name from UserRepository
+            String employeeName = userRepository.findById(declaration.getUserId())
+                    .map(u -> u.getFirstName() + " " + u.getLastName())
+                    .orElse(declaration.getUserId());
+            String fyLabel = declaration.getFinancialYear() != null ? declaration.getFinancialYear() : "";
+            String notifTitle = "IT Declaration Submitted";
+            String notifMsg = "Employee " + employeeName + " has submitted IT Declaration for FY " + fyLabel + ". Please review and approve.";
+
+            // Notify all FA_ADMIN and FA_OPERATOR users
+            List<User> faAdmins = userRepository.findByRole(UserRole.FA_ADMIN);
+            List<User> faOperators = userRepository.findByRole(UserRole.FA_OPERATOR);
+
+            for (User approver : faAdmins) {
+                createNotification(approver.getId(), "IT_DECLARATION_SUBMITTED", notifTitle, notifMsg);
+            }
+            for (User approver : faOperators) {
+                createNotification(approver.getId(), "IT_DECLARATION_SUBMITTED", notifTitle, notifMsg);
+            }
+        } catch (Exception e) {
+            // Don't fail on notification error
+        }
+
+        return saved;
+    }
+
+    private void createNotification(String userId, String type, String title, String message) {
+        Notification notif = new Notification();
+        notif.setUserId(userId);
+        notif.setType(type);
+        notif.setTitle(title);
+        notif.setMessage(message);
+        notif.setRead(false);
+        notif.setCreatedAt(LocalDateTime.now());
+        notificationRepository.save(notif);
     }
 
     public Optional<ItDeclaration> updateStatus(String id, String status, String reason, String reviewedBy) {
@@ -67,19 +112,16 @@ public class ItDeclarationService {
             }
             ItDeclaration saved = itDeclarationRepository.save(declaration);
 
-            // Send notification to employee
+            // Notify employee about the decision
             try {
-                Notification notif = new Notification();
-                notif.setUserId(declaration.getUserId());
-                notif.setTitle("IT Declaration " + status);
+                String title = "IT Declaration " + ("APPROVED".equals(status) ? "Approved ✅" : "Rejected ❌");
+                String message;
                 if ("APPROVED".equals(status)) {
-                    notif.setMessage("Your IT Declaration for FY " + declaration.getFinancialYear() + " has been APPROVED. You can now view and print your Form 16.");
+                    message = "Your IT Declaration for FY " + declaration.getFinancialYear() + " has been APPROVED. You can now view and download your Form 16.";
                 } else {
-                    notif.setMessage("Your IT Declaration for FY " + declaration.getFinancialYear() + " has been REJECTED. Reason: " + (reason != null ? reason : "Not specified") + ". Please resubmit.");
+                    message = "Your IT Declaration for FY " + declaration.getFinancialYear() + " has been REJECTED. Reason: " + (reason != null ? reason : "Not specified") + ". Please resubmit with corrections.";
                 }
-                notif.setRead(false);
-                notif.setCreatedAt(LocalDateTime.now());
-                notificationRepository.save(notif);
+                createNotification(declaration.getUserId(), "IT_DECLARATION_" + status, title, message);
             } catch (Exception e) {
                 // Don't fail on notification error
             }

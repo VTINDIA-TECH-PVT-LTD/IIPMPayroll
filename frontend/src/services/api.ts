@@ -116,6 +116,9 @@ class ApiService {
   // ============ NOTIFICATIONS ============
   async getNotifications(userId: string): Promise<any[]> { return (await this.api.get(`/notifications/${userId}`)).data; }
   async markNotificationRead(id: string): Promise<any> { return (await this.api.put(`/notifications/${id}/read`, {})).data; }
+  async markAllNotificationsRead(userId: string): Promise<any> { return (await this.api.put(`/notifications/mark-all-read/${userId}`, {})).data; }
+  async dismissNotification(id: string): Promise<any> { return (await this.api.delete(`/notifications/${id}`)).data; }
+  async clearAllNotifications(userId: string): Promise<any> { return (await this.api.delete(`/notifications/clear-all/${userId}`)).data; }
 
   // ============ UTILS ============
   isAuthenticated(): boolean { return this.token !== null; }

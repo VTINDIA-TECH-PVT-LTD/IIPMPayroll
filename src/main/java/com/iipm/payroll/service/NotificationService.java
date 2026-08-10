@@ -73,6 +73,11 @@ public class NotificationService {
         notificationRepository.deleteById(notificationId);
     }
 
+    public void clearAllForUser(String userId) {
+        List<Notification> all = notificationRepository.findByUserId(userId);
+        notificationRepository.deleteAll(all);
+    }
+
     public void deleteExpiredNotifications() {
         // Delete notifications older than 30 days
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
