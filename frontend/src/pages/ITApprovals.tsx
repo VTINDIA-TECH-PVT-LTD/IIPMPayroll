@@ -91,16 +91,17 @@ const DetailModal: React.FC<DetailModalProps> = ({ declaration: d, onClose }) =>
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
     }}>
       <div style={{
-        background: 'var(--bg-surface)', borderRadius: '16px', padding: '28px',
+        background: '#ffffff', borderRadius: '16px', padding: '28px',
         width: '520px', maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        border: '1px solid #e2e8f0',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ margin: 0, fontWeight: 700 }}>Declaration Details</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.3rem', color: 'var(--text-muted)' }}>×</button>
+          <h3 style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>Declaration Details</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.3rem', color: '#94a3b8' }}>×</button>
         </div>
         <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontWeight: 700, fontSize: '1rem' }}>{d.employeeName}</div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{d.employeeId} • {d.department} • {d.designation}</div>
+          <div style={{ fontWeight: 700, fontSize: '1rem', color: '#1e293b' }}>{d.employeeName}</div>
+          <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{d.employeeId} • {d.department} • {d.designation}</div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
           {[
@@ -111,9 +112,9 @@ const DetailModal: React.FC<DetailModalProps> = ({ declaration: d, onClose }) =>
             { label: 'HRA Exemption', value: fmt(d.hraExemption) },
             { label: 'Home Loan Interest', value: fmt(d.homeLoanInterest) },
           ].map(({ label, value }) => (
-            <div key={label} style={{ background: 'var(--bg-hover)', borderRadius: '8px', padding: '10px 12px' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>{label}</div>
-              <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{value}</div>
+            <div key={label} style={{ background: '#f1f5f9', borderRadius: '8px', padding: '10px 12px' }}>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '2px' }}>{label}</div>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#1e293b' }}>{value}</div>
             </div>
           ))}
         </div>
