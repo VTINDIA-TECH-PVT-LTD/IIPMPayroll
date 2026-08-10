@@ -1,4 +1,4 @@
-﻿import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { UserContext } from '../App';
 import api from '../services/api';
@@ -69,7 +69,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <img src="/logo.png" alt="IIPM" className="sidebar-brand-logo" onError={(e) => {
+        <img src={process.env.PUBLIC_URL + "/logo.png"} alt="IIPM" className="sidebar-brand-logo" onError={(e) => {
           (e.target as HTMLImageElement).style.display = 'none';
         }} />
         <div className="sidebar-brand-text">

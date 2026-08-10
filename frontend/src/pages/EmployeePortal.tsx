@@ -138,7 +138,7 @@ const EmployeePortal: React.FC = () => {
         .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #333; }
       </style></head>
       <body>
-        <img src="/logo.png" class="watermark" />
+        <img src={process.env.PUBLIC_URL + "/logo.png"} class="watermark" />
         <div class="header">
           <h1>Indian Institute of Petroleum and Energy</h1>
           <p>EAB, Vangali</p>

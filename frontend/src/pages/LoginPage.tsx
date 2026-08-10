@@ -38,7 +38,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     <div className="login-page">
       {/* Left Panel */}
       <div className="login-left">
-        <img src="/logo.png" alt="IIPM Logo" className="login-logo"
+        <img src={process.env.PUBLIC_URL + "/logo.png"} alt="IIPM Logo" className="login-logo"
           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
         <div className="login-tagline">
           <h1>Indian Institute of<br />Petroleum & Energy</h1>
@@ -59,7 +59,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div className="login-right">
         <div className="login-form-container">
           <div className="login-form-header" style={{ textAlign: 'center' }}>
-            <img src="/logo.png" alt="IIPM Logo" className="login-logo-mobile"
+            <img src={process.env.PUBLIC_URL + "/logo.png"} alt="IIPM Logo" className="login-logo-mobile"
                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             <h3>Welcome back</h3>
             <p>Sign in to access the Payroll Management System</p>
