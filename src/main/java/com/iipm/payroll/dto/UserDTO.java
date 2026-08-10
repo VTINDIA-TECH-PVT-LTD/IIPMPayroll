@@ -46,7 +46,7 @@ public class UserDTO {
 
     private Integer payIndex;
 
-    private double basicPay;
+    private Double basicPay;
 
     private String bankAccountNumber;
 
