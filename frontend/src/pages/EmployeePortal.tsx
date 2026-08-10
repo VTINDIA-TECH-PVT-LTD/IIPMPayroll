@@ -121,11 +121,21 @@ const EmployeePortal: React.FC = () => {
 <style>
   @page { size: A4; margin: 10mm 15mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; background:#fff; position:relative; }
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #000; background:#f0f2f5; position:relative; }
   
+  .page {
+    max-width: 750px;
+    margin: 20px auto;
+    background: #fff;
+    padding: 30px 40px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    position: relative;
+    min-height: 900px;
+  }
+
   /* Watermark */
   .watermark-container {
-    position: fixed;
+    position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -141,38 +151,41 @@ const EmployeePortal: React.FC = () => {
   
   /* Header */
   .header { text-align:center; margin-bottom:15px; }
-  .header h1 { font-size:14px; font-weight:bold; margin-bottom:3px; letter-spacing: 0.2px; }
+  .header h1 { font-size:15px; font-weight:bold; margin-bottom:4px; letter-spacing: 0.2px; }
   .header .addr { font-size:10px; line-height:1.4; color: #111; }
   
-  .ps-title { text-align:center; font-weight:bold; font-size:11px; margin-top:15px; line-height: 1.4; }
-  .emp-name { text-align:center; font-size:12px; font-weight:bold; margin:10px 0 20px 0; }
+  .ps-title { text-align:center; font-weight:bold; font-size:12px; margin-top:20px; line-height: 1.4; }
+  .emp-name { text-align:center; font-size:13px; font-weight:bold; margin:15px 0 25px 0; }
   
   /* Details Table */
-  .detail-table { width:100%; border-collapse:collapse; margin-bottom:15px; }
-  .detail-table td { padding:2px; font-size:9.5px; vertical-align:top; }
-  .lbl { color:#000; white-space:nowrap; width:130px; }
-  .sep { width:10px; text-align: center; }
+  .detail-table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+  .detail-table td { padding:3px; font-size:10px; vertical-align:top; }
+  .lbl { color:#000; white-space:nowrap; width:140px; }
+  .sep { width:15px; text-align: center; }
   .detail-val { width: auto; }
   
   /* Salary Table */
-  .sal-table { width:100%; border-collapse:collapse; margin-bottom:15px; border: 1.5px solid #000; }
-  .sal-table th { background:#fff; font-weight:bold; font-size:10px; padding:5px 6px; border:1px solid #000; text-align:left; }
-  .sal-table td { padding:4px 6px; border:1px solid #000; font-size:9.5px; }
-  .sal-table .amt { text-align:right; width:90px; }
+  .sal-table { width:100%; border-collapse:collapse; margin-bottom:20px; border: 1.5px solid #000; }
+  .sal-table th { background:#fff; font-weight:bold; font-size:11px; padding:6px 8px; border:1px solid #000; text-align:left; }
+  .sal-table td { padding:5px 8px; border:1px solid #000; font-size:10px; }
+  .sal-table .amt { text-align:right; width:100px; }
   .total-row td { font-weight:bold; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
-  .net-row td { font-weight:bold; font-size:10px; }
+  .net-row td { font-weight:bold; font-size:11px; }
   
   /* Footer */
-  .words { margin-top:15px; font-size:10px; line-height:1.5; }
-  .footer { text-align:center; margin-top:40px; font-size:9px; color:#111; font-style:italic; }
+  .words { margin-top:20px; font-size:11px; line-height:1.5; }
+  .footer { text-align:center; margin-top:50px; font-size:10px; color:#111; font-style:italic; }
   
   /* Print overrides */
   @media print {
+    body { background: #fff; }
+    .page { margin: 0; padding: 0; box-shadow: none; max-width: none; min-height: auto; }
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 </style></head>
 <body>
+<div class="page">
 <div class="watermark-container">
   <img src="${logoUrl}" alt="watermark" onerror="this.style.display='none'"/>
 </div>
@@ -258,6 +271,7 @@ const EmployeePortal: React.FC = () => {
 
   <div class="words"><b>Amount (in words):</b><br/>INR ${words} Only</div>
   <div class="footer">This is a Computer Generated Pay Slip</div>
+</div>
 </div>
 </body></html>`;
 
