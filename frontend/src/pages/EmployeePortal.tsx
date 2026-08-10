@@ -98,130 +98,143 @@ const EmployeePortal: React.FC = () => {
   const printPayslip = async () => {
     if (!selectedPayroll) return;
     const p = selectedPayroll;
-    
-    let u = null;
+    let u: any = null;
     try {
-      if (userCtx?.userId) {
-        u = await apiService.getUserById(userCtx.userId);
-      }
-    } catch (e) {
-      console.error("Could not fetch user details for payslip", e);
-    }
+      if (userCtx?.userId) u = await apiService.getUserById(userCtx.userId);
+    } catch (e) { console.error("Could not fetch user details", e); }
 
-    const name = u ? `${u.firstName} ${u.lastName}` : '';
-    const netAmount = Math.round(p.netSalary || 0);
-    const words = numberToWords(netAmount);
+    const name = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : '';
+    const words = numberToWords(Math.round(p.netSalary || 0));
+    const monthLabel = months[p.month - 1];
+    const fmt = (n: number) => (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const logoUrl = `${window.location.origin}/IIPMPayroll/logo.png`;
+    const npsEmpE = p.npsEmployerShare || 0;
+    const npsEmpD = p.npsEmployerShare || 0;
+    const totalEarnings = (p.basicPay||0) + (p.da||0) + (p.hra||0) + (p.ta||0) + npsEmpE;
+    const doj = u?.dateOfJoining
+      ? new Date(u.dateOfJoining).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      : '';
 
-    const html = `
-      <html><head><title>Pay Slip - ${months[p.month - 1]} ${p.year}</title>
-      <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-        body { font-family: 'Roboto', Arial, sans-serif; font-size: 13px; margin: 40px auto; max-width: 800px; color: #111; position: relative; }
-        .watermark { position: fixed; top: 30%; left: 15%; width: 70%; opacity: 0.04; z-index: -1; pointer-events: none; }
-        .header { text-align: center; margin-bottom: 24px; line-height: 1.4; }
-        .header h1 { margin: 0; font-size: 20px; font-weight: 700; color: #000; }
-        .header p { margin: 2px 0; font-size: 13px; }
-        .header .payslip-title { margin-top: 15px; font-weight: 700; font-size: 16px; border-bottom: 1px solid #ccc; display: inline-block; padding-bottom: 2px; }
-        .emp-name { text-align: center; font-size: 16px; font-weight: 700; margin: 15px 0 20px 0; }
-        
-        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 20px; }
-        .detail-row { display: flex; margin-bottom: 6px; }
-        .detail-label { width: 150px; color: #444; }
-        .detail-value { font-weight: 500; }
-        
-        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid #000; }
-        th, td { padding: 8px 12px; border: 1px solid #000; }
-        th { text-align: left; background: #fff; font-weight: 700; }
-        .amt-col { text-align: right; width: 120px; }
-        .total-row td { font-weight: 700; }
-        .net-row { font-weight: 700; font-size: 14px; }
-        .amount-words { margin-top: 15px; font-size: 13px; line-height: 1.5; }
-        .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #333; }
-      </style></head>
-      <body>
-        <img src={process.env.PUBLIC_URL + "/logo.png"} class="watermark" />
-        <div class="header">
-          <h1>Indian Institute of Petroleum and Energy</h1>
-          <p>EAB, Vangali</p>
-          <p>Sabbavaram</p>
-          <p>Anakapalle</p>
-          <p>531035</p>
-          <p>E-Mail : js@iipe.ac.in, fo@iipe.ac.in</p>
-          <div class="payslip-title">Pay Slip<br/>for ${months[p.month - 1]}-${p.year}</div>
-        </div>
-        
-        <div class="emp-name">${name}</div>
-        
-        <div class="details-grid">
-          <div>
-            <div class="detail-row"><div class="detail-label">Employee Number</div><div class="detail-value">: ${p.employeeId}</div></div>
-            <div class="detail-row"><div class="detail-label">Function</div><div class="detail-value">: ${u?.function || 'Regular'}</div></div>
-            <div class="detail-row"><div class="detail-label">Designation</div><div class="detail-value">: ${u?.designation || ''}</div></div>
-            <div class="detail-row"><div class="detail-label">Location</div><div class="detail-value">: ${u?.location || 'Visakhapatnam'}</div></div>
-            <div class="detail-row"><div class="detail-label">Bank Details</div><div class="detail-value">: ${u?.bankAccountNumber || ''}, ${u?.bankName || ''}</div></div>
-            <div class="detail-row"><div class="detail-label">Date of joining</div><div class="detail-value">: ${u?.dateOfJoining ? new Date(u.dateOfJoining).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'2-digit'}).replace(/ /g, '-') : ''}</div></div>
-          </div>
-          <div>
-            <div class="detail-row"><div class="detail-label">Tax Regime</div><div class="detail-value">: ${u?.taxRegime || 'Regular Tax Regime'}</div></div>
-            <div class="detail-row"><div class="detail-label">Income Tax Number (PAN)</div><div class="detail-value">: ${u?.pan || ''}</div></div>
-            <div class="detail-row"><div class="detail-label">Pay Level</div><div class="detail-value">: ${u?.payLevel || ''}</div></div>
-            <div class="detail-row"><div class="detail-label">PF account number</div><div class="detail-value">: ${u?.pfAccountNumber || ''}</div></div>
-            <div class="detail-row"><div class="detail-label">Department</div><div class="detail-value">: ${u?.department || ''}</div></div>
-            <div class="detail-row"><div class="detail-label">PR Account Number (PRAN)</div><div class="detail-value">: ${u?.pranAccountNumber || ''}</div></div>
-          </div>
-        </div>
-        
-        <table>
-          <tr>
-            <th>Earnings</th><th class="amt-col">Amount</th>
-            <th>Deductions</th><th class="amt-col">Amount</th>
-          </tr>
-          <tr>
-            <td>Basic Pay</td><td class="amt-col">${(p.basicPay||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-            <td>CGHS</td><td class="amt-col">${(p.cghs||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          </tr>
-          <tr>
-            <td>Dearness Allowance</td><td class="amt-col">${(p.da||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-            <td>NPS Employee Share</td><td class="amt-col">${(p.npsEmployeeShare||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          </tr>
-          <tr>
-            <td>HRA</td><td class="amt-col">${(p.hra||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-            <td>NPS Employer Share D</td><td class="amt-col">${(p.npsEmployerShare||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          </tr>
-          <tr>
-            <td>NPS Employer Share E</td><td class="amt-col">${(p.npsEmployerShare||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-            <td>Professional Tax</td><td class="amt-col">${(p.professionalTax||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          </tr>
-          <tr>
-            <td>Transport Allowance</td><td class="amt-col">${(p.ta||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-            ${p.tds > 0 ? `<td>TDS</td><td class="amt-col">${(p.tds).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>` : `<td></td><td></td>`}
-          </tr>
-          ${p.otherDeductions > 0 && p.tds === 0 ? `<tr><td></td><td></td><td>Other Deductions</td><td class="amt-col">${(p.otherDeductions).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>` : ''}
-          ${p.otherDeductions > 0 && p.tds > 0 ? `<tr><td></td><td></td><td>Other Deductions</td><td class="amt-col">${(p.otherDeductions).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>` : ''}
-          <tr class="total-row">
-            <td>Total Earnings</td><td class="amt-col">${(p.grossSalary||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-            <td>Total Deductions</td><td class="amt-col">${(p.totalDeductions||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          </tr>
-          <tr class="net-row">
-            <td colspan="2" style="border-right: none;"></td>
-            <td style="border-left: none;">Net Amount</td>
-            <td class="amt-col">₹ ${(p.netSalary||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          </tr>
-        </table>
-        
-        <div class="amount-words">
-          Amount (in words):<br/>
-          INR ${words} Only
-        </div>
-        
-        <div class="footer">
-          This is a Computer Generated Pay Slip
-        </div>
-      </body></html>
-    `;
-    const win = window.open('', '_blank');
-    if (win) { win.document.write(html); win.document.close(); win.print(); }
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/>
+<title>Pay Slip - ${monthLabel} ${p.year}</title>
+<style>
+  @page { size: A4; margin: 14mm 16mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #111; background:#fff; position:relative; }
+  .watermark { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:340px; opacity:0.06; z-index:0; pointer-events:none; }
+  .content { position:relative; z-index:1; }
+  .header { text-align:center; margin-bottom:10px; }
+  .header h1 { font-size:15px; font-weight:bold; margin-bottom:2px; }
+  .header .addr { font-size:11px; line-height:1.55; }
+  .ps-title { text-align:center; font-weight:bold; font-size:13px; margin-top:10px; }
+  .emp-name { text-align:center; font-size:12.5px; font-weight:bold; margin:10px 0 12px 0; }
+  .detail-table { width:100%; border-collapse:collapse; margin-bottom:12px; }
+  .detail-table td { padding:2.5px 3px; font-size:11px; vertical-align:top; }
+  .lbl { color:#333; white-space:nowrap; width:140px; }
+  .sep { width:8px; }
+  .sal-table { width:100%; border-collapse:collapse; margin-bottom:8px; border:1px solid #111; }
+  .sal-table th { background:#fff; font-weight:bold; font-size:11.5px; padding:5px 8px; border:1px solid #111; text-align:left; }
+  .sal-table td { padding:4px 8px; border:1px solid #111; font-size:11px; }
+  .amt { text-align:right; width:110px; }
+  .total-row td { font-weight:bold; background:#eee; }
+  .net-row td { font-weight:bold; font-size:12px; background:#e8e8e8; }
+  .words { margin-top:10px; font-size:11px; line-height:1.6; }
+  .footer { text-align:center; margin-top:28px; font-size:11px; color:#444; font-style:italic; }
+</style></head>
+<body>
+<img src="${logoUrl}" class="watermark" onerror="this.style.display='none'"/>
+<div class="content">
+  <div class="header">
+    <h1>Indian Institute of Petroleum and Energy</h1>
+    <div class="addr">FAB, Vangal<br/>Sabbavaram<br/>Anakapalle<br/>531035<br/>E-Mail : pr@iipe.ac.in, fa@iipe.ac.in</div>
+  </div>
+  <div class="ps-title">Pay Slip<br/>for ${monthLabel}-${p.year}</div>
+  <div class="emp-name">Mr/Ms. ${name}</div>
+
+  <table class="detail-table">
+    <tr>
+      <td class="lbl">Employee Number</td><td class="sep">:</td><td>${p.employeeId||''}</td>
+      <td width="25"></td>
+      <td class="lbl">Tax Regime</td><td class="sep">:</td><td>${u?.taxRegime||'Regular Tax Regime'}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Function</td><td class="sep">:</td><td>${u?.function||'NPS'}</td>
+      <td></td>
+      <td class="lbl">Income Tax Number (PAN)</td><td class="sep">:</td><td>${u?.pan||''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Designation</td><td class="sep">:</td><td><b>${u?.designation||''}</b></td>
+      <td></td>
+      <td class="lbl">Pay Level</td><td class="sep">:</td><td>Level-${u?.payLevel||p.payLevel||''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Location</td><td class="sep">:</td><td>${u?.location||'Visakhapatnam'}</td>
+      <td></td>
+      <td class="lbl">PF account number</td><td class="sep">:</td><td>${u?.pfAccountNumber||''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Bank Details</td><td class="sep">:</td><td>${u?.bankName?`${u.bankName}${u.bankAccountNumber?' (****'+String(u.bankAccountNumber).slice(-4)+')':''}`:''}
+      </td>
+      <td></td>
+      <td class="lbl">Department</td><td class="sep">:</td><td>${u?.department||''}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Date of joining</td><td class="sep">:</td><td>${doj}</td>
+      <td></td>
+      <td class="lbl">PR Account Number (IPRAN)</td><td class="sep">:</td><td>${u?.pranAccountNumber||''}</td>
+    </tr>
+  </table>
+
+  <table class="sal-table">
+    <thead><tr>
+      <th>Earnings</th><th class="amt">Amount</th>
+      <th>Deductions</th><th class="amt">Amount</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td>Basic Pay</td><td class="amt">${fmt(p.basicPay)}</td>
+        <td>NPS (Employee)</td><td class="amt">${fmt(p.npsEmployeeShare)}</td>
+      </tr>
+      <tr>
+        <td>Dearness Allowance (DA)</td><td class="amt">${fmt(p.da)}</td>
+        <td>Provident Fund (PF)</td><td class="amt">0.00</td>
+      </tr>
+      <tr>
+        <td>House Rent Allowance (HRA)</td><td class="amt">${fmt(p.hra)}</td>
+        <td>NPS EMP D</td><td class="amt">${fmt(npsEmpD)}</td>
+      </tr>
+      <tr>
+        <td>Transport Allowance (TA)</td><td class="amt">${fmt(p.ta)}</td>
+        <td>Professional Tax</td><td class="amt">${fmt(p.professionalTax)}</td>
+      </tr>
+      <tr>
+        <td>NPS EMP</td><td class="amt">${fmt(npsEmpE)}</td>
+        <td>CGHS</td><td class="amt">${fmt(p.cghs)}</td>
+      </tr>
+      ${p.tds > 0 ? `<tr><td></td><td></td><td>Income Tax (TDS)</td><td class="amt">${fmt(p.tds)}</td></tr>` : ''}
+      ${p.otherDeductions > 0 ? `<tr><td></td><td></td><td>Other Deductions</td><td class="amt">${fmt(p.otherDeductions)}</td></tr>` : ''}
+      <tr class="total-row">
+        <td>Total Earnings</td><td class="amt">${fmt(totalEarnings)}</td>
+        <td>Total Deductions</td><td class="amt">${fmt(p.totalDeductions)}</td>
+      </tr>
+      <tr class="net-row">
+        <td colspan="2"></td>
+        <td>Net Amount</td><td class="amt">${fmt(p.netSalary)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="words"><b>Amount (in words):</b><br/>INR ${words} Only</div>
+  <div class="footer">This is a Computer Generated Pay Slip</div>
+</div>
+</body></html>`;
+
+    const win = window.open('', '_blank', 'width=900,height=750');
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => { win.focus(); win.print(); }, 800); }
   };
+
+
 
   const printForm16 = async () => {
     try {
