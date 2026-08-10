@@ -19,36 +19,25 @@ const EmployeeDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const payrolls = await apiService.getMyPayrolls();
+      const [payrollData, ytdData] = await Promise.allSettled([
+        apiService.getPayrollsByUser(userCtx!.userId!),
+        apiService.getYTDReport(userCtx!.userId!),
+      ]);
       
-      // Calculate YTD
-      const currentYear = new Date().getFullYear();
-      let mProc = 0, tGross = 0, tTds = 0, tNet = 0;
-      
-      payrolls.forEach((p: any) => {
-        if (p.year === currentYear) {
-          mProc++;
-          tGross += p.grossSalary || 0;
-          tTds += p.tds || 0;
-          tNet += p.netSalary || 0;
-        }
-      });
-      
-      setYtd({
-        monthsProcessed: mProc,
-        totalGrossSalary: tGross,
-        totalTDS: tTds,
-        totalNetSalary: tNet
-      });
+      if (ytdData.status === 'fulfilled') {
+        setYtd(ytdData.value);
+      }
 
-      // Get most recent payslip
-      if (payrolls.length > 0) {
-        // Sort descending by year and month
-        payrolls.sort((a: any, b: any) => {
-          if (a.year !== b.year) return b.year - a.year;
-          return b.month - a.month;
-        });
-        setRecentPayslip(payrolls[0]);
+      if (payrollData.status === 'fulfilled') {
+        const payrolls = payrollData.value || [];
+        if (payrolls.length > 0) {
+          // Sort descending by year and month
+          payrolls.sort((a: any, b: any) => {
+            if (a.year !== b.year) return b.year - a.year;
+            return b.month - a.month;
+          });
+          setRecentPayslip(payrolls[0]);
+        }
       }
     } catch (err) {
       console.error('Failed to load dashboard data', err);
