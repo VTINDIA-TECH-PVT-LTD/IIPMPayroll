@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import apiService from '../services/api';
 
 const DataManagementPage: React.FC = () => {
@@ -6,6 +6,20 @@ const DataManagementPage: React.FC = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,9 +73,18 @@ const DataManagementPage: React.FC = () => {
         <p>Import or export Excel files as per client requirements</p>
       </div>
 
-      {message && <div className="alert-success" style={{ padding: '12px', background: '#dcfce7', color: '#166534', borderRadius: '4px', marginBottom: '20px' }}>{message}</div>}
-      {error && <div className="alert-danger" style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '4px', marginBottom: '20px' }}>{error}</div>}
-
+      {error && (
+        <div className="alert-danger" style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '4px', marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+          <span>{error}</span>
+          <button onClick={() => setError('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: '16px' }}>✖</button>
+        </div>
+      )}
+      {message && (
+        <div className="alert-success" style={{ padding: '12px', background: '#dcfce7', color: '#166534', borderRadius: '4px', marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+          <span>{message}</span>
+          <button onClick={() => setMessage('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: '16px' }}>✖</button>
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', padding: '16px' }}>
         {/* Import Section */}
         <div className="card-iipm" style={{ padding: '24px' }}>
