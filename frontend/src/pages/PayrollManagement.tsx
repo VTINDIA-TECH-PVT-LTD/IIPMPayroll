@@ -341,7 +341,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
           </div>
 
           {rows.length > 0 && (
-            <div className="card-iipm" style={{ padding: '0' }}>
+            <div className="card-iipm" style={{ padding: '0', maxWidth: '100%', overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ fontWeight: 600 }}>{rows.length} employees</div>
                 <button className="btn-accent-iipm" onClick={submitBulkPayroll} disabled={loading}>
@@ -539,7 +539,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
             <button className="btn-outline-iipm" onClick={loadPayrolls}>Refresh</button>
           </div>
 
-          <div className="card-iipm" style={{ padding: '0' }}>
+          <div className="card-iipm" style={{ padding: '0', maxWidth: '100%', overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3>{mode === 'process' ? 'Records Sent for Approval' : 'Pending Salary Approvals'} — {months[month - 1]} {year}</h3>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
