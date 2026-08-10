@@ -239,9 +239,9 @@ const UserManagement: React.FC = () => {
             <>
               <button className="btn-outline-iipm" onClick={downloadTemplate}>Download Template</button>
               <button className="btn-outline-iipm" onClick={() => fileInputRef.current?.click()}>Bulk Import</button>
-              <button className="btn-outline-iipm" onClick={exportUsers}>Export All</button>
             </>
           )}
+          <button className="btn-outline-iipm" onClick={exportUsers}>Export All</button>
           <button className="btn-accent-iipm" onClick={openCreate}>+ Add Employee</button>
         </div>
       </div>
@@ -331,6 +331,31 @@ const UserManagement: React.FC = () => {
                 )}
               </tbody>
             </table>
+            
+            {/* Pagination Controls */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderTop: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length} entries
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  style={{ padding: '6px 12px', border: '1px solid var(--border)', background: currentPage === 1 ? 'var(--bg-hover)' : '#fff', borderRadius: '6px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>
+                  Previous
+                </button>
+                <span style={{ display: 'flex', alignItems: 'center', padding: '0 8px', fontSize: '0.85rem', fontWeight: 600 }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  style={{ padding: '6px 12px', border: '1px solid var(--border)', background: currentPage === totalPages ? 'var(--bg-hover)' : '#fff', borderRadius: '6px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>
+                  Next
+                </button>
+              </div>
+            </div>
+            
           </div>
         )}
       </div>
