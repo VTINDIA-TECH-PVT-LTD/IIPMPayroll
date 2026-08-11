@@ -45,6 +45,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null);
   const [selectedPayrolls, setSelectedPayrolls] = useState<string[]>([]);
+  const [employeeFilter, setEmployeeFilter] = useState<'all' | 'pending' | 'processed'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -355,10 +356,36 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
             </div>
           </div>
 
-          {rows.length > 0 && (
+          {rows.length > 0 && (() => {
+            const filteredRows = rows.filter(row => {
+              const hasPayroll = payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId);
+              if (employeeFilter === 'pending') return !hasPayroll;
+              if (employeeFilter === 'processed') return hasPayroll;
+              return true;
+            });
+            const pendingCount = rows.filter(row => !payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId)).length;
+            const processedCount = rows.filter(row => payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId)).length;
+            return (
             <div className="card-iipm" style={{ padding: '0', maxWidth: '100%', overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontWeight: 600 }}>{rows.length} employees</div>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                {/* Filter Tabs */}
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {(['all', 'pending', 'processed'] as const).map(f => {
+                    const count = f === 'all' ? rows.length : f === 'pending' ? pendingCount : processedCount;
+                    const colors: Record<string, {bg: string, color: string, border: string}> = {
+                      all: { bg: employeeFilter === 'all' ? '#0a3161' : '#f1f5f9', color: employeeFilter === 'all' ? '#fff' : '#475569', border: '#0a3161' },
+                      pending: { bg: employeeFilter === 'pending' ? '#f59e0b' : '#fffbeb', color: employeeFilter === 'pending' ? '#fff' : '#92400e', border: '#f59e0b' },
+                      processed: { bg: employeeFilter === 'processed' ? '#16a34a' : '#f0fdf4', color: employeeFilter === 'processed' ? '#fff' : '#166534', border: '#16a34a' },
+                    };
+                    const c = colors[f];
+                    return (
+                      <button key={f} onClick={() => setEmployeeFilter(f)}
+                        style={{ padding: '6px 14px', borderRadius: '20px', border: `1.5px solid ${c.border}`, background: c.bg, color: c.color, fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+                        {f.charAt(0).toUpperCase() + f.slice(1)} <span style={{ background: 'rgba(0,0,0,0.12)', borderRadius: '10px', padding: '1px 7px', marginLeft: '4px', fontSize: '0.75rem' }}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
                 <button className="btn-accent-iipm" onClick={submitBulkPayroll} disabled={loading}>
                   {loading ? 'Processing...' : 'Submit For Approval & Export'}
                 </button>
@@ -391,7 +418,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row, i) => {
+                  {filteredRows.map((row, i) => {
                     const u = row.user;
                     const bp = u.basicPay || 0;
                     const daPct = (settings.DA_PERCENTAGE || 62) / 100;
@@ -459,8 +486,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                 </tbody>
                 <tfoot>
                   <tr style={{ fontWeight: 'bold', background: '#e2e8f0' }}>
-                    <td colSpan={5} style={{ textAlign: 'right', paddingRight: '20px' }}>Total</td>
-                    <td>{fmt(rows.reduce((sum, row) => sum + (row.user.basicPay || 0), 0))}</td>
+                    <td colSpan={5} style={{ textAlign: 'right', paddingRight: '20px' }}>Total ({filteredRows.length})</td>
+                    <td>{fmt(filteredRows.reduce((sum, row) => sum + (row.user.basicPay || 0), 0))}</td>
                     <td>{fmt(rows.reduce((sum, row) => sum + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100)), 0))}</td>
                     <td>{fmt(rows.reduce((sum, row) => {
                       const level = parseInt(row.user.payLevel || '10');
@@ -526,7 +553,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
               </table>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {rows.length === 0 && !loading && (
             <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
