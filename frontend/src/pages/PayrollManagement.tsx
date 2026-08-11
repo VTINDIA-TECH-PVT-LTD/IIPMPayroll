@@ -43,7 +43,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   const [rows, setRows] = useState<PayrollRow[]>([]);
   const [payrolls, setPayrolls] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null);
   const [selectedPayrolls, setSelectedPayrolls] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
