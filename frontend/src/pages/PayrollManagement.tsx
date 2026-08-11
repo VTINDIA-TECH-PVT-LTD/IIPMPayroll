@@ -98,7 +98,18 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
       });
       setEmployees(filtered);
       setRows(filtered.map((u: any) => ({ user: u, tds: '', otherDeductions: 0, remark: '' })));
-      if (filtered.length === 0) setMsg({ type: 'error', text: 'No active employees found matching your filters.' });
+      
+      const alreadyApprovedCount = filtered.filter((u: any) => 
+        payrolls.some(p => p.user.id === u.id && (p.status === 'APPROVED' || p.status === 'RELEASED'))
+      ).length;
+
+      if (alreadyApprovedCount > 0) {
+        setMsg({ type: 'warning', text: `Warning: ${alreadyApprovedCount} loaded employee(s) are already APPROVED for this month. The system will safely skip them when you submit.` });
+      } else if (filtered.length === 0) {
+        setMsg({ type: 'error', text: 'No active employees found matching your filters.' });
+      } else {
+        setMsg(null); // Clear previous messages
+      }
     } catch {
       setMsg({ type: 'error', text: 'Failed to load employees.' });
     } finally {
