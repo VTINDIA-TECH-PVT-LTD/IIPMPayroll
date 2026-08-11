@@ -61,6 +61,16 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   const [settings, setSettings] = useState<Record<string, number>>({});
   const [userMap, setUserMap] = useState<Record<string, string>>({});
 
+  // Derived filter values — computed fresh on every render
+  const filteredRows = rows.filter(row => {
+    const hasPayroll = payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId);
+    if (employeeFilter === 'pending') return !hasPayroll;
+    if (employeeFilter === 'processed') return hasPayroll;
+    return true;
+  });
+  const pendingCount = rows.filter(row => !payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId)).length;
+  const processedCount = rows.filter(row => payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId)).length;
+
   useEffect(() => { loadPayrolls(); }, [month, year, tab]);
   useEffect(() => {
     // Load settings once when component mounts
@@ -356,16 +366,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
             </div>
           </div>
 
-          {rows.length > 0 && (() => {
-            const filteredRows = rows.filter(row => {
-              const hasPayroll = payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId);
-              if (employeeFilter === 'pending') return !hasPayroll;
-              if (employeeFilter === 'processed') return hasPayroll;
-              return true;
-            });
-            const pendingCount = rows.filter(row => !payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId)).length;
-            const processedCount = rows.filter(row => payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId)).length;
-            return (
+          {rows.length > 0 && (
             <div className="card-iipm" style={{ padding: '0', maxWidth: '100%', overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 {/* Filter Tabs */}
@@ -553,8 +554,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
               </table>
               </div>
             </div>
-            );
-          })()}
+          )}
 
           {rows.length === 0 && !loading && (
             <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
