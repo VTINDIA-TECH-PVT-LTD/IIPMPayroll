@@ -100,7 +100,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
       setRows(filtered.map((u: any) => ({ user: u, tds: '', otherDeductions: 0, remark: '' })));
       
       const alreadyApprovedCount = filtered.filter((u: any) => 
-        payrolls.some(p => p.user.id === u.id && (p.status === 'APPROVED' || p.status === 'RELEASED'))
+        payrolls.some((p: any) => (p.userId === u.id || p.employeeId === u.employeeId) && (p.status === 'APPROVED' || p.status === 'RELEASED'))
       ).length;
 
       if (alreadyApprovedCount > 0) {
