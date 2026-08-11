@@ -106,7 +106,7 @@ public class SettingService {
         settings.put("DA_PERCENTAGE", getSettingAsDouble("DA_PERCENTAGE") != null ? getSettingAsDouble("DA_PERCENTAGE") : 60.0);
         settings.put("HRA_PERCENTAGE", getSettingAsDouble("HRA_PERCENTAGE") != null ? getSettingAsDouble("HRA_PERCENTAGE") : 20.0);
         settings.put("NPS_EMPLOYEE_PERCENTAGE", getSettingAsDouble("NPS_EMPLOYEE_PERCENTAGE") != null ? getSettingAsDouble("NPS_EMPLOYEE_PERCENTAGE") : 10.0);
-        settings.put("NPS_EMPLOYER_PERCENTAGE", getSettingAsDouble("NPS_EMPLOYER_PERCENTAGE") != null ? getSettingAsDouble("NPS_EMPLOYER_PERCENTAGE") : 10.0);
+        settings.put("NPS_EMPLOYER_PERCENTAGE", getSettingAsDouble("NPS_EMPLOYER_PERCENTAGE") != null ? getSettingAsDouble("NPS_EMPLOYER_PERCENTAGE") : 14.0);
         settings.put("PT_AMOUNT", getSettingAsDouble("PT_AMOUNT") != null ? getSettingAsDouble("PT_AMOUNT") : 200.0);
         settings.put("CGHS_AMOUNT", getSettingAsDouble("CGHS_AMOUNT") != null ? getSettingAsDouble("CGHS_AMOUNT") : 1000.0);
         settings.put("TA_FIXED_AMOUNT", getSettingAsDouble("TA_FIXED_AMOUNT") != null ? getSettingAsDouble("TA_FIXED_AMOUNT") : 3600.0);
@@ -133,7 +133,7 @@ public class SettingService {
                 Map.entry("DA_PERCENTAGE", "60"),
                 Map.entry("HRA_PERCENTAGE", "20"),
                 Map.entry("NPS_EMPLOYEE_PERCENTAGE", "10"),
-                Map.entry("NPS_EMPLOYER_PERCENTAGE", "10"),
+                Map.entry("NPS_EMPLOYER_PERCENTAGE", "14"),
                 Map.entry("PT_AMOUNT", "200"),
                 Map.entry("CGHS_AMOUNT", "1000"),
                 Map.entry("TA_FIXED_AMOUNT", "3600"),
@@ -145,6 +145,11 @@ public class SettingService {
             Optional<Setting> existing = settingRepository.findByKey(entry.getKey());
             if (existing.isEmpty()) {
                 createSetting(entry.getKey(), entry.getValue(), "DOUBLE", "PAYROLL", "Default setting for " + entry.getKey());
+            } else if (entry.getKey().equals("NPS_EMPLOYER_PERCENTAGE") && "10".equals(existing.get().getValue())) {
+                Setting setting = existing.get();
+                setting.setValue("14");
+                settingRepository.save(setting);
+                log.info("Migrated NPS_EMPLOYER_PERCENTAGE from 10 to 14");
             }
         }
 
