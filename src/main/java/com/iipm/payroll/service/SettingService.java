@@ -145,7 +145,8 @@ public class SettingService {
             Optional<Setting> existing = settingRepository.findByKey(entry.getKey());
             if (existing.isEmpty()) {
                 createSetting(entry.getKey(), entry.getValue(), "DOUBLE", "PAYROLL", "Default setting for " + entry.getKey());
-            } else if (entry.getKey().equals("NPS_EMPLOYER_PERCENTAGE") && "10".equals(existing.get().getValue())) {
+            } else if (entry.getKey().equals("NPS_EMPLOYER_PERCENTAGE") && 
+                      ("10".equals(existing.get().getValue()) || "10.0".equals(existing.get().getValue()))) {
                 Setting setting = existing.get();
                 setting.setValue("14");
                 settingRepository.save(setting);
