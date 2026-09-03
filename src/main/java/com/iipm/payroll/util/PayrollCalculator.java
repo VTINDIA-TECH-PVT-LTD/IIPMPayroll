@@ -48,21 +48,49 @@ public class PayrollCalculator {
         try {
             updateConfiguration(settings);
 
-            double da               = calculateDA(basicPay);
-            double hra              = calculateHRA(basicPay);
-            double ta               = calculateTA(payLevel);
-            double npsEmployeeShare = calculateNPSEmployeeShare(basicPay, da);
-            double npsEmployerShare = calculateNPSEmployerShare(basicPay, da);
+            boolean isContract = payLevel != null && (
+                payLevel.equalsIgnoreCase("Consolidated") ||
+                payLevel.equalsIgnoreCase("Contract") ||
+                payLevel.equalsIgnoreCase("Fixed")
+            );
 
-            // Gross = Basic + DA + HRA + TA + NPS Employer Share (official PDF logic)
-            double grossSalary = basicPay + da + hra + ta + npsEmployerShare;
+            boolean isDirector = payLevel != null && (
+                payLevel.equalsIgnoreCase("Level-17") ||
+                payLevel.equalsIgnoreCase("17")
+            );
 
-            double professionalTax  = ptAmount;
-            double cghs             = calculateCGHS(payLevel);
-            
-            // Total Deductions = PT + TDS + NPS Employee + CGHS + Other Deductions + NPS Employer Share (official PDF logic)
-            double totalDeductions  = professionalTax + tds + npsEmployeeShare + cghs + otherDeductions + npsEmployerShare;
-            double netSalary        = grossSalary - totalDeductions;
+            double da = 0.0;
+            double hra = 0.0;
+            double ta = 0.0;
+            double npsEmployeeShare = 0.0;
+            double npsEmployerShare = 0.0;
+            double professionalTax = (basicPay >= 20000 ? ptAmount : 0.0);
+            double cghs = 0.0;
+            double grossSalary = basicPay;
+            double totalDeductions = 0.0;
+            double netSalary = 0.0;
+
+            if (isContract) {
+                grossSalary = basicPay;
+                totalDeductions = professionalTax + tds + otherDeductions;
+                netSalary = grossSalary - totalDeductions;
+            } else if (isDirector) {
+                da = calculateDA(basicPay);
+                grossSalary = basicPay + da;
+                cghs = 1000.0;
+                totalDeductions = professionalTax + tds + cghs + otherDeductions;
+                netSalary = grossSalary - totalDeductions;
+            } else {
+                da = calculateDA(basicPay);
+                hra = calculateHRA(basicPay);
+                ta = calculateTA(payLevel);
+                npsEmployeeShare = calculateNPSEmployeeShare(basicPay, da);
+                npsEmployerShare = calculateNPSEmployerShare(basicPay, da);
+                grossSalary = basicPay + da + hra + ta + npsEmployerShare;
+                cghs = calculateCGHS(payLevel);
+                totalDeductions = professionalTax + tds + npsEmployeeShare + cghs + otherDeductions + npsEmployerShare;
+                netSalary = grossSalary - totalDeductions;
+            }
 
             result.put("basicPay",         roundToScale(basicPay));
             result.put("da",               roundToScale(da));
