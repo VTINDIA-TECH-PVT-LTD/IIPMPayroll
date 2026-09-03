@@ -40,6 +40,8 @@ public class Form16DTO {
     private double deduction80C;
     private double deduction80D;
     private double deduction80CCD;
+    private double deduction80CCD1B;
+    private double deduction80CCD2;
     private double homeLoanInterest;
     private double totalChapterVIADeductions;
 

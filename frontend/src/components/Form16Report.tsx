@@ -607,8 +607,8 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
             <tr>
               <td className="text-center">(f)</td>
               <td>Deduction in respect of contribution by Employer to pension scheme under section 80CCD (2)</td>
-              <td className="text-right">0.00</td>
-              <td className="text-right">0.00</td>
+              <td className="text-right">{fmt(d.deduction80CCD2 || d.deduction80CCD)}</td>
+              <td className="text-right">{fmt(d.deduction80CCD2 || d.deduction80CCD)}</td>
             </tr>
             <tr>
               <td className="text-center">(g)</td>

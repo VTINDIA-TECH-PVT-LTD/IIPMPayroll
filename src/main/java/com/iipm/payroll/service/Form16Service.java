@@ -59,10 +59,18 @@ public class Form16Service {
         double grossSalary = 0;
         double totalTds = 0;
         double professionalTax = 0;
+        double totalNpsEmployer = 0;
         for (Payroll p : payrolls) {
             grossSalary += p.getGrossSalary();
             totalTds += p.getTds();
             professionalTax += p.getProfessionalTax();
+            if (p.getNpsEmployerShare() != null) {
+                totalNpsEmployer += p.getNpsEmployerShare();
+            }
+        }
+        if (totalNpsEmployer == 0 && user.getBasicPay() != null && user.getBasicPay() > 0) {
+            double da = user.getBasicPay() * 0.60;
+            totalNpsEmployer = (user.getBasicPay() + da) * 0.14 * (payrolls.isEmpty() ? 12 : payrolls.size());
         }
 
         // Quarter-wise dummy data (Assuming evenly split for demo)
@@ -115,8 +123,10 @@ public class Form16Service {
 
         dto.setDeduction80C(sec80C);
         dto.setDeduction80D(sec80D);
+        dto.setDeduction80CCD2(totalNpsEmployer);
+        dto.setDeduction80CCD(totalNpsEmployer);
         dto.setHomeLoanInterest(homeLoan);
-        dto.setTotalChapterVIADeductions(sec80C + sec80D + homeLoan);
+        dto.setTotalChapterVIADeductions(sec80C + sec80D + homeLoan + totalNpsEmployer);
         
         double taxableIncome = Math.max(0, dto.getGrossTotalIncome() - dto.getTotalChapterVIADeductions());
         dto.setTotalTaxableIncome(taxableIncome);

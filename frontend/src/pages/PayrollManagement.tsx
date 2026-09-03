@@ -167,20 +167,32 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     if (u.tds && u.tds > 0) return u.tds;
     const bp = u.basicPay || 0;
     if (bp <= 0) return 0;
-    const isContract = (u.employeeType || '').toLowerCase().includes('contract') || (u.payLevel || '').toLowerCase().includes('consolidated');
+    const isContract = isContractUser(u);
     if (isContract) return 0;
     
     // Director Level 17
-    if (String(u.payLevel).includes('17') || (u.designation || '').toLowerCase().includes('director')) return 90000;
+    const isDirector = (u.employeeId === 'DIR001') || (u.payLevel && String(u.payLevel).includes('17')) || (u.designation && u.designation.toLowerCase().includes('director'));
+    if (isDirector) return 90000;
     
+    const isRegistrar = u.employeeId === 'NT1022';
     const da = Math.round(bp * ((settings.DA_PERCENTAGE || 60) / 100));
-    const hra = Math.round(bp * ((settings.HRA_PERCENTAGE || 20) / 100));
+    const hra = (isDirector || isRegistrar) ? 0 : Math.round(bp * ((settings.HRA_PERCENTAGE || 20) / 100));
     const level = parseInt(String(u.payLevel).replace(/\D/g, '') || '10', 10);
     const taBase = level >= 10 ? (settings.TA_FIXED_AMOUNT || 3600) : 1800;
-    const ta = Math.round(taBase * (1 + ((settings.TA_DA_PERCENTAGE || 60) / 100)));
-    const annualGross = (bp + da + hra + ta) * 12;
+    const ta = (isDirector || isRegistrar) ? 0 : Math.round(taBase * (1 + ((settings.TA_DA_PERCENTAGE || 60) / 100)));
+    const deanAllowance = getOfficialDeanAllowance(u);
+    const npsEmployer = Math.round((bp + da) * ((settings.NPS_EMPLOYER_PERCENTAGE || 14) / 100));
     
-    const taxableIncome = Math.max(0, annualGross - 200000);
+    const monthlyGross = bp + da + hra + ta + deanAllowance + npsEmployer;
+    const annualGross = monthlyGross * 12;
+    
+    // Deductions under Sec 16 & Chapter VI-A (New Tax Regime):
+    // Standard Deduction: ₹75,000 + Sec 80CCD(2) Employer NPS Contribution + Professional Tax: ₹2,400
+    const stdDeduction = 75000;
+    const sec80CCD2 = npsEmployer * 12;
+    const ptAnnual = (settings.PT_AMOUNT || 200) * 12;
+    
+    const taxableIncome = Math.max(0, annualGross - stdDeduction - sec80CCD2 - ptAnnual);
     if (taxableIncome <= 300000) return 0;
     
     let annualTax = 0;
