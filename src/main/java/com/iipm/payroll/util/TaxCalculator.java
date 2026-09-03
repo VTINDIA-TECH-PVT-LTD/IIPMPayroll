@@ -11,8 +11,9 @@ public class TaxCalculator {
     private static final double STANDARD_DEDUCTION_OLD = 50000.0;
     private static final double STANDARD_DEDUCTION_NEW = 75000.0;
     private static final double MAX_80C_DEDUCTION = 150000.0;
+    private static final double ANNUAL_PROFESSIONAL_TAX = 2400.0;
 
-    public double calculateAnnualTax(double projectedAnnualIncome, ItDeclaration declaration) {
+    public double calculateAnnualTax(double projectedAnnualIncome, double annualNpsEmployerShare, ItDeclaration declaration) {
         if (projectedAnnualIncome <= 0) {
             return 0.0;
         }
@@ -21,14 +22,22 @@ public class TaxCalculator {
                 ? declaration.getTaxRegime().toUpperCase() : "NEW";
 
         if ("NEW".equals(regime)) {
-            return calculateNewRegime(projectedAnnualIncome);
+            return calculateNewRegime(projectedAnnualIncome, annualNpsEmployerShare);
         } else {
-            return calculateOldRegime(projectedAnnualIncome, declaration);
+            return calculateOldRegime(projectedAnnualIncome, annualNpsEmployerShare, declaration);
         }
     }
 
-    private double calculateNewRegime(double income) {
-        double taxableIncome = income - STANDARD_DEDUCTION_NEW;
+    public double calculateAnnualTax(double projectedAnnualIncome, ItDeclaration declaration) {
+        return calculateAnnualTax(projectedAnnualIncome, 0.0, declaration);
+    }
+
+    private double calculateNewRegime(double income, double annualNpsEmployerShare) {
+        // Under New Regime:
+        // Standard Deduction: ₹75,000
+        // Section 80CCD(2): Employer NPS Contribution (14% for Central Autonomous bodies like IIPE)
+        // Professional Tax: ₹2,400
+        double taxableIncome = Math.max(0.0, income - STANDARD_DEDUCTION_NEW - annualNpsEmployerShare - ANNUAL_PROFESSIONAL_TAX);
         if (taxableIncome <= 300000) return 0.0;
 
         double tax = 0.0;
@@ -36,7 +45,7 @@ public class TaxCalculator {
         // Rebate u/s 87A (New regime: taxable income up to 7,00,000 gets full rebate up to 25,000)
         boolean isRebateApplicable = taxableIncome <= 700000;
 
-        // FY 2024-25 / 2025-26 Slabs
+        // FY 2024-25 & 2025-26 Slabs:
         if (taxableIncome > 300000) tax += (Math.min(taxableIncome, 700000) - 300000) * 0.05;
         if (taxableIncome > 700000) tax += (Math.min(taxableIncome, 1000000) - 700000) * 0.10;
         if (taxableIncome > 1000000) tax += (Math.min(taxableIncome, 1200000) - 1000000) * 0.15;
@@ -54,8 +63,8 @@ public class TaxCalculator {
         return Math.max(0.0, tax);
     }
 
-    private double calculateOldRegime(double income, ItDeclaration declaration) {
-        double totalExemptions = STANDARD_DEDUCTION_OLD;
+    private double calculateOldRegime(double income, double annualNpsEmployerShare, ItDeclaration declaration) {
+        double totalExemptions = STANDARD_DEDUCTION_OLD + annualNpsEmployerShare + ANNUAL_PROFESSIONAL_TAX;
         
         if (declaration != null && "APPROVED".equalsIgnoreCase(declaration.getStatus())) {
             double sec80C = Math.min(declaration.getSection80C(), MAX_80C_DEDUCTION);
@@ -66,7 +75,7 @@ public class TaxCalculator {
             totalExemptions += (sec80C + sec80D + hra + homeLoan);
         }
 
-        double taxableIncome = income - totalExemptions;
+        double taxableIncome = Math.max(0.0, income - totalExemptions);
         if (taxableIncome <= 250000) return 0.0;
 
         double tax = 0.0;
@@ -87,8 +96,12 @@ public class TaxCalculator {
         return Math.max(0.0, tax);
     }
     
-    public double calculateMonthlyTds(double projectedAnnualIncome, ItDeclaration declaration) {
-        double annualTax = calculateAnnualTax(projectedAnnualIncome, declaration);
+    public double calculateMonthlyTds(double projectedAnnualIncome, double annualNpsEmployerShare, ItDeclaration declaration) {
+        double annualTax = calculateAnnualTax(projectedAnnualIncome, annualNpsEmployerShare, declaration);
         return Math.round(annualTax / 12.0);
+    }
+
+    public double calculateMonthlyTds(double projectedAnnualIncome, ItDeclaration declaration) {
+        return calculateMonthlyTds(projectedAnnualIncome, 0.0, declaration);
     }
 }

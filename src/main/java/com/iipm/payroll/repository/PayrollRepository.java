@@ -12,8 +12,7 @@ import java.util.Optional;
 public interface PayrollRepository extends MongoRepository<Payroll, String> {
     Optional<Payroll> findByUserIdAndMonthAndYear(String userId, int month, int year);
 
-    List<Payroll> findByUserId(String userId);
-
+    @Query(value = "{ '$or': [ { 'userId': ?0 }, { 'employeeId': ?0 } ] }", sort = "{ 'year': -1, 'month': -1 }")
     List<Payroll> findByUserIdOrderByYearDescMonthDesc(String userId);
 
     List<Payroll> findByMonthAndYear(int month, int year);

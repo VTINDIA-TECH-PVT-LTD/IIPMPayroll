@@ -257,8 +257,12 @@ public class PayrollService {
                 double da = payrollCalculator.calculateDA(basic);
                 double hra = payrollCalculator.calculateHRA(basic);
                 double ta = payrollCalculator.calculateTA(user.getPayLevel() != null ? user.getPayLevel() : "10");
-                double projectedIncome = (basic + da + hra + ta) * 12;
-                tds = taxCalculator.calculateMonthlyTds(projectedIncome, decl);
+                double dean = user.getDeanAllowance() != null ? user.getDeanAllowance()
+                        : (user.getSpecialAllowance() != null ? user.getSpecialAllowance() : 0.0);
+                double monthlyNpsEmp = (basic + da) * 0.14;
+                double projectedIncome = (basic + da + hra + ta + dean + monthlyNpsEmp) * 12;
+                double annualNpsEmp = monthlyNpsEmp * 12;
+                tds = taxCalculator.calculateMonthlyTds(projectedIncome, annualNpsEmp, decl);
             }
 
             double otherDeductions = (otherDeductionsMap != null && otherDeductionsMap.containsKey(user.getId()))
@@ -383,8 +387,12 @@ public class PayrollService {
             double da = payrollCalculator.calculateDA(basic);
             double hra = payrollCalculator.calculateHRA(basic);
             double ta = payrollCalculator.calculateTA(user.getPayLevel() != null ? user.getPayLevel() : "10");
-            double projectedIncome = (basic + da + hra + ta) * 12;
-            double tds = taxCalculator.calculateMonthlyTds(projectedIncome, decl);
+            double dean = user.getDeanAllowance() != null ? user.getDeanAllowance()
+                    : (user.getSpecialAllowance() != null ? user.getSpecialAllowance() : 0.0);
+            double monthlyNpsEmp = (basic + da) * 0.14;
+            double projectedIncome = (basic + da + hra + ta + dean + monthlyNpsEmp) * 12;
+            double annualNpsEmp = monthlyNpsEmp * 12;
+            double tds = taxCalculator.calculateMonthlyTds(projectedIncome, annualNpsEmp, decl);
             
             Map<String, Object> calculation = payrollCalculator.calculateMonthlySalary(
                     basic, 

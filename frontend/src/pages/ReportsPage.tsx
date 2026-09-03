@@ -1043,7 +1043,7 @@ const ReportsPage: React.FC = () => {
                   </tr>
                   <tr>
                     <td>(f)</td><td>Deduction in respect of contribution by Employer to pension scheme under section 80CCD (2)</td>
-                    <td class="text-right">${data.deduction80CCD?.toFixed(2) || '0.00'}</td><td class="text-right">${data.deduction80CCD?.toFixed(2) || '0.00'}</td>
+                    <td class="text-right">${(data.deduction80CCD2 || data.deduction80CCD || 0).toFixed(2)}</td><td class="text-right">${(data.deduction80CCD2 || data.deduction80CCD || 0).toFixed(2)}</td>
                   </tr>
                   <tr>
                     <td>(g)</td><td>Deduction in respect of health insurance premia under section 80D</td>
