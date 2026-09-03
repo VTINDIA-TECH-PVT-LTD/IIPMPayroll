@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import apiService from '../services/api';
 import { UserContext } from '../App';
 import { Link } from 'react-router-dom';
+import { IIPE_LOGO_BASE64 } from '../assets/logoBase64';
 
 const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -158,10 +159,14 @@ const EmployeePortal: React.FC = () => {
     const taxRegime = u?.taxRegime ? `${u.taxRegime} Tax Regime` : 'New Tax Regime (u/s 115BAC)';
 
     // Department
-    const department = u?.department || p.department || 'Finance & Accounts';
+    const department = (u?.department && u.department !== 'Non-Teaching' && u.department !== 'Teaching') 
+      ? u.department 
+      : ((p.employeeId || '').startsWith('TS') ? 'Academic & Research' : 'Finance & Accounts');
 
     const deductionPercentage = totalEarnings > 0 ? ((p.totalDeductions / totalEarnings) * 100).toFixed(2) : '0.00';
-    const logoSrc = window.location.origin + process.env.PUBLIC_URL + '/logo.png';
+    const logoSrc = IIPE_LOGO_BASE64;
+    const cleanLevel = (u?.payLevel || p.payLevel || '-').replace(/^Level-?/i, '');
+    const displayLevel = cleanLevel !== '-' ? `Level-${cleanLevel}` : '-';
     
     const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/>
@@ -353,7 +358,7 @@ const EmployeePortal: React.FC = () => {
       
       <!-- Col 3 -->
       <div class="detail-row"><div class="lbl">Department</div><div class="sep">:</div><div class="val">${department}</div></div>
-      <div class="detail-row"><div class="lbl">Pay Level</div><div class="sep">:</div><div class="val">Level-${u?.payLevel||p.payLevel||'-'}</div></div>
+      <div class="detail-row"><div class="lbl">Pay Level</div><div class="sep">:</div><div class="val">${displayLevel}</div></div>
       <div class="detail-row"><div class="lbl">Bank Name</div><div class="sep">:</div><div class="val">${u?.bankName||'State Bank of India'}</div></div>
       
       <!-- Col 4 -->
