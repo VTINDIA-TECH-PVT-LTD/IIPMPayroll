@@ -342,6 +342,7 @@ public class PayrollService {
         List<User> users = userRepository.findAll();
         List<Payroll> preview = new java.util.ArrayList<>();
         String financialYear = (month >= 4 ? year + "-" + (year + 1) : (year - 1) + "-" + year);
+        Map<String, Double> settings = settingService.getAllPayrollSettings();
 
         for (User user : users) {
             boolean deptMatch = department == null || department.isEmpty() ||
@@ -349,7 +350,8 @@ public class PayrollService {
             boolean levelMatch = true;
             if (payLevelBand != null && !payLevelBand.isEmpty() && user.getPayLevel() != null) {
                 try {
-                    int l = Integer.parseInt(user.getPayLevel());
+                    String cleanLevel = user.getPayLevel().replaceAll("\\D+", "");
+                    int l = Integer.parseInt(cleanLevel);
                     if (payLevelBand.equals("1 to 5")) levelMatch = (l >= 1 && l <= 5);
                     else if (payLevelBand.equals("6 to 9")) levelMatch = (l >= 6 && l <= 9);
                     else if (payLevelBand.equals("10 to 17")) levelMatch = (l >= 10 && l <= 17);
@@ -366,8 +368,6 @@ public class PayrollService {
             double ta = payrollCalculator.calculateTA(user.getPayLevel() != null ? user.getPayLevel() : "10");
             double projectedIncome = (basic + da + hra + ta) * 12;
             double tds = taxCalculator.calculateMonthlyTds(projectedIncome, decl);
-
-            Map<String, Double> settings = settingService.getAllPayrollSettings();
             
             Map<String, Object> calculation = payrollCalculator.calculateMonthlySalary(
                     basic, 
