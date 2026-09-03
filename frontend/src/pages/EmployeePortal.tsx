@@ -15,6 +15,8 @@ const EmployeePortal: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   const [tdsProjection, setTdsProjection] = useState<any>(null);
+  const [showPayslipModal, setShowPayslipModal] = useState(false);
+  const [activePayslipHtml, setActivePayslipHtml] = useState<string>('');
 
   // IT Declaration State
   const [declaration, setDeclaration] = useState<any>({
@@ -101,13 +103,12 @@ const EmployeePortal: React.FC = () => {
   };
 
   const getLastWorkingDayOfMonth = (year: number, month: number): Date => {
-    // month is 1-indexed (1 = Jan, ..., 12 = Dec)
-    const d = new Date(year, month, 0); // Last day of month
-    // Saturday (6) and Sunday (0) are holidays -> step back to Friday
-    if (d.getDay() === 6) {
-      d.setDate(d.getDate() - 1);
-    } else if (d.getDay() === 0) {
+    const d = new Date(year, month, 0); // Last calendar day of month
+    const dayOfWeek = d.getDay(); // 0 = Sun, 6 = Sat
+    if (dayOfWeek === 0) { // Sunday -> Friday
       d.setDate(d.getDate() - 2);
+    } else if (dayOfWeek === 6) { // Saturday -> Friday
+      d.setDate(d.getDate() - 1);
     }
     return d;
   };
@@ -119,14 +120,44 @@ const EmployeePortal: React.FC = () => {
     return `${day}-${monthNames[d.getMonth()]}-${d.getFullYear()}`;
   };
 
-  const printPayslip = async () => {
-    if (!selectedPayroll) return;
-    const p = selectedPayroll;
-    let u: any = null;
+  const triggerPrint = (htmlContent: string) => {
     try {
-      if (userCtx?.userId) u = await apiService.getUserById(userCtx.userId);
-    } catch (e) { console.error("Could not fetch user details", e); }
+      let iframe = document.getElementById('payslip-print-iframe') as HTMLIFrameElement;
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'payslip-print-iframe';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+      }
+      const doc = iframe.contentWindow?.document || iframe.contentDocument;
+      if (doc) {
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+        setTimeout(() => {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        }, 500);
+        return;
+      }
+    } catch (e) {
+      console.error("Iframe print fallback to window.open", e);
+    }
 
+    const win = window.open('', '_blank', 'width=900,height=750');
+    if (win) {
+      win.document.write(htmlContent);
+      win.document.close();
+      setTimeout(() => { win.focus(); win.print(); }, 800);
+    }
+  };
+
+  const generatePayslipHtml = (p: any, u: any): string => {
     const rawName = (u?.name || (u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : '') || p.employeeName || 'Mr. Y Rama Rao').trim();
     const name = (rawName.startsWith('Mr.') || rawName.startsWith('Dr.') || rawName.startsWith('Prof.') || rawName.startsWith('Ms.') || rawName.startsWith('Mrs.')) ? rawName : `Mr. ${rawName}`;
     const words = numberToWords(Math.round(p.netSalary || 0));
@@ -137,31 +168,25 @@ const EmployeePortal: React.FC = () => {
     const npsEmpD = p.npsEmployerShare || 0;
     const totalEarnings = (p.basicPay || 0) + (p.da || 0) + (p.hra || 0) + (p.ta || 0) + (p.otherAllowances || 0) + npsEmpE;
     
-    // Days in Month & Paid Days
     const daysInMonth = new Date(p.year, p.month, 0).getDate();
     const paidDays = daysInMonth;
 
-    // Date of Joining
     const rawDoj = u?.dateOfJoining || (p.employeeId === 'NT1005' ? '2020-01-20' : null);
     const doj = rawDoj
       ? new Date(rawDoj).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
       : '-';
 
-    // Date of Next Increment (7th CPC standard: 01-Jul or 01-Jan)
     const dni = u?.dateOfNextIncrement 
       ? new Date(u.dateOfNextIncrement).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
       : (p.month < 7 ? `01-Jul-${p.year}` : `01-Jul-${p.year + 1}`);
 
-    // Category (Teaching / Non-Teaching / Contract)
     const isContract = (p.employeeType || u?.employeeType || u?.function || '').toLowerCase().includes('contract') || (p.payLevel || u?.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
     const isFaculty = (p.employeeId || '').startsWith('TS') && !isContract;
     const empCategory = isFaculty ? 'Teaching Faculty' : isContract ? 'Contractual Staff' : 'Non-Teaching Staff';
 
-    // Tax Regime
     const rawRegime = (u?.taxRegime || p.taxRegime || 'New').replace(/Tax\s*Regime/gi, '').trim();
     const taxRegime = rawRegime ? `${rawRegime} Tax Regime` : 'New Tax Regime (u/s 115BAC)';
 
-    // Department
     const department = (u?.department && u.department !== 'Non-Teaching' && u.department !== 'Teaching') 
       ? u.department 
       : ((p.employeeId || '').startsWith('TS') ? 'Academic & Research' : 'Finance & Accounts');
@@ -171,7 +196,7 @@ const EmployeePortal: React.FC = () => {
     const cleanLevel = (u?.payLevel || p.payLevel || '-').replace(/^Level-?/i, '');
     const displayLevel = cleanLevel !== '-' ? `Level-${cleanLevel}` : '-';
     
-    const html = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/>
 <title>Pay Slip - ${monthLabel} ${p.year} - ${p.employeeId}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -467,9 +492,28 @@ const EmployeePortal: React.FC = () => {
 
 </div>
 </body></html>`;
+  };
 
-    const win = window.open('', '_blank', 'width=900,height=750');
-    if (win) { win.document.write(html); win.document.close(); setTimeout(() => { win.focus(); win.print(); }, 800); }
+  const handleOpenPayslip = async (p: any) => {
+    setSelectedPayroll(p);
+    let u: any = null;
+    try {
+      if (userCtx?.userId) u = await apiService.getUserById(userCtx.userId);
+    } catch (e) { console.error("Could not fetch user details", e); }
+    const html = generatePayslipHtml(p, u);
+    setActivePayslipHtml(html);
+    setShowPayslipModal(true);
+  };
+
+  const printPayslip = async () => {
+    if (!selectedPayroll) return;
+    let u: any = null;
+    try {
+      if (userCtx?.userId) u = await apiService.getUserById(userCtx.userId);
+    } catch (e) { console.error("Could not fetch user details", e); }
+    const html = generatePayslipHtml(selectedPayroll, u);
+    setActivePayslipHtml(html);
+    triggerPrint(html);
   };
 
 
@@ -765,12 +809,13 @@ const EmployeePortal: React.FC = () => {
         <p>View and download your salary slips and Form 16</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selectedPayroll ? '340px 1fr' : '1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: selectedPayroll ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr', gap: '24px' }}>
         {/* Payslip List */}
         <div>
           <div className="card-iipm" style={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontWeight: 600 }}>
-              Payslips — {currentYear}
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Payslips — {currentYear}</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{payrolls.length} Months</span>
             </div>
             {payrolls.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
@@ -780,23 +825,35 @@ const EmployeePortal: React.FC = () => {
             ) : (
               <div>
                 {payrolls.map(p => (
-                  <div key={p.id} onClick={() => setSelectedPayroll(p)}
+                  <div key={p.id}
                     style={{
                       padding: '14px 20px', borderBottom: '1px solid var(--border)',
                       cursor: 'pointer', transition: 'all 0.15s ease',
                       background: selectedPayroll?.id === p.id ? 'rgba(201,168,76,0.08)' : 'transparent',
                       borderLeft: selectedPayroll?.id === p.id ? '3px solid var(--accent)' : '3px solid transparent',
                     }}
+                    onClick={() => { setSelectedPayroll(p); }}
                     onMouseEnter={e => { if (selectedPayroll?.id !== p.id) e.currentTarget.style.background = 'var(--bg-hover)'; }}
                     onMouseLeave={e => { if (selectedPayroll?.id !== p.id) e.currentTarget.style.background = 'transparent'; }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                       <div>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{months[p.month - 1]} {p.year}</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--success)' }}>{fmt(p.netSalary)}</div>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>{months[p.month - 1]} {p.year}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--success)', fontWeight: 600 }}>{fmt(p.netSalary)}</div>
                       </div>
-                      <span style={{ padding: '3px 8px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700, background: `${statusColor[p.status]}20`, color: statusColor[p.status] }}>
-                        {p.status}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ padding: '3px 8px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700, background: `${statusColor[p.status]}20`, color: statusColor[p.status] }}>
+                          {p.status}
+                        </span>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleOpenPayslip(p); }}
+                          style={{
+                            background: '#0a3161', color: '#fff', border: 'none',
+                            padding: '6px 12px', borderRadius: '6px', fontSize: '0.78rem',
+                            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                          }}>
+                          📄 View / Print
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -808,29 +865,36 @@ const EmployeePortal: React.FC = () => {
         {/* Payslip Detail */}
         {selectedPayroll && (
           <div className="card-iipm" style={{ padding: '0' }}>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3>Payslip — {months[selectedPayroll.month - 1]} {selectedPayroll.year}</h3>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={printPayslip} className="btn-primary-iipm" style={{ fontSize: '0.85rem', padding: '8px 16px' }}>🖨 Print Payslip</button>
-                <button onClick={() => setSelectedPayroll(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <h3 style={{ margin: 0 }}>Payslip — {months[selectedPayroll.month - 1]} {selectedPayroll.year}</h3>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button onClick={() => selectedPayroll && handleOpenPayslip(selectedPayroll)} className="btn-primary-iipm" style={{ fontSize: '0.82rem', padding: '6px 14px' }}>
+                  📄 View Full Slip
+                </button>
+                <button onClick={printPayslip} className="btn-primary-iipm" style={{ fontSize: '0.82rem', padding: '6px 14px', background: '#c9a84c', color: '#0a3161' }}>
+                  🖨 Print / PDF
+                </button>
+                <button onClick={() => setSelectedPayroll(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem', padding: '0 4px' }}>
+                  ✕
+                </button>
               </div>
             </div>
-            <div style={{ padding: '24px' }}>
+            <div style={{ padding: '18px 20px' }}>
               {/* Header info */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px', padding: '16px', background: 'var(--bg-hover)', borderRadius: '10px' }}>
-                <div><div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Employee ID</div><div style={{ fontWeight: 600 }}>{selectedPayroll.employeeId}</div></div>
-                <div><div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pay Period</div><div style={{ fontWeight: 600 }}>{months[selectedPayroll.month - 1]} {selectedPayroll.year}</div></div>
-                <div><div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</div>
-                  <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, background: `${statusColor[selectedPayroll.status]}20`, color: statusColor[selectedPayroll.status] }}>{selectedPayroll.status}</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '20px', padding: '14px', background: 'var(--bg-hover)', borderRadius: '10px' }}>
+                <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Employee ID</div><div style={{ fontWeight: 600 }}>{selectedPayroll.employeeId}</div></div>
+                <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pay Period</div><div style={{ fontWeight: 600 }}>{months[selectedPayroll.month - 1]} {selectedPayroll.year}</div></div>
+                <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</div>
+                  <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, background: `${statusColor[selectedPayroll.status]}20`, color: statusColor[selectedPayroll.status] }}>{selectedPayroll.status}</span>
                 </div>
-                {selectedPayroll.approvedBy && <div><div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Approved By</div><div style={{ fontWeight: 600 }}>{selectedPayroll.approvedBy}</div></div>}
+                {selectedPayroll.approvedBy && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Approved By</div><div style={{ fontWeight: 600 }}>{selectedPayroll.approvedBy}</div></div>}
               </div>
 
               {/* Earnings vs Deductions */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
                 {/* Earnings */}
                 <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Earnings</div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Earnings</div>
                   <table className="table-iipm">
                     <tbody>
                       {[
@@ -839,6 +903,7 @@ const EmployeePortal: React.FC = () => {
                         ['HRA (20%)', selectedPayroll.hra],
                         ['Transport Allowance', selectedPayroll.ta],
                         ['Other Allowances', selectedPayroll.otherAllowances || 0],
+                        ['NPS Employer (14%)', selectedPayroll.npsEmployerShare || 0],
                       ].map(([label, val]) => (
                         <tr key={String(label)}>
                           <td>{label}</td>
@@ -855,15 +920,15 @@ const EmployeePortal: React.FC = () => {
 
                 {/* Deductions */}
                 <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Deductions</div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Deductions</div>
                   <table className="table-iipm">
                     <tbody>
                       {[
-                        ['TDS', selectedPayroll.tds],
                         ['NPS (Employee 10%)', selectedPayroll.npsEmployeeShare],
                         ['NPS (Employer 14%)', selectedPayroll.npsEmployerShare],
                         ['Professional Tax', selectedPayroll.professionalTax || 200],
-                        ['CGHS', selectedPayroll.cghs || 650],
+                        ['CGHS / Medical', selectedPayroll.cghs || 450],
+                        ['TDS / Income Tax', selectedPayroll.tds || 0],
                         ['Other Deductions', selectedPayroll.otherDeductions || 0],
                       ].map(([label, val]) => (
                         <tr key={String(label)}>
@@ -881,10 +946,10 @@ const EmployeePortal: React.FC = () => {
               </div>
 
               {/* Net Salary */}
-              <div style={{ marginTop: '24px', padding: '20px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(26,58,110,0.2))', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.3)' }}>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Net Salary Payable</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#22c55e', marginTop: '4px' }}>{fmt(selectedPayroll.netSalary)}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>For {months[selectedPayroll.month - 1]} {selectedPayroll.year}</div>
+              <div style={{ marginTop: '20px', padding: '16px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(26,58,110,0.2))', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.3)' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Net Salary Payable</div>
+                <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#22c55e', marginTop: '2px' }}>{fmt(selectedPayroll.netSalary)}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>For {months[selectedPayroll.month - 1]} {selectedPayroll.year}</div>
               </div>
             </div>
           </div>
@@ -1016,6 +1081,60 @@ const EmployeePortal: React.FC = () => {
         </div>
         <Link to="/it-declaration" className="btn-primary-iipm" style={{ textDecoration: 'none' }}>Go to Declarations</Link>
       </div>
+
+      {/* Full Screen Interactive Mobile / Desktop Payslip Preview Modal */}
+      {showPayslipModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(4px)',
+          zIndex: 99999, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', padding: '10px'
+        }}>
+          <div style={{
+            width: '100%', maxWidth: '880px', height: '94vh',
+            background: '#fff', borderRadius: '12px', overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)'
+          }}>
+            {/* Modal Top Bar */}
+            <div style={{
+              padding: '12px 18px', background: '#0a3161', color: '#fff',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              borderBottom: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>📄</span> Official Payslip Preview {selectedPayroll ? `— ${months[selectedPayroll.month - 1]} ${selectedPayroll.year}` : ''}
+              </div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button 
+                  onClick={() => triggerPrint(activePayslipHtml)}
+                  style={{
+                    background: '#c9a84c', color: '#0a3161', border: 'none',
+                    padding: '7px 16px', borderRadius: '6px', fontWeight: 700,
+                    fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                  }}>
+                  🖨 Print / Save PDF
+                </button>
+                <button 
+                  onClick={() => setShowPayslipModal(false)}
+                  style={{
+                    background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none',
+                    width: '32px', height: '32px', borderRadius: '50%', fontWeight: 700,
+                    fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                  ✕
+                </button>
+              </div>
+            </div>
+            
+            {/* Iframe View */}
+            <iframe 
+              title="Payslip Preview"
+              srcDoc={activePayslipHtml}
+              style={{ width: '100%', height: '100%', border: 'none', background: '#f8fafc' }}
+            />
+          </div>
+        </div>
+      )}
 
     </div>
   );
