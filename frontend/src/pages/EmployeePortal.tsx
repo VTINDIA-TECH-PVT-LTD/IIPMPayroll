@@ -339,7 +339,7 @@ const EmployeePortal: React.FC = () => {
         <h1>INDIAN INSTITUTE OF PETROLEUM AND ENERGY</h1>
         <div class="inst-sub">(An Institute of National Importance at par with IITs/IIMs)</div>
         <div class="inst-min">Ministry of Petroleum and Natural Gas, Government of India</div>
-        <div class="inst-addr">2nd Floor, AU Engg College Main Block, Andhra University, Visakhapatnam &ndash; 530003, A.P., India</div>
+        <div class="inst-addr">EAB, Vangali, Sabbavaram, Anakapalle &ndash; 531035, Andhra Pradesh, India</div>
         <div class="inst-contact"><span>E-mail:</span> dr.finance@iipe.ac.in &nbsp;|&nbsp; <span>Website:</span> www.iipe.ac.in</div>
       </div>
     </div>

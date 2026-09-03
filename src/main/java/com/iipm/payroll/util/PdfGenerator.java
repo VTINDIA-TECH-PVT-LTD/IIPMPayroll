@@ -39,7 +39,7 @@ public class PdfGenerator {
         subTitle.setAlignment(Element.ALIGN_CENTER);
         document.add(subTitle);
 
-        Paragraph address = new Paragraph("2nd Floor, AU Engg College Main Block, Andhra University, Visakhapatnam – 530003, A.P., India\nE-Mail : dr.finance@iipe.ac.in | Website: www.iipe.ac.in", smallFont);
+        Paragraph address = new Paragraph("EAB, Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India\nE-Mail : dr.finance@iipe.ac.in | Website: www.iipe.ac.in", smallFont);
         address.setAlignment(Element.ALIGN_CENTER);
         document.add(address);
 
