@@ -13,6 +13,8 @@ const EmployeePortal: React.FC = () => {
   const [ytd, setYtd] = useState<any>(null);
   const currentYear = new Date().getFullYear();
 
+  const [tdsProjection, setTdsProjection] = useState<any>(null);
+
   // IT Declaration State
   const [declaration, setDeclaration] = useState<any>({
     section80C: '', section80D: '', hraExemption: '', homeLoanInterest: '', status: ''
@@ -63,12 +65,14 @@ const EmployeePortal: React.FC = () => {
   const loadMyPayrolls = async () => {
     try {
       setLoading(true);
-      const [payrollData, ytdData] = await Promise.allSettled([
+      const [payrollData, ytdData, tdsProjData] = await Promise.allSettled([
         apiService.getPayrollsByUser(userCtx!.userId!),
         apiService.getYTDReport(userCtx!.userId!),
+        apiService.getTdsProjection(userCtx!.userId!, 2026),
       ]);
       if (payrollData.status === 'fulfilled') setPayrolls(payrollData.value);
       if (ytdData.status === 'fulfilled')    setYtd(ytdData.value?.data || ytdData.value);
+      if (tdsProjData.status === 'fulfilled') setTdsProjection(tdsProjData.value);
     } catch { }
     finally { setLoading(false); }
   };
@@ -826,6 +830,113 @@ const EmployeePortal: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* TDS & Income Tax Projection Section */}
+      {tdsProjection && (
+        <div className="card-iipm" style={{ marginTop: '24px', padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
+            <div>
+              <h3 style={{ margin: 0, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                📊 Annual TDS & Income Tax Projection (FY {tdsProjection.financialYear})
+              </h3>
+              <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                Calculated under <strong>{tdsProjection.taxRegime} Tax Regime</strong> (Standard Deduction: ₹{tdsProjection.standardDeduction?.toLocaleString('en-IN')} | Sec 80CCD(2) NPS: ₹{Math.round(tdsProjection.deduction80CCD2 || 0).toLocaleString('en-IN')})
+              </p>
+            </div>
+            <span style={{ padding: '6px 14px', borderRadius: '20px', background: 'rgba(201,168,76,0.15)', color: 'var(--accent)', fontWeight: 700, fontSize: '0.85rem', border: '1px solid rgba(201,168,76,0.3)' }}>
+              PAN: {tdsProjection.pan}
+            </span>
+          </div>
+
+          {/* 4 Key Metric Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            <div style={{ padding: '16px', background: 'var(--bg-hover)', borderRadius: '10px', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Estimated Total Annual Tax</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--primary)', marginTop: '4px' }}>
+                {fmt(tdsProjection.estimatedAnnualTax)}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                Net Taxable: {fmt(tdsProjection.netTaxableIncome)}
+              </div>
+            </div>
+
+            <div style={{ padding: '16px', background: 'rgba(34,197,94,0.08)', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.25)' }}>
+              <div style={{ fontSize: '0.78rem', color: '#15803d', textTransform: 'uppercase', fontWeight: 700 }}>💰 TDS Deducted So Far</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#16a34a', marginTop: '4px' }}>
+                {fmt(tdsProjection.tdsDeductedSoFar)}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#15803d', marginTop: '2px' }}>
+                Paid across {tdsProjection.monthsDeductedCount} months
+              </div>
+            </div>
+
+            <div style={{ padding: '16px', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.25)' }}>
+              <div style={{ fontSize: '0.78rem', color: '#b91c1c', textTransform: 'uppercase', fontWeight: 700 }}>⚖️ Balance Tax to be Deducted</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#dc2626', marginTop: '4px' }}>
+                {fmt(tdsProjection.tdsRemainingToBeDeducted)}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#b91c1c', marginTop: '2px' }}>
+                Remaining over {tdsProjection.monthsRemainingCount} months
+              </div>
+            </div>
+
+            <div style={{ padding: '16px', background: 'rgba(201,168,76,0.12)', borderRadius: '10px', border: '1px solid rgba(201,168,76,0.35)' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 700 }}>📅 TDS for Next Months</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--accent)', marginTop: '4px' }}>
+                {fmt(tdsProjection.monthlyTdsNextMonths)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>/ mo</span>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                Estimated monthly deduction
+              </div>
+            </div>
+          </div>
+
+          {/* Month-by-Month TDS Schedule Table */}
+          <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', fontSize: '0.95rem' }}>
+            📅 Month-by-Month TDS Schedule & Status (April {currentYear} – March {currentYear + 1})
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table-iipm">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th style={{ textAlign: 'right' }}>Gross Income</th>
+                  <th style={{ textAlign: 'center' }}>Deduction Status</th>
+                  <th style={{ textAlign: 'right' }}>Monthly TDS</th>
+                  <th style={{ textAlign: 'right' }}>Cumulative TDS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tdsProjection.monthlySchedule?.map((s: any, idx: number) => {
+                  const isDeducted = s.status === 'DEDUCTED';
+                  return (
+                    <tr key={idx} style={{ background: isDeducted ? 'rgba(34,197,94,0.03)' : 'transparent' }}>
+                      <td style={{ fontWeight: 600 }}>{s.monthName}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(s.grossSalary)}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span style={{
+                          padding: '3px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700,
+                          background: isDeducted ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
+                          color: isDeducted ? '#16a34a' : '#d97706',
+                          border: `1px solid ${isDeducted ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`
+                        }}>
+                          {isDeducted ? '✓ DEDUCTED' : '⏳ PROJECTED'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: isDeducted ? '#16a34a' : 'var(--accent)' }}>
+                        {fmt(s.tdsAmount)}
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {fmt(s.cumulativeTds)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Form 16 card */}
       <div style={{ marginTop: '24px', padding: '20px 24px', background: 'linear-gradient(135deg, rgba(201,168,76,0.1), rgba(26,58,110,0.2))', borderRadius: 'var(--radius)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

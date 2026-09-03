@@ -21,6 +21,9 @@ public class PayrollController {
     @Autowired
     private PayrollService payrollService;
 
+    @Autowired
+    private com.iipm.payroll.service.TdsProjectionService tdsProjectionService;
+
     @PostMapping
     public ResponseEntity<ApiResponse<Payroll>> createPayroll(@RequestBody Map<String, Object> payrollData,
                                                              @RequestHeader("X-User-Id") String createdBy) {
@@ -247,20 +250,30 @@ public class PayrollController {
         }
     }
 
-    @GetMapping("/export-approval-sheet")
-    public ResponseEntity<byte[]> exportApprovalSheet(@RequestParam int month, @RequestParam int year) {
+    @GetMapping("/tds-projection/{userId}/{year}")
+    public ResponseEntity<ApiResponse<com.iipm.payroll.dto.TdsProjectionDTO>> getTdsProjection(
+            @PathVariable String userId,
+            @PathVariable int year) {
         try {
-            byte[] pdfBytes = payrollService.exportApprovalSheet(month, year);
-            
-            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-            headers.setContentType(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-            headers.setContentDispositionFormData("filename", "Approval_Sheet_" + month + "_" + year + ".xlsx");
-            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
-            
-            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+            com.iipm.payroll.dto.TdsProjectionDTO dto = tdsProjectionService.calculateTdsProjection(userId, year);
+            return ResponseEntity.ok(ApiResponse.success("TDS projection calculated successfully", dto));
         } catch (Exception e) {
-            log.error("Failed to export approval sheet", e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error calculating TDS projection for user: {}", userId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error calculating TDS projection: " + e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/tds-projections/{year}")
+    public ResponseEntity<ApiResponse<List<com.iipm.payroll.dto.TdsProjectionDTO>>> getAllTdsProjections(
+            @PathVariable int year) {
+        try {
+            List<com.iipm.payroll.dto.TdsProjectionDTO> list = tdsProjectionService.calculateAllTdsProjections(year);
+            return ResponseEntity.ok(ApiResponse.success("All TDS projections calculated successfully", list));
+        } catch (Exception e) {
+            log.error("Error calculating all TDS projections", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error calculating all TDS projections: " + e.getMessage(), null));
         }
     }
 }

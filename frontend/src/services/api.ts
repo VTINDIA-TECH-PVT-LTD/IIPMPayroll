@@ -102,6 +102,8 @@ class ApiService {
   async approvePayroll(id: string): Promise<any> { return (await this.api.put(`/payroll/${id}/approve`, {})).data.data; }
   async rejectPayroll(id: string, reason: string): Promise<any> { return (await this.api.put(`/payroll/${id}/reject`, { reason })).data.data; }
   async lockPayroll(id: string): Promise<any> { return (await this.api.put(`/payroll/${id}/lock`, {})).data.data; }
+  async getTdsProjection(userId: string, year: number): Promise<any> { return (await this.api.get(`/payroll/tds-projection/${userId}/${year}`)).data.data; }
+  async getAllTdsProjections(year: number): Promise<any[]> { return (await this.api.get(`/payroll/tds-projections/${year}`)).data.data; }
 
   // ============ REPORTS ============
   async getSalaryRegister(month: number, year: number): Promise<any> { return (await this.api.get(`/reports/salary-register/${month}/${year}`)).data.data; }

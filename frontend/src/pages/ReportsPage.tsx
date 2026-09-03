@@ -8,7 +8,7 @@ const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 
 const ReportsPage: React.FC = () => {
   const userCtx = useContext(UserContext);
-  const [tab, setTab] = useState<'register' | 'bank' | 'nps' | 'tds' | 'dept' | 'ytd' | 'comparison'>('register');
+  const [tab, setTab] = useState<'register' | 'bank' | 'projection' | 'nps' | 'tds' | 'dept' | 'ytd' | 'comparison'>('register');
   const [bankCategoryFilter, setBankCategoryFilter] = useState<'all' | 'faculty' | 'staff' | 'contract'>('all');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -17,6 +17,17 @@ const ReportsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
   const [msg, setMsg] = useState<string | null>(null);
+
+  const tabList = [
+    { key: 'register', label: '📋 Salary Register' },
+    { key: 'bank', label: '💳 Bank Payment Sheet' },
+    { key: 'projection', label: '📊 TDS Projection Statement' },
+    { key: 'nps', label: '🏛️ NPS Schedule' },
+    { key: 'tds', label: '📑 TDS Summary' },
+    { key: 'dept', label: '🏢 Department-wise' },
+    { key: 'ytd', label: '📈 My YTD Summary' },
+    { key: 'comparison', label: '⚖️ Salary Comparison' },
+  ] as const;
 
   const [signatures, setSignatures] = useState({
     preparedBy: 'S.SIRISHA',
@@ -34,6 +45,7 @@ const ReportsPage: React.FC = () => {
     try {
       let result: any;
       if (tab === 'register' || tab === 'bank') result = await apiService.getSalaryRegister(month, year);
+      else if (tab === 'projection') result = await apiService.getAllTdsProjections(year);
       else if (tab === 'nps')  result = await apiService.getNPSReport(year);
       else if (tab === 'tds')  result = await apiService.getTDSReport(year);
       else if (tab === 'dept') result = await apiService.getDepartmentReport(month, year);
@@ -72,16 +84,6 @@ const ReportsPage: React.FC = () => {
 
   const fmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
   const fmtN = (n: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n || 0);
-
-  const tabList = [
-    { key: 'register', label: '📋 Salary Register' },
-    { key: 'bank',     label: '💳 Bank Payment Sheet' },
-    { key: 'nps',      label: '🏦 NPS Report' },
-    { key: 'tds',      label: '📊 TDS Report' },
-    { key: 'dept',     label: '🏢 Department-wise' },
-    { key: 'ytd',      label: '📈 Year-to-Date' },
-    { key: 'comparison',label: '⚖️ YoY Comparison' },
-  ] as const;
 
   const exportSalaryRegisterToExcel = () => {
     if (!data || !data.payrolls) return;
@@ -362,6 +364,35 @@ const ReportsPage: React.FC = () => {
     }
   };
 
+  const exportTdsProjectionToExcel = () => {
+    if (!data || !Array.isArray(data)) return;
+    const wb = XLSX.utils.book_new();
+    const rows = data.map((d: any, idx: number) => ({
+      'Sl.No': idx + 1,
+      'Emp ID': d.employeeId,
+      'Employee Name': d.employeeName,
+      'Designation': d.designation,
+      'Department': d.department,
+      'PAN': d.pan,
+      'Tax Regime': d.taxRegime,
+      'Projected Annual Gross (Rs.)': d.projectedAnnualGross || 0,
+      'Standard Deduction (Rs.)': d.standardDeduction || 0,
+      'Sec 80CCD(2) NPS Share (Rs.)': Math.round(d.deduction80CCD2 || 0),
+      'Professional Tax (Rs.)': d.professionalTax || 0,
+      'Other Chapter VI-A (Rs.)': d.otherChapterVIADeductions || 0,
+      'Net Taxable Income (Rs.)': d.netTaxableIncome || 0,
+      'Estimated Annual Tax (Rs.)': d.estimatedAnnualTax || 0,
+      'TDS Deducted So Far (Rs.)': d.tdsDeductedSoFar || 0,
+      'Balance Tax to Deduct (Rs.)': d.tdsRemainingToBeDeducted || 0,
+      'Remaining Months': d.monthsRemainingCount || 0,
+      'Monthly TDS for Next Months (Rs.)': d.monthlyTdsNextMonths || 0
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, `TDS_Projection_${year}`);
+    XLSX.writeFile(wb, `IIPE_TDS_Projection_FY_${year}-${year + 1}.xlsx`);
+  };
+
   return (
     <div className="page-container">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -373,6 +404,11 @@ const ReportsPage: React.FC = () => {
           {tab === 'register' && (
             <button className="btn-success-iipm" onClick={exportSalaryRegisterToExcel}>
               📊 Export to Excel
+            </button>
+          )}
+          {tab === 'projection' && (
+            <button className="btn-success-iipm" onClick={exportTdsProjectionToExcel}>
+              📊 Export TDS Excel
             </button>
           )}
           <button className="btn-primary-iipm" onClick={() => window.print()}>
@@ -631,6 +667,126 @@ const ReportsPage: React.FC = () => {
                           <td colSpan={7} style={{ padding: '12px 16px', color: 'var(--accent)' }}>TOTAL DISBURSEMENT AMOUNT</td>
                           <td style={{ padding: '12px 16px', textAlign: 'right', color: '#16a34a', fontSize: '1rem' }}>{fmt(totalDisbursement)}</td>
                           <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ===== TDS PROJECTION STATEMENT ===== */}
+      {tab === 'projection' && data && Array.isArray(data) && (
+        <div>
+          {/* Summary Cards */}
+          {(() => {
+            const totalEmployees = data.length;
+            const totalProjectedTax = data.reduce((s: number, d: any) => s + (d.estimatedAnnualTax || 0), 0);
+            const totalTdsDeducted = data.reduce((s: number, d: any) => s + (d.tdsDeductedSoFar || 0), 0);
+            const totalRemainingTax = data.reduce((s: number, d: any) => s + (d.tdsRemainingToBeDeducted || 0), 0);
+            const totalMonthlyRemainingTds = data.reduce((s: number, d: any) => s + (d.monthlyTdsNextMonths || 0), 0);
+
+            return (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                  <div className="stat-card">
+                    <div className="stat-label">Total Employees</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem', color: '#0a3161' }}>{totalEmployees} Staff</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">Total Estimated Annual Tax</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem', color: '#c9a84c' }}>{fmt(totalProjectedTax)}</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">💰 TDS Deducted So Far (YTD)</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem', color: '#16a34a' }}>{fmt(totalTdsDeducted)}</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">⚖️ Total Balance Tax to Deduct</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem', color: '#dc2626' }}>{fmt(totalRemainingTax)}</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">📅 Monthly Projected TDS</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem', color: '#2563eb' }}>{fmt(totalMonthlyRemainingTds)} / mo</div>
+                  </div>
+                </div>
+
+                <div className="card-iipm" style={{ padding: '0', overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a' }}>
+                        Annual TDS Projection & Deduction Statement — FY {year}-{year + 1}
+                      </h3>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        Institutional summary of estimated annual tax, actual TDS collected so far, and monthly TDS to be deducted for next months
+                      </p>
+                    </div>
+                    <button className="btn-success-iipm" onClick={exportTdsProjectionToExcel} style={{ fontSize: '0.85rem', padding: '6px 14px' }}>
+                      📊 Export Excel Schedule
+                    </button>
+                  </div>
+
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="table-iipm" style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ background: '#f1f5f9' }}>
+                          <th>Sl. No.</th>
+                          <th>Emp ID</th>
+                          <th>Employee Name</th>
+                          <th>Designation</th>
+                          <th>PAN</th>
+                          <th>Regime</th>
+                          <th style={{ textAlign: 'right' }}>Projected Gross (₹)</th>
+                          <th style={{ textAlign: 'right' }}>Sec 80CCD(2) NPS (₹)</th>
+                          <th style={{ textAlign: 'right' }}>Net Taxable (₹)</th>
+                          <th style={{ textAlign: 'right' }}>Est. Annual Tax (₹)</th>
+                          <th style={{ textAlign: 'right', color: '#16a34a' }}>💰 TDS Deducted (₹)</th>
+                          <th style={{ textAlign: 'right', color: '#dc2626' }}>⚖️ Balance Tax (₹)</th>
+                          <th style={{ textAlign: 'right', color: '#2563eb' }}>📅 Monthly TDS (₹/mo)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.map((d: any, idx: number) => (
+                          <tr key={d.userId || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ textAlign: 'center' }}>{idx + 1}</td>
+                            <td><strong>{d.employeeId}</strong></td>
+                            <td>{d.employeeName}</td>
+                            <td>{d.designation}</td>
+                            <td><span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{d.pan}</span></td>
+                            <td>
+                              <span style={{
+                                padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700,
+                                background: d.taxRegime === 'NEW' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)',
+                                color: d.taxRegime === 'NEW' ? '#2563eb' : '#d97706'
+                              }}>
+                                {d.taxRegime}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>{fmt(d.projectedAnnualGross)}</td>
+                            <td style={{ textAlign: 'right' }}>{fmt(Math.round(d.deduction80CCD2 || 0))}</td>
+                            <td style={{ textAlign: 'right' }}>{fmt(d.netTaxableIncome)}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(d.estimatedAnnualTax)}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>{fmt(d.tdsDeductedSoFar)}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{fmt(d.tdsRemainingToBeDeducted)}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 700, color: '#2563eb', background: 'rgba(37,99,235,0.04)' }}>
+                              {fmt(d.monthlyTdsNextMonths)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                          <td colSpan={6} style={{ padding: '12px 16px', color: 'var(--accent)' }}>INSTITUTIONAL TOTALS</td>
+                          <td style={{ textAlign: 'right' }}>{fmt(data.reduce((s: number, d: any) => s + (d.projectedAnnualGross || 0), 0))}</td>
+                          <td style={{ textAlign: 'right' }}>{fmt(data.reduce((s: number, d: any) => s + (d.deduction80CCD2 || 0), 0))}</td>
+                          <td style={{ textAlign: 'right' }}>{fmt(data.reduce((s: number, d: any) => s + (d.netTaxableIncome || 0), 0))}</td>
+                          <td style={{ textAlign: 'right' }}>{fmt(totalProjectedTax)}</td>
+                          <td style={{ textAlign: 'right', color: '#16a34a' }}>{fmt(totalTdsDeducted)}</td>
+                          <td style={{ textAlign: 'right', color: '#dc2626' }}>{fmt(totalRemainingTax)}</td>
+                          <td style={{ textAlign: 'right', color: '#2563eb' }}>{fmt(totalMonthlyRemainingTds)}</td>
                         </tr>
                       </tfoot>
                     </table>
