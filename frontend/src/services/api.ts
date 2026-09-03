@@ -41,6 +41,19 @@ class ApiService {
       }
       return config;
     });
+
+    this.api.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('authToken');
+          if (window.location.pathname !== '/IIPMPayroll/login') {
+            window.location.href = '/IIPMPayroll/login';
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
   }
 
   // ============ AUTH ============

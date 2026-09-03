@@ -89,7 +89,9 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   }, []);
 
   const matchesBand = (level: string, band: string) => {
-    const l = parseInt(level, 10);
+    if (!level) return false;
+    const cleanLevel = String(level).replace(/\D/g, '');
+    const l = parseInt(cleanLevel, 10);
     if (isNaN(l)) return false;
     if (band === '1 to 5') return l >= 1 && l <= 5;
     if (band === '6 to 9') return l >= 6 && l <= 9;
@@ -100,7 +102,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      const all = await apiService.getAllUsers();
+      const all = (await apiService.getAllUsers()) || [];
       const filtered = all.filter((u: any) => {
         if (!u.isActive || !u.basicPay) return false;
         if (department && u.department !== department) return false;
@@ -110,8 +112,9 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
       setEmployees(filtered);
       setRows(filtered.map((u: any) => ({ user: u, tds: '', otherDeductions: 0, remark: '' })));
       
+      const currentPayrolls = Array.isArray(payrolls) ? payrolls : [];
       const alreadyApprovedCount = filtered.filter((u: any) => 
-        payrolls.some((p: any) => (p.userId === u.id || p.employeeId === u.employeeId) && (p.status === 'APPROVED' || p.status === 'RELEASED'))
+        currentPayrolls.some((p: any) => (p.userId === u.id || p.employeeId === u.employeeId) && (p.status === 'APPROVED' || p.status === 'RELEASED'))
       ).length;
 
       if (alreadyApprovedCount > 0) {
@@ -121,8 +124,9 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
       } else {
         setMsg(null); // Clear previous messages
       }
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to load employees.' });
+    } catch (err: any) {
+      console.error(err);
+      setMsg({ type: 'error', text: err?.response?.data?.message || err?.message || 'Failed to load employees.' });
     } finally {
       setLoading(false);
     }
