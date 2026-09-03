@@ -127,7 +127,8 @@ const EmployeePortal: React.FC = () => {
       if (userCtx?.userId) u = await apiService.getUserById(userCtx.userId);
     } catch (e) { console.error("Could not fetch user details", e); }
 
-    const name = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : (p.employeeName || '');
+    const rawName = (u?.name || (u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : '') || p.employeeName || 'Mr. Y Rama Rao').trim();
+    const name = (rawName.startsWith('Mr.') || rawName.startsWith('Dr.') || rawName.startsWith('Prof.') || rawName.startsWith('Ms.') || rawName.startsWith('Mrs.')) ? rawName : `Mr. ${rawName}`;
     const words = numberToWords(Math.round(p.netSalary || 0));
     const monthLabel = months[p.month - 1];
     const payDateStr = formatPayDate(p.year, p.month);
@@ -175,19 +176,19 @@ const EmployeePortal: React.FC = () => {
 <title>Pay Slip - ${monthLabel} ${p.year} - ${p.employeeId}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  @page { size: A4; margin: 8mm; }
+  @page { size: A4 portrait; margin: 6mm 10mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
   body { font-size: 10px; color: #1e293b; background:#f4f6f8; position:relative; }
   
   .page {
     max-width: 800px;
-    margin: 15px auto;
+    margin: 10px auto;
     background: #fff;
-    padding: 22px;
+    padding: 16px 20px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     border-radius: 8px;
     position: relative;
-    min-height: 980px;
+    box-sizing: border-box;
   }
 
   .watermark {
@@ -203,7 +204,7 @@ const EmployeePortal: React.FC = () => {
   }
 
   /* --- HEADER --- */
-  .header-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1; border-bottom: 2px solid #0a3161; padding-bottom: 10px; }
+  .header-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; position: relative; z-index: 1; border-bottom: 2px solid #0a3161; padding-bottom: 8px; }
   .header-left { display: flex; align-items: center; gap: 14px; }
   .header-left img { width: 85px; height: 85px; object-fit: contain; }
   .header-text h1 { font-size: 15px; font-weight: 800; color: #0a3161; line-height: 1.2; margin-bottom: 3px; }
@@ -213,94 +214,92 @@ const EmployeePortal: React.FC = () => {
   .header-text .inst-contact { font-size: 8px; color: #64748b; }
   .header-text span { color: #0a3161; font-weight: 600; }
   
-  .header-right { width: 230px; display: flex; flex-direction: column; gap: 6px; }
-  .ps-badge { background: #0a3161; color: white; border-radius: 6px; text-align: center; padding: 6px 10px; }
-  .ps-badge .title { font-size: 14px; font-weight: 800; letter-spacing: 0.5px; }
-  .ps-badge .subtitle { font-size: 9px; font-weight: 500; margin-top: 1px; }
+  .header-right { width: 230px; display: flex; flex-direction: column; gap: 5px; }
+  .ps-badge { background: #0a3161; color: white; border-radius: 6px; text-align: center; padding: 5px 10px; }
+  .ps-badge .title { font-size: 13px; font-weight: 800; letter-spacing: 0.5px; }
+  .ps-badge .subtitle { font-size: 8.5px; font-weight: 500; margin-top: 1px; }
   
-  .pay-dates { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; }
-  .date-row { display: flex; align-items: center; margin-bottom: 4px; font-size: 9px; }
+  .pay-dates { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 8px; }
+  .date-row { display: flex; align-items: center; margin-bottom: 3px; font-size: 8.5px; }
   .date-row:last-child { margin-bottom: 0; }
-  .date-row .icon { width: 12px; height: 12px; margin-right: 6px; color: #0a3161; flex-shrink: 0; }
+  .date-row .icon { width: 11px; height: 11px; margin-right: 5px; color: #0a3161; flex-shrink: 0; }
   .date-row .lbl { font-weight: 600; width: 75px; color: #475569; }
   .date-row .val { font-weight: 700; color: #0f172a; white-space: nowrap; }
 
   /* --- DETAILS BOX --- */
-  .details-box { border: 1px solid #cbd5e1; border-radius: 6px; position: relative; padding: 18px 14px 12px 14px; margin-bottom: 12px; background: rgba(255, 255, 255, 0.7); z-index: 1; }
-  .emp-name-badge { position: absolute; top: -9px; left: 18px; background: #0a3161; color: #fff; padding: 2px 12px; font-size: 10.5px; font-weight: 700; border-radius: 4px; letter-spacing: 0.3px; }
+  .details-box { border: 1px solid #cbd5e1; border-radius: 6px; position: relative; padding: 14px 12px 8px 12px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.7); z-index: 1; }
+  .emp-name-badge { position: absolute; top: -9px; left: 16px; background: #0a3161; color: #fff; padding: 2px 10px; font-size: 10px; font-weight: 700; border-radius: 4px; letter-spacing: 0.3px; }
   
-  .details-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 14px; }
-  .detail-row { display: flex; font-size: 9px; }
-  .detail-row .lbl { width: 110px; color: #475569; font-weight: 500; flex-shrink: 0; }
-  .detail-row .sep { width: 10px; font-weight: 500; color: #94a3b8; }
+  .details-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 12px; }
+  .detail-row { display: flex; font-size: 8.5px; }
+  .detail-row .lbl { width: 105px; color: #475569; font-weight: 500; flex-shrink: 0; }
+  .detail-row .sep { width: 8px; font-weight: 500; color: #94a3b8; }
   .detail-row .val { flex: 1; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .cat-badge { background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 3px; font-size: 8.5px; font-weight: 700; }
+  .cat-badge { background: #e0f2fe; color: #0369a1; padding: 1px 5px; border-radius: 3px; font-size: 8px; font-weight: 700; }
 
   /* --- SALARY TABLES --- */
-  .salary-container { position: relative; margin-bottom: -1px; z-index: 1; }
-  .tables-wrapper { display: flex; gap: 12px; position: relative; }
+  .salary-container { position: relative; margin-bottom: 8px; z-index: 1; }
+  .tables-wrapper { display: flex; gap: 10px; position: relative; }
   
   .sal-table { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.7); }
-  .sal-table .header-row { display: flex; align-items: center; padding: 6px 10px; font-size: 11px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
+  .sal-table .header-row { display: flex; align-items: center; padding: 5px 8px; font-size: 10px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
   .sal-table.earn { border-color: #bbf7d0; }
   .sal-table.earn .header-row { color: #166534; background: rgba(240, 253, 244, 0.9); border-bottom-color: #bbf7d0; }
   .sal-table.ded { border-color: #fecaca; }
   .sal-table.ded .header-row { color: #991b1b; background: rgba(254, 242, 242, 0.9); border-bottom-color: #fecaca; }
   
   .sal-table table { width: 100%; border-collapse: collapse; background: transparent; }
-  .sal-table th { background: rgba(248, 250, 252, 0.8); font-size: 9px; font-weight: 700; padding: 5px 10px; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; }
+  .sal-table th { background: rgba(248, 250, 252, 0.8); font-size: 8.5px; font-weight: 700; padding: 4px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; }
   .sal-table th.amt-col { text-align: right; }
   .sal-table.earn th { color: #166534; }
   .sal-table.ded th { color: #991b1b; }
 
-  .sal-table td { padding: 5.5px 10px; font-size: 9.5px; border-bottom: 1px dashed rgba(226, 232, 240, 0.9); color: #334155; font-weight: 500; background: transparent; }
-  .sal-table td.amt-col { text-align: right; color: #0f172a; font-weight: 700; font-family: monospace; font-size: 10px; }
+  .sal-table td { padding: 4.5px 8px; font-size: 9px; border-bottom: 1px dashed rgba(226, 232, 240, 0.9); color: #334155; font-weight: 500; background: transparent; }
+  .sal-table td.amt-col { text-align: right; color: #0f172a; font-weight: 700; font-family: monospace; font-size: 9.5px; }
   
-  .total-row td { font-weight: 800 !important; font-size: 10.5px !important; border-top: 1px solid #cbd5e1; border-bottom: none !important; background: rgba(248, 250, 252, 0.9) !important; }
+  .total-row td { font-weight: 800 !important; font-size: 9.5px !important; border-top: 1px solid #cbd5e1; border-bottom: none !important; background: rgba(248, 250, 252, 0.9) !important; }
   .sal-table.earn .total-row td { color: #166534 !important; }
   .sal-table.ded .total-row td { color: #991b1b !important; }
 
   /* --- NET PAY --- */
-  .net-pay-box { margin: 12px auto; width: 340px; text-align: center; border: 1.5px solid #0a3161; border-radius: 6px; overflow: hidden; position: relative; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.04); background: #fff; }
-  .net-pay-header { background: #0a3161; color: white; padding: 5px; font-weight: 800; font-size: 11px; letter-spacing: 1px; }
-  .net-pay-body { padding: 8px 12px; }
-  .net-pay-amount { font-size: 22px; font-weight: 800; color: #0a3161; margin-bottom: 2px; font-family: monospace; }
-  .net-pay-words { font-size: 8.5px; color: #475569; font-weight: 600; font-style: italic; }
+  .net-pay-box { margin: 8px auto; width: 330px; text-align: center; border: 1.5px solid #0a3161; border-radius: 6px; overflow: hidden; position: relative; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.04); background: #fff; }
+  .net-pay-header { background: #0a3161; color: white; padding: 4px; font-weight: 800; font-size: 10px; letter-spacing: 1px; }
+  .net-pay-body { padding: 6px 10px; }
+  .net-pay-amount { font-size: 20px; font-weight: 800; color: #0a3161; margin-bottom: 2px; font-family: monospace; }
+  .net-pay-words { font-size: 8px; color: #475569; font-weight: 600; font-style: italic; }
 
   /* --- SUMMARY CARDS --- */
-  .summary-cards { display: flex; justify-content: space-between; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 16px; margin-bottom: 12px; position: relative; z-index: 1; background: #f8fafc; }
+  .summary-cards { display: flex; justify-content: space-between; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 14px; margin-bottom: 8px; position: relative; z-index: 1; background: #f8fafc; }
   .card { display: flex; align-items: center; gap: 8px; background: transparent; }
-  .card-icon { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
-  .card-icon svg { width: 16px; height: 16px; }
+  .card-icon { width: 26px; height: 26px; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+  .card-icon svg { width: 14px; height: 14px; }
   .card.earn .card-icon { background: #dcfce7; color: #166534; }
   .card.ded .card-icon { background: #fee2e2; color: #991b1b; }
   .card.net .card-icon { background: #dbeafe; color: #0a3161; }
   .card.perc .card-icon { background: #f3e8ff; color: #6b21a8; }
-  .card-info .lbl { font-size: 8px; font-weight: 700; color: #64748b; margin-bottom: 1px; text-transform: uppercase; }
-  .card-info .val { font-size: 11.5px; font-weight: 800; }
+  .card-info .lbl { font-size: 7.5px; font-weight: 700; color: #64748b; margin-bottom: 1px; text-transform: uppercase; }
+  .card-info .val { font-size: 10.5px; font-weight: 800; }
   .card.earn .val { color: #166534; }
   .card.ded .val { color: #991b1b; }
   .card.net .val { color: #0a3161; }
   .card.perc .val { color: #6b21a8; }
-  .card-info .sub { font-size: 7.5px; color: #94a3b8; }
+  .card-info .sub { font-size: 7px; color: #94a3b8; }
 
   /* --- FOOTER --- */
-  .footer-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px; position: relative; z-index: 1; }
-  .footer-words { font-size: 9px; font-weight: 700; color: #0f172a; max-width: 450px; }
+  .footer-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; position: relative; z-index: 1; }
+  .footer-words { font-size: 8.5px; font-weight: 700; color: #0f172a; max-width: 450px; }
   .footer-words span { font-weight: 500; color: #475569; display: block; margin-top: 2px; }
   
-  .auth-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; background: #f8fafc; }
-  .auth-box svg { width: 20px; height: 20px; color: #0284c7; flex-shrink: 0; }
-  .auth-box div { font-size: 8px; color: #334155; font-weight: 600; line-height: 1.2; }
+  .auth-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 10px; display: flex; align-items: center; gap: 6px; background: #f8fafc; }
+  .auth-box svg { width: 18px; height: 18px; color: #0284c7; flex-shrink: 0; }
+  .auth-box div { font-size: 7.5px; color: #334155; font-weight: 600; line-height: 1.2; }
   
-  .bottom-note { text-align: center; margin-top: 20px; font-size: 8.5px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 4px; position: relative; z-index: 1; border-top: 1px dashed #e2e8f0; padding-top: 8px; }
-  .bottom-note svg { width: 12px; height: 12px; }
+  .bottom-note { text-align: center; margin-top: 10px; font-size: 8px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 4px; position: relative; z-index: 1; border-top: 1px dashed #e2e8f0; padding-top: 5px; }
+  .bottom-note svg { width: 11px; height: 11px; }
 
   @media print {
-    body { background: #fff; }
-    .page { margin: 0; padding: 12px; box-shadow: none; max-width: none; min-height: auto; border-radius: 0; }
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    html, body { background: #fff; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { margin: 0 !important; padding: 8px 14px !important; box-shadow: none !important; max-width: 100% !important; min-height: auto !important; border-radius: 0 !important; page-break-after: avoid !important; page-break-inside: avoid !important; }
   }
 </style></head>
 <body>
