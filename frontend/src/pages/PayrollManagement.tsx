@@ -114,6 +114,42 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     return true;
   };
 
+  const calculateAutoTds = (u: any) => {
+    if (u.tds && u.tds > 0) return u.tds;
+    const bp = u.basicPay || 0;
+    if (bp <= 0) return 0;
+    const isContract = (u.employeeType || '').toLowerCase().includes('contract') || (u.payLevel || '').toLowerCase().includes('consolidated');
+    if (isContract) return 0;
+    
+    // Director Level 17
+    if (String(u.payLevel).includes('17') || (u.designation || '').toLowerCase().includes('director')) return 90000;
+    
+    const da = Math.round(bp * ((settings.DA_PERCENTAGE || 62) / 100));
+    const hra = Math.round(bp * ((settings.HRA_PERCENTAGE || 20) / 100));
+    const level = parseInt(String(u.payLevel).replace(/\D/g, '') || '10', 10);
+    const taBase = level >= 10 ? (settings.TA_FIXED_AMOUNT || 3600) : 1800;
+    const ta = Math.round(taBase * (1 + ((settings.TA_DA_PERCENTAGE || 62) / 100)));
+    const annualGross = (bp + da + hra + ta) * 12;
+    
+    const taxableIncome = Math.max(0, annualGross - 200000);
+    if (taxableIncome <= 300000) return 0;
+    
+    let annualTax = 0;
+    if (taxableIncome > 1500000) {
+      annualTax = 150000 + (taxableIncome - 1500000) * 0.30;
+    } else if (taxableIncome > 1200000) {
+      annualTax = 90000 + (taxableIncome - 1200000) * 0.20;
+    } else if (taxableIncome > 900000) {
+      annualTax = 45000 + (taxableIncome - 900000) * 0.15;
+    } else if (taxableIncome > 600000) {
+      annualTax = 15000 + (taxableIncome - 600000) * 0.10;
+    } else if (taxableIncome > 300000) {
+      annualTax = (taxableIncome - 300000) * 0.05;
+    }
+    const monthlyTds = Math.round((annualTax * 1.04) / 12);
+    return Math.round(monthlyTds / 100) * 100;
+  };
+
   const loadEmployees = async () => {
     try {
       setLoading(true);
@@ -127,7 +163,12 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
         return true;
       });
       setEmployees(filtered);
-      setRows(filtered.map((u: any) => ({ user: u, tds: '', otherDeductions: 0, remark: '' })));
+      setRows(filtered.map((u: any) => ({
+        user: u,
+        tds: calculateAutoTds(u),
+        otherDeductions: u.otherDeductions || 0,
+        remark: ''
+      })));
       
       const currentPayrolls = Array.isArray(payrolls) ? payrolls : [];
       const alreadyApprovedCount = filtered.filter((u: any) => 
