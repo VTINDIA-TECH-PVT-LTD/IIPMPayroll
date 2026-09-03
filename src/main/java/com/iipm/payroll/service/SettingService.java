@@ -138,7 +138,10 @@ public class SettingService {
                 Map.entry("CGHS_AMOUNT", "1000"),
                 Map.entry("TA_FIXED_AMOUNT", "3600"),
                 Map.entry("TA_DA_PERCENTAGE", "60"),
-                Map.entry("DEFAULT_TAX_REGIME", "NEW")
+                Map.entry("DEFAULT_TAX_REGIME", "NEW"),
+                Map.entry("STANDARD_DEDUCTION_NEW", "75000"),
+                Map.entry("STANDARD_DEDUCTION_OLD", "50000"),
+                Map.entry("MAX_80C_DEDUCTION", "150000")
         );
 
         for (Map.Entry<String, String> entry : defaults.entrySet()) {
