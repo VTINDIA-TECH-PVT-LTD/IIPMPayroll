@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
-import iipeLogo from '../assets/logo.png';
+import iipeLogo from '../assets/logoBase64';
 import '../styles/LoginPage.css';
 
 interface LoginPageProps {

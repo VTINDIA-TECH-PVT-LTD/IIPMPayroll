@@ -22,6 +22,7 @@ const AdminDashboard: React.FC = () => {
   });
   const [recentPayrolls, setRecentPayrolls] = useState<any[]>([]);
   const [recentEmployees, setRecentEmployees] = useState<any[]>([]);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   const now = new Date();
@@ -52,6 +53,12 @@ const AdminDashboard: React.FC = () => {
       const userList = users.status === 'fulfilled' ? users.value : [];
       const payrollList = payrolls.status === 'fulfilled' ? payrolls.value : [];
       
+      const uMap: Record<string, string> = {};
+      userList.forEach((u: any) => {
+        if (u.employeeId) uMap[u.employeeId] = `${u.firstName} ${u.lastName}`.trim();
+      });
+      setUserMap(uMap);
+
       const deptData = deptReport.status === 'fulfilled' ? deptReport.value : null;
       const statsData = statsReport.status === 'fulfilled' ? statsReport.value : null;
 
@@ -68,7 +75,7 @@ const AdminDashboard: React.FC = () => {
         totalNetThisMonth: totalNet,
         totalGrossThisMonth: totalGross,
       });
-      setRecentPayrolls(payrollList.slice(0, 5));
+      setRecentPayrolls(payrollList.slice(0, 8));
 
       // Build Bar Data
       if (statsData && statsData.monthlyCosts) {
@@ -111,10 +118,10 @@ const AdminDashboard: React.FC = () => {
   const isAdminAdmin = userCtx?.role === 'ADMIN_ADMIN';
   const isAdminOp = userCtx?.role === 'ADMIN_OPERATOR';
 
-  const statCards = isFaAdmin ? [
-    { title: 'Pending Approvals', amount: stats.pendingApprovals.toString(), icon: <FileCheck size={24} />, color: '#f59e0b', trend: '', up: true, link: '/approvals' },
+  const statCards = (isFaAdmin || isFaOp) ? [
+    { title: 'Total Monthly Net', amount: fmt(stats.totalNetThisMonth), icon: <Banknote size={24} />, color: '#153C7D', trend: '', up: true, link: '/reports' },
+    { title: 'Pending Salary Approvals', amount: stats.pendingApprovals.toString(), icon: <FileCheck size={24} />, color: '#f59e0b', trend: '', up: true, link: isFaAdmin ? '/approvals' : '/payroll' },
     { title: 'Approved Payrolls', amount: stats.approvedPayrolls.toString(), icon: <CheckSquare size={24} />, color: '#22c55e', trend: '', up: true, link: '/reports' },
-    { title: 'Rejected Payrolls', amount: stats.rejectedPayrolls.toString(), icon: <Ban size={24} />, color: '#ef4444', trend: '', up: false, link: '/reports' },
   ] : [
     { title: 'Total Payrolls', amount: fmt(stats.totalNetThisMonth), icon: <Banknote size={24} />, color: '#153C7D', trend: '', up: true, link: '/reports' },
     { title: 'Pending Payments', amount: stats.pendingApprovals.toString(), icon: <FileCheck size={24} />, color: '#F47C20', trend: '', up: false, link: '/payroll' },
@@ -280,49 +287,113 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Employee List Table */}
+      {/* Role-based Bottom Table: Recent Payroll Register for Finance Roles vs Employee List for Admin Roles */}
       <div className="dashboard-grid" style={{ marginTop: '24px' }}>
         <div className="card-iipm" style={{ padding: '24px', gridColumn: '1 / -1' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0 }}>Employee List</h3>
-            <Link to="/users"><button className="btn-outline-iipm" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>View All</button></Link>
-          </div>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
-          ) : recentEmployees.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              <p>No employees found.</p>
-            </div>
+          {(isFaOp || isFaAdmin) ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Recent Payroll Processing — {monthName} {currentYear}</h3>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Monthly salary overview and disbursal status
+                  </div>
+                </div>
+                <Link to="/payroll">
+                  <button className="btn-accent-iipm" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
+                    Go to Salary Processing →
+                  </button>
+                </Link>
+              </div>
+
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading payroll data...</div>
+              ) : recentPayrolls.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                  <p style={{ marginBottom: '12px' }}>No payroll records created yet for {monthName} {currentYear}.</p>
+                  <Link to="/payroll">
+                    <button className="btn-accent-iipm" style={{ padding: '8px 18px' }}>Start Salary Processing</button>
+                  </Link>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-iipm" style={{ border: 'none' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ background: 'var(--bg-hover)' }}>Employee ID</th>
+                        <th style={{ background: 'var(--bg-hover)' }}>Employee Name</th>
+                        <th style={{ background: 'var(--bg-hover)' }}>Gross Salary</th>
+                        <th style={{ background: 'var(--bg-hover)' }}>Net Salary</th>
+                        <th style={{ background: 'var(--bg-hover)' }}>Status</th>
+                        <th style={{ background: 'var(--bg-hover)' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentPayrolls.map((p) => (
+                        <tr key={p.id}>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 600 }}>{p.employeeId}</td>
+                          <td style={{ fontWeight: 600 }}>{userMap[p.employeeId] || p.employeeName || '—'}</td>
+                          <td>{fmt(p.grossSalary || 0)}</td>
+                          <td style={{ color: 'var(--success)', fontWeight: 700 }}>{fmt(p.netSalary || 0)}</td>
+                          <td><span className={getStatusBadge(p.status)}>{p.status}</span></td>
+                          <td>
+                            <Link to="/payroll">
+                              <button className="btn-outline-iipm" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>
+                                View Details
+                              </button>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="table-iipm" style={{ border: 'none' }}>
-                <thead>
-                  <tr>
-                    <th style={{ background: 'var(--bg-hover)' }}>Employee ID</th>
-                    <th style={{ background: 'var(--bg-hover)' }}>Name</th>
-                    <th style={{ background: 'var(--bg-hover)' }}>Department</th>
-                    <th style={{ background: 'var(--bg-hover)' }}>Designation</th>
-                    <th style={{ background: 'var(--bg-hover)' }}>Role</th>
-                    <th style={{ background: 'var(--bg-hover)' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentEmployees.map((u) => (
-                    <tr key={u.id}>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 600 }}>{u.employeeId}</td>
-                      <td>
-                        <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{u.firstName} {u.lastName}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
-                      </td>
-                      <td>{u.department || '—'}</td>
-                      <td>{u.designation || '—'}</td>
-                      <td><span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', background: 'var(--bg-body)', borderRadius: '4px' }}>{u.role ? u.role.replace('_', ' ') : '—'}</span></td>
-                      <td><span className={u.isActive ? 'badge-iipm badge-success' : 'badge-iipm badge-danger'}>{u.isActive ? 'ACTIVE' : 'INACTIVE'}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0 }}>Employee List</h3>
+                <Link to="/users"><button className="btn-outline-iipm" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>View All</button></Link>
+              </div>
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
+              ) : recentEmployees.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                  <p>No employees found.</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-iipm" style={{ border: 'none' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ background: 'var(--bg-hover)' }}>Employee ID</th>
+                        <th style={{ background: 'var(--bg-hover)' }}>Name</th>
+                        <th style={{ background: 'var(--bg-hover)' }}>Department</th>
+                        <th style={{ background: 'var(--bg-hover)' }}>Designation</th>
+                        <th style={{ background: 'var(--bg-hover)' }}>Role</th>
+                        <th style={{ background: 'var(--bg-hover)' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentEmployees.map((u) => (
+                        <tr key={u.id}>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 600 }}>{u.employeeId}</td>
+                          <td>
+                            <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{u.firstName} {u.lastName}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
+                          </td>
+                          <td>{u.department || '—'}</td>
+                          <td>{u.designation || '—'}</td>
+                          <td><span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', background: 'var(--bg-body)', borderRadius: '4px' }}>{u.role ? u.role.replace('_', ' ') : '—'}</span></td>
+                          <td><span className={u.isActive ? 'badge-iipm badge-success' : 'badge-iipm badge-danger'}>{u.isActive ? 'ACTIVE' : 'INACTIVE'}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

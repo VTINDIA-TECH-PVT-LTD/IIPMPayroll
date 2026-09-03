@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { UserContext } from '../App';
 import api from '../services/api';
-import iipeLogo from '../assets/logo.png';
+import iipeLogo from '../assets/logoBase64';
 import '../styles/Navbar.css';
 import { 
   LayoutDashboard, Users, Settings, Database,
