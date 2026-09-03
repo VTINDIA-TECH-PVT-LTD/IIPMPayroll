@@ -98,13 +98,26 @@ function App() {
     return '';
   };
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <UserContext.Provider value={{ isAuthenticated, role, userId, username }}>
       <Router basename={getBasename()}>
         <div className="App">
-          {isAuthenticated && <Navbar onLogout={handleLogout} />}
+          {isAuthenticated && (
+            <Navbar 
+              onLogout={handleLogout} 
+              isOpen={sidebarOpen} 
+              onClose={() => setSidebarOpen(false)} 
+            />
+          )}
           <div className={isAuthenticated ? 'main-content' : 'auth-wrapper'} style={!isAuthenticated ? { width: '100%', flex: 1 } : {}}>
-            {isAuthenticated && <Topbar onLogout={handleLogout} />}
+            {isAuthenticated && (
+              <Topbar 
+                onLogout={handleLogout} 
+                onToggleSidebar={() => setSidebarOpen(prev => !prev)} 
+              />
+            )}
             <Routes>
               {/* Public */}
               <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage onLogin={handleLogin} />} />

@@ -12,9 +12,11 @@ import {
 
 interface NavbarProps {
   onLogout: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
+const Navbar: React.FC<NavbarProps> = ({ onLogout, isOpen = false, onClose }) => {
   const userCtx = useContext(UserContext);
   const navigate = useNavigate();
   const role = userCtx?.role || '';
@@ -22,7 +24,12 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
 
   const handleLogout = () => {
     onLogout();
+    onClose?.();
     navigate('/login');
+  };
+
+  const handleLinkClick = () => {
+    onClose?.();
   };
 
   const getInitials = (name: string) => name.slice(0, 2).toUpperCase();
@@ -73,99 +80,105 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
   };
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <img src={iipeLogo} alt="IIPE" className="sidebar-brand-logo" />
-        <div className="sidebar-brand-text">
-          <div className="sidebar-brand-name">IIPE Payroll</div>
-          <div className="sidebar-brand-sub">Management System</div>
+    <>
+      {isOpen && <div className="sidebar-backdrop" onClick={onClose} />}
+      <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+        <div className="sidebar-brand">
+          {isOpen && (
+            <button className="sidebar-close-btn" onClick={onClose} aria-label="Close sidebar">✕</button>
+          )}
+          <img src={iipeLogo} alt="IIPE" className="sidebar-brand-logo" />
+          <div className="sidebar-brand-text">
+            <div className="sidebar-brand-name">IIPE Payroll</div>
+            <div className="sidebar-brand-sub">Management System</div>
+          </div>
         </div>
-      </div>
 
-      <nav className="sidebar-nav">
-        <div className="sidebar-section-label">Overview</div>
-        <NavLink to="/" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} end>
-          <span className="sidebar-nav-icon"><LayoutDashboard size={20} /></span> Dashboard
-        </NavLink>
+        <nav className="sidebar-nav">
+          <div className="sidebar-section-label">Overview</div>
+          <NavLink to="/" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} end onClick={handleLinkClick}>
+            <span className="sidebar-nav-icon"><LayoutDashboard size={20} /></span> Dashboard
+          </NavLink>
 
-        {(role === 'SUPER_ADMIN' || role === 'ADMIN_ADMIN' || role === 'ADMIN_OPERATOR') && (
-          <>
-            <div className="sidebar-section-label">Administration</div>
-            <NavLink to="/users" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon"><Users size={20} /></span> Employees
-            </NavLink>
-            {(role === 'SUPER_ADMIN' || role === 'ADMIN_ADMIN') && (
-              <NavLink to="/settings" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon"><Settings size={20} /></span> Settings
+          {(role === 'SUPER_ADMIN' || role === 'ADMIN_ADMIN' || role === 'ADMIN_OPERATOR') && (
+            <>
+              <div className="sidebar-section-label">Administration</div>
+              <NavLink to="/users" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                <span className="sidebar-nav-icon"><Users size={20} /></span> Employees
               </NavLink>
-            )}
-            {(role === 'SUPER_ADMIN' || role === 'ADMIN_ADMIN') && (
-              <NavLink to="/data" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon"><Database size={20} /></span> Data Management
+              {(role === 'SUPER_ADMIN' || role === 'ADMIN_ADMIN') && (
+                <NavLink to="/settings" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                  <span className="sidebar-nav-icon"><Settings size={20} /></span> Settings
+                </NavLink>
+              )}
+              {(role === 'SUPER_ADMIN' || role === 'ADMIN_ADMIN') && (
+                <NavLink to="/data" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                  <span className="sidebar-nav-icon"><Database size={20} /></span> Data Management
+                </NavLink>
+              )}
+            </>
+          )}
+
+          {(role === 'SUPER_ADMIN' || role === 'FA_OPERATOR') && (
+            <>
+              <div className="sidebar-section-label">Payroll Processing</div>
+              <NavLink to="/payroll" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                <span className="sidebar-nav-icon"><Banknote size={20} /></span> Salary Processing
               </NavLink>
-            )}
-          </>
-        )}
+            </>
+          )}
 
-        {(role === 'SUPER_ADMIN' || role === 'FA_OPERATOR') && (
-          <>
-            <div className="sidebar-section-label">Payroll Processing</div>
-            <NavLink to="/payroll" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon"><Banknote size={20} /></span> Salary Processing
-            </NavLink>
-          </>
-        )}
+          {(role === 'SUPER_ADMIN' || role === 'FA_ADMIN' || role === 'FA_OPERATOR') && (
+            <>
+              <div className="sidebar-section-label">Approvals</div>
+              {(role === 'SUPER_ADMIN' || role === 'FA_ADMIN') && (
+                <NavLink to="/approvals" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                  <span className="sidebar-nav-icon"><FileCheck size={20} /></span> Pending Salary
+                </NavLink>
+              )}
+              {(role === 'SUPER_ADMIN' || role === 'FA_OPERATOR') && (
+                <NavLink to="/it-approvals" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                  <span className="sidebar-nav-icon"><CheckSquare size={20} /></span> IT Approvals
+                </NavLink>
+              )}
+            </>
+          )}
 
-        {(role === 'SUPER_ADMIN' || role === 'FA_ADMIN' || role === 'FA_OPERATOR') && (
-          <>
-            <div className="sidebar-section-label">Approvals</div>
-            {(role === 'SUPER_ADMIN' || role === 'FA_ADMIN') && (
-              <NavLink to="/approvals" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon"><FileCheck size={20} /></span> Pending Salary
+          {(role === 'SUPER_ADMIN' || role === 'FA_OPERATOR' || role === 'FA_ADMIN') && (
+            <>
+              {(role === 'SUPER_ADMIN' || role === 'FA_OPERATOR') && (
+                <NavLink to="/arrears" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                  <span className="sidebar-nav-icon"><IndianRupee size={20} /></span> Arrears
+                </NavLink>
+              )}
+              <div className="sidebar-section-label">Reports</div>
+              <NavLink to="/reports" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                <span className="sidebar-nav-icon"><FileText size={20} /></span> Reports
               </NavLink>
-            )}
-            {(role === 'SUPER_ADMIN' || role === 'FA_OPERATOR') && (
-              <NavLink to="/it-approvals" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon"><CheckSquare size={20} /></span> IT Approvals
+            </>
+          )}
+
+          {(role === 'EMPLOYEE' || role === 'SUPER_ADMIN') && (
+            <>
+              <div className="sidebar-section-label">My Payroll</div>
+              <NavLink to="/payslips" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                <span className="sidebar-nav-icon"><Receipt size={20} /></span> My Payslips
               </NavLink>
-            )}
-          </>
-        )}
-
-        {(role === 'SUPER_ADMIN' || role === 'FA_OPERATOR' || role === 'FA_ADMIN') && (
-          <>
-            {(role === 'SUPER_ADMIN' || role === 'FA_OPERATOR') && (
-              <NavLink to="/arrears" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-nav-icon"><IndianRupee size={20} /></span> Arrears
+              <NavLink to="/form16" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                <span className="sidebar-nav-icon"><FileText size={20} /></span> Form 16
               </NavLink>
-            )}
-            <div className="sidebar-section-label">Reports</div>
-            <NavLink to="/reports" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon"><FileText size={20} /></span> Reports
-            </NavLink>
-          </>
-        )}
+              <NavLink to="/it-declaration" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                <span className="sidebar-nav-icon"><FileSignature size={20} /></span> IT Declaration
+              </NavLink>
+              <NavLink to="/it-declaration-history" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                <span className="sidebar-nav-icon"><FileText size={20} /></span> Declaration History
+              </NavLink>
+            </>
+          )}
 
-        {(role === 'EMPLOYEE' || role === 'SUPER_ADMIN') && (
-          <>
-            <div className="sidebar-section-label">My Payroll</div>
-            <NavLink to="/payslips" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon"><Receipt size={20} /></span> My Payslips
-            </NavLink>
-            <NavLink to="/form16" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon"><FileText size={20} /></span> Form 16
-            </NavLink>
-            <NavLink to="/it-declaration" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon"><FileSignature size={20} /></span> IT Declaration
-            </NavLink>
-            <NavLink to="/it-declaration-history" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}>
-              <span className="sidebar-nav-icon"><FileText size={20} /></span> Declaration History
-            </NavLink>
-          </>
-        )}
-
-      </nav>
-    </aside>
+        </nav>
+      </aside>
+    </>
   );
 };
 

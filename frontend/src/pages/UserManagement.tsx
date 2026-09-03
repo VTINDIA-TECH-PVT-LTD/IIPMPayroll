@@ -419,7 +419,7 @@ const UserManagement: React.FC = () => {
                 {/* Section: Personal */}
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Personal Information</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                     <div><label className="form-label-iipm">First Name *</label><input className="form-control-iipm" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} required /></div>
                     <div><label className="form-label-iipm">Last Name</label><input className="form-control-iipm" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} /></div>
                     <div>
@@ -453,7 +453,7 @@ const UserManagement: React.FC = () => {
                 {(apiService.isAdminAdmin() || apiService.isSuperAdmin() || (editUser && apiService.isAdminOperator())) && (
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Official Payroll Details</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                     <div><label className="form-label-iipm">Staff Type (Function)</label>
                       <select className="form-control-iipm" value={form.function} onChange={e => setForm({ ...form, function: e.target.value })} disabled={apiService.isAdminOperator()}>
                         <option value="Faculty">Faculty</option>
@@ -473,7 +473,7 @@ const UserManagement: React.FC = () => {
                 {(apiService.isAdminAdmin() || apiService.isSuperAdmin() || (editUser && apiService.isAdminOperator())) && (
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Employment Details</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                     <div><label className="form-label-iipm">Department</label>
                       <select className="form-control-iipm" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} disabled={apiService.isAdminOperator()}>
                         <option value="">Select...</option>
@@ -505,7 +505,7 @@ const UserManagement: React.FC = () => {
                 {(apiService.isAdminAdmin() || apiService.isSuperAdmin() || (editUser && apiService.isAdminOperator())) && (
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Salary — 7th CPC Pay Matrix</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                     <div><label className="form-label-iipm">Pay Level</label>
                       <select className="form-control-iipm" value={form.payLevel} onChange={e => setForm({ ...form, payLevel: e.target.value })} disabled={apiService.isAdminOperator()}>
                         {levels.map(l => <option key={l} value={l}>Level {l} {l <= '5' ? '(Group C)' : l <= '9' ? '(Group B)' : '(Group A)'}</option>)}
@@ -537,7 +537,7 @@ const UserManagement: React.FC = () => {
                 {(apiService.isAdminAdmin() || apiService.isSuperAdmin() || (editUser && apiService.isAdminOperator())) && (
                 <div>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Bank Details</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                     <div><label className="form-label-iipm">Bank Name</label><input className="form-control-iipm" value={form.bankName} onChange={e => setForm({ ...form, bankName: e.target.value })} disabled={apiService.isAdminOperator()} /></div>
                     <div><label className="form-label-iipm">Account Number</label><input className="form-control-iipm" value={form.bankAccountNumber} onChange={e => setForm({ ...form, bankAccountNumber: e.target.value })} disabled={apiService.isAdminOperator()} /></div>
                     <div><label className="form-label-iipm">IFSC Code</label><input className="form-control-iipm" value={form.ifscCode} onChange={e => setForm({ ...form, ifscCode: e.target.value.toUpperCase() })} disabled={apiService.isAdminOperator()} /></div>

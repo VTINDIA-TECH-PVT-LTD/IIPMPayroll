@@ -2,10 +2,12 @@ import React, { useContext, useState, useRef, useEffect, useCallback } from 'rea
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../App';
 import api from '../services/api';
+import { Menu } from 'lucide-react';
 import '../styles/Topbar.css';
 
 interface TopbarProps {
   onLogout: () => void;
+  onToggleSidebar?: () => void;
 }
 
 const typeIcon: Record<string, string> = {
@@ -24,7 +26,7 @@ const typeIcon: Record<string, string> = {
 
 const getIcon = (type: string) => typeIcon[type] || typeIcon.DEFAULT;
 
-const Topbar: React.FC<TopbarProps> = ({ onLogout }) => {
+const Topbar: React.FC<TopbarProps> = ({ onLogout, onToggleSidebar }) => {
   const userCtx = useContext(UserContext);
   const navigate = useNavigate();
   const role = userCtx?.role || '';
@@ -149,6 +151,17 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout }) => {
   return (
     <header className="topbar">
       <div className="topbar-left">
+        {onToggleSidebar && (
+          <button 
+            className="topbar-hamburger-btn" 
+            onClick={onToggleSidebar}
+            aria-label="Toggle navigation menu"
+            type="button"
+          >
+            <Menu size={22} />
+          </button>
+        )}
+        <div className="topbar-title-mobile">IIPE Payroll</div>
       </div>
 
       <div className="topbar-right">

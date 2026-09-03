@@ -158,3 +158,53 @@
 }
 .action-card-premium .action-title { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 2px; }
 .action-card-premium .action-desc { font-size: 0.8rem; color: var(--text-secondary); }
+
+/* ===== RESPONSIVE DASHBOARD ===== */
+@media (max-width: 768px) {
+  .welcome-banner {
+    padding: 20px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+  }
+  .welcome-banner h1 {
+    font-size: 1.45rem;
+  }
+  .welcome-banner p {
+    font-size: 0.92rem;
+  }
+  .stat-card-dribbble {
+    padding: 16px;
+    border-radius: var(--radius);
+  }
+  .stat-amount {
+    font-size: 1.55rem;
+  }
+  .chart-card {
+    padding: 16px;
+    border-radius: var(--radius);
+  }
+  .chart-card h3 {
+    margin-bottom: 16px;
+    font-size: 1.05rem;
+  }
+  .action-card-premium {
+    padding: 12px;
+  }
+  .action-card-premium .action-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-banner h1 {
+    font-size: 1.25rem;
+  }
+  .stat-amount {
+    font-size: 1.35rem;
+  }
+}
