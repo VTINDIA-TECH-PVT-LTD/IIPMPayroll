@@ -8,7 +8,8 @@ const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 
 const ReportsPage: React.FC = () => {
   const userCtx = useContext(UserContext);
-  const [tab, setTab] = useState<'register' | 'nps' | 'tds' | 'dept' | 'ytd' | 'comparison'>('register');
+  const [tab, setTab] = useState<'register' | 'bank' | 'nps' | 'tds' | 'dept' | 'ytd' | 'comparison'>('register');
+  const [bankCategoryFilter, setBankCategoryFilter] = useState<'all' | 'faculty' | 'staff' | 'contract'>('all');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [userId, setUserId] = useState<string>('');
@@ -32,7 +33,7 @@ const ReportsPage: React.FC = () => {
     setLoading(true); setData(null); setMsg(null);
     try {
       let result: any;
-      if (tab === 'register') result = await apiService.getSalaryRegister(month, year);
+      if (tab === 'register' || tab === 'bank') result = await apiService.getSalaryRegister(month, year);
       else if (tab === 'nps')  result = await apiService.getNPSReport(year);
       else if (tab === 'tds')  result = await apiService.getTDSReport(year);
       else if (tab === 'dept') result = await apiService.getDepartmentReport(month, year);
@@ -41,12 +42,20 @@ const ReportsPage: React.FC = () => {
         if (!userId) { setLoading(false); return; }
         result = await apiService.getSalaryComparison(userId);
       }
-      // For register, attach user details to payroll data
-      if (tab === 'register' && (result?.data || result)) {
+      // For register and bank, attach user details to payroll data
+      if ((tab === 'register' || tab === 'bank') && (result?.data || result)) {
         const payload = result.data || result;
         payload.payrolls = payload.payrolls?.map((p: any) => {
-          const emp = employees.find(e => e.employeeId === p.employeeId);
-          return { ...p, designation: emp?.designation || '', payLevel: emp?.payLevel || '', staffFunction: emp?.function || '' };
+          const emp = employees.find(e => e.employeeId === p.employeeId || e.id === p.userId);
+          return { 
+            ...p, 
+            designation: emp?.designation || '', 
+            payLevel: emp?.payLevel || '', 
+            staffFunction: emp?.function || emp?.employeeType || '',
+            bankName: emp?.bankName || 'State Bank of India',
+            bankAccountNumber: emp?.bankAccountNumber || '',
+            ifscCode: emp?.ifscCode || 'SBIN0003170'
+          };
         });
         setData(payload);
       } else {
@@ -66,6 +75,7 @@ const ReportsPage: React.FC = () => {
 
   const tabList = [
     { key: 'register', label: '📋 Salary Register' },
+    { key: 'bank',     label: '💳 Bank Payment Sheet' },
     { key: 'nps',      label: '🏦 NPS Report' },
     { key: 'tds',      label: '📊 TDS Report' },
     { key: 'dept',     label: '🏢 Department-wise' },
@@ -219,6 +229,139 @@ const ReportsPage: React.FC = () => {
     XLSX.writeFile(wb, `INDIAN_INSTITUTE_OF_PETROLEUM_AND_ENERGY_Salary_${months[month-1]}_${year}.xlsx`);
   };
 
+  const exportBankPaymentSheetToExcel = () => {
+    if (!data || !data.payrolls) return;
+    const wb = XLSX.utils.book_new();
+
+    const filtered = data.payrolls.filter((p: any) => {
+      const isContract = (p.employeeType || p.staffFunction || '').toLowerCase().includes('contract') || (p.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
+      const isFaculty = (p.employeeId || '').startsWith('TS') && !isContract;
+      if (bankCategoryFilter === 'faculty') return isFaculty;
+      if (bankCategoryFilter === 'staff') return !isFaculty && !isContract;
+      if (bankCategoryFilter === 'contract') return isContract;
+      return true;
+    });
+
+    const exportRows = filtered.map((p: any, idx: number) => ({
+      'Sl. No.': idx + 1,
+      'Employee ID': p.employeeId,
+      'Employee Name': p.employeeName || `${p.firstName || ''} ${p.lastName || ''}`.trim(),
+      'Designation': p.designation || '-',
+      'Bank Name': p.bankName || 'State Bank of India',
+      'Bank Account Number': p.bankAccountNumber || '-',
+      'IFSC Code': p.ifscCode || 'SBIN0003170',
+      'Net Amount Payable (Rs.)': p.netSalary || 0,
+    }));
+
+    const totalNet = filtered.reduce((s: number, p: any) => s + (p.netSalary || 0), 0);
+    exportRows.push({
+      'Sl. No.': 'TOTAL',
+      'Employee ID': '',
+      'Employee Name': '',
+      'Designation': '',
+      'Bank Name': '',
+      'Bank Account Number': '',
+      'IFSC Code': '',
+      'Net Amount Payable (Rs.)': totalNet,
+    } as any);
+
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    XLSX.utils.book_append_sheet(wb, ws, `Bank_Advice_${shortMonths[month - 1]}_${year}`);
+    XLSX.writeFile(wb, `IIPE_Bank_Payment_Advice_${months[month - 1]}_${year}.xlsx`);
+  };
+
+  const printBankAdviceLetter = () => {
+    if (!data || !data.payrolls) return;
+    const filtered = data.payrolls.filter((p: any) => {
+      const isContract = (p.employeeType || p.staffFunction || '').toLowerCase().includes('contract') || (p.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
+      const isFaculty = (p.employeeId || '').startsWith('TS') && !isContract;
+      if (bankCategoryFilter === 'faculty') return isFaculty;
+      if (bankCategoryFilter === 'staff') return !isFaculty && !isContract;
+      if (bankCategoryFilter === 'contract') return isContract;
+      return true;
+    });
+    const totalAmount = filtered.reduce((s: number, p: any) => s + (p.netSalary || 0), 0);
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Bank Payment Advice - ${months[month - 1]} ${year}</title>
+        <style>
+          body { font-family: 'Times New Roman', serif; font-size: 11pt; margin: 20mm 15mm; color: #000; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
+          .title { font-size: 15pt; font-weight: bold; margin-bottom: 4px; }
+          .subtitle { font-size: 10pt; }
+          .ref-table { width: 100%; margin-bottom: 15px; font-size: 10.5pt; }
+          .advice-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 9.5pt; }
+          .advice-table th, .advice-table td { border: 1px solid #000; padding: 5px 6px; }
+          .text-right { text-align: right; }
+          .text-center { text-align: center; }
+          .bold { font-weight: bold; }
+          .sig-container { display: flex; justify-content: space-between; margin-top: 50px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">INDIAN INSTITUTE OF PETROLEUM AND ENERGY</div>
+          <div class="subtitle">2nd Floor, AU Engg College Main Block, Andhra University, Visakhapatnam - 530003</div>
+        </div>
+        <table class="ref-table">
+          <tr>
+            <td>Ref No: IIPE/PAYROLL/${year}/${shortMonths[month - 1].toUpperCase()}</td>
+            <td class="text-right">Date: ${new Date().toLocaleDateString('en-GB')}</td>
+          </tr>
+        </table>
+        <p>To,<br><b>The Branch Manager,</b><br>State Bank of India,<br>AU College of Engineering Campus Branch,<br>Visakhapatnam - 530003</p>
+        <p><b>Dear Sir,</b></p>
+        <p>We authorize you to debit IIPE Revenue Current Account No. <b>39877553958</b> and remit the following net salary amounts to the respective bank accounts of our employees towards <b>${months[month - 1]} ${year}</b> Salaries:</p>
+        <table class="advice-table">
+          <thead>
+            <tr style="background:#f2f2f2;">
+              <th class="text-center" style="width:5%;">Sl.No</th>
+              <th class="text-center" style="width:10%;">Emp ID</th>
+              <th>Employee Name</th>
+              <th>Bank Name</th>
+              <th>Account Number</th>
+              <th class="text-center">IFSC Code</th>
+              <th class="text-right" style="width:15%;">Net Amount (Rs.)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map((p: any, idx: number) => `
+              <tr>
+                <td class="text-center">${idx + 1}</td>
+                <td class="text-center">${p.employeeId}</td>
+                <td><b>${p.employeeName || (p.firstName + ' ' + p.lastName)}</b></td>
+                <td>${p.bankName || 'State Bank of India'}</td>
+                <td>${p.bankAccountNumber || '-'}</td>
+                <td class="text-center">${p.ifscCode || 'SBIN0003170'}</td>
+                <td class="text-right bold">${Number(p.netSalary || 0).toLocaleString('en-IN')}</td>
+              </tr>
+            `).join('')}
+            <tr style="background:#f9f9f9;">
+              <td colspan="6" class="bold text-center">TOTAL DISBURSEMENT AMOUNT</td>
+              <td class="text-right bold" style="font-size:11pt;">₹ ${Number(totalAmount).toLocaleString('en-IN')}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin-top:20px;">Yours Faithfully,<br><b>For Indian Institute of Petroleum and Energy</b></p>
+        <div class="sig-container" style="margin-top:50px;">
+          <div>_______________________<br><b>Prepared / Verified By</b><br>F&A Section</div>
+          <div style="text-align:center;">_______________________<br><b>Finance & Accounts Officer</b></div>
+          <div style="text-align:right;">_______________________<br><b>Registrar / Authorized Signatory</b></div>
+        </div>
+      </body>
+      </html>
+    `;
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.print();
+    }
+  };
+
   return (
     <div className="page-container">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -357,6 +500,146 @@ const ReportsPage: React.FC = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* ===== BANK PAYMENT SHEET ===== */}
+      {tab === 'bank' && data && (
+        <div>
+          {/* Header Action Bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {(['all', 'faculty', 'staff', 'contract'] as const).map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setBankCategoryFilter(cat)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    border: `1.5px solid ${bankCategoryFilter === cat ? '#0a3161' : '#e2e8f0'}`,
+                    background: bankCategoryFilter === cat ? '#0a3161' : '#ffffff',
+                    color: bankCategoryFilter === cat ? '#ffffff' : '#475569',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {cat === 'all' ? 'All Employees' : cat === 'faculty' ? 'Teaching Faculty' : cat === 'staff' ? 'Non-Teaching Staff' : 'Contract Staff'}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn-outline-iipm" onClick={exportBankPaymentSheetToExcel} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                📊 Export Bank Excel
+              </button>
+              <button className="btn-accent-iipm" onClick={printBankAdviceLetter} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                📄 Print Bank Advice Letter
+              </button>
+            </div>
+          </div>
+
+          {/* Bank Summary Cards */}
+          {(() => {
+            const filteredPayrolls = (data.payrolls || []).filter((p: any) => {
+              const isContract = (p.employeeType || p.staffFunction || '').toLowerCase().includes('contract') || (p.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
+              const isFaculty = (p.employeeId || '').startsWith('TS') && !isContract;
+              if (bankCategoryFilter === 'faculty') return isFaculty;
+              if (bankCategoryFilter === 'staff') return !isFaculty && !isContract;
+              if (bankCategoryFilter === 'contract') return isContract;
+              return true;
+            });
+            const totalDisbursement = filteredPayrolls.reduce((sum: number, p: any) => sum + (p.netSalary || 0), 0);
+            const sbiCount = filteredPayrolls.filter((p: any) => (p.bankName || '').toLowerCase().includes('state bank') || (p.ifscCode || '').startsWith('SBIN')).length;
+            const otherBankCount = filteredPayrolls.length - sbiCount;
+
+            return (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                  <div className="stat-card">
+                    <div className="stat-label">Total Beneficiaries</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem', color: '#0a3161' }}>{filteredPayrolls.length} Employees</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">Total Net Salary Disbursement</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem', color: '#16a34a' }}>{fmt(totalDisbursement)}</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">SBI AUCE Campus Remittance</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem', color: '#3b82f6' }}>{sbiCount} Accounts</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">Other Bank Branches</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem', color: '#f59e0b' }}>{otherBankCount} Accounts</div>
+                  </div>
+                </div>
+
+                <div className="card-iipm" style={{ padding: '0', overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: '#f8fafc' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a' }}>
+                      Bank Remittance Schedule — {months[month - 1]} {year}
+                    </h3>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      Debit Account: IIPE Revenue Current Account (No. 39877553958) | State Bank of India
+                    </p>
+                  </div>
+
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="table-iipm" style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ background: '#f1f5f9' }}>
+                          <th>Sl. No.</th>
+                          <th>Emp ID</th>
+                          <th>Employee Name</th>
+                          <th>Designation</th>
+                          <th>Bank Name</th>
+                          <th>Bank Account Number</th>
+                          <th>IFSC Code</th>
+                          <th style={{ textAlign: 'right' }}>Net Amount Payable (₹)</th>
+                          <th style={{ textAlign: 'center' }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPayrolls.map((p: any, i: number) => (
+                          <tr key={p.employeeId || i}>
+                            <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                            <td style={{ fontWeight: 600 }}>{p.employeeId}</td>
+                            <td style={{ fontWeight: 600 }}>{p.employeeName || `${p.firstName || ''} ${p.lastName || ''}`.trim()}</td>
+                            <td>{p.designation || '-'}</td>
+                            <td>{p.bankName || 'State Bank of India'}</td>
+                            <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0f172a' }}>
+                              {p.bankAccountNumber || <span style={{ color: '#ef4444' }}>Not Configured</span>}
+                            </td>
+                            <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{p.ifscCode || 'SBIN0003170'}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>{fmt(p.netSalary)}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: p.status === 'APPROVED' ? '#dcfce7' : '#fef3c7', color: p.status === 'APPROVED' ? '#166534' : '#92400e' }}>
+                                {p.status || 'PROCESSED'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {!filteredPayrolls.length && (
+                          <tr>
+                            <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                              No bank payment records found for the selected category.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                          <td colSpan={7} style={{ padding: '12px 16px', color: 'var(--accent)' }}>TOTAL DISBURSEMENT AMOUNT</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'right', color: '#16a34a', fontSize: '1rem' }}>{fmt(totalDisbursement)}</td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </div>
       )}
 
       {/* ===== NPS REPORT ===== */}
