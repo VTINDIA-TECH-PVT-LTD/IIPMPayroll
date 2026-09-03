@@ -31,11 +31,15 @@ public class PdfGenerator {
         Font largeBold = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
 
         // Header
-        Paragraph title = new Paragraph("Indian Institute of Petroleum and Energy", largeBold);
+        Paragraph title = new Paragraph("INDIAN INSTITUTE OF PETROLEUM AND ENERGY", largeBold);
         title.setAlignment(Element.ALIGN_CENTER);
         document.add(title);
 
-        Paragraph address = new Paragraph("EAB, Vangali\nSabbavaram\nAnakapalle\n531035\nE-Mail : js@iipe.ac.in,fo@iipe.ac.in", smallFont);
+        Paragraph subTitle = new Paragraph("(An Institute of National Importance at par with IITs)\nMinistry of Petroleum and Natural Gas, Government of India", boldFont);
+        subTitle.setAlignment(Element.ALIGN_CENTER);
+        document.add(subTitle);
+
+        Paragraph address = new Paragraph("2nd Floor, AU Engg College Main Block, Andhra University, Visakhapatnam – 530003, A.P., India\nE-Mail : fa@iipe.ac.in, info@iipe.ac.in | Website: www.iipe.ac.in", smallFont);
         address.setAlignment(Element.ALIGN_CENTER);
         document.add(address);
 
@@ -48,7 +52,7 @@ public class PdfGenerator {
         paySlipTitle.setAlignment(Element.ALIGN_CENTER);
         document.add(paySlipTitle);
 
-        Paragraph paySlipPeriod = new Paragraph("for " + monthName + "-" + year, normalFont);
+        Paragraph paySlipPeriod = new Paragraph("for " + monthName + " " + year, normalFont);
         paySlipPeriod.setAlignment(Element.ALIGN_CENTER);
         document.add(paySlipPeriod);
 
@@ -64,15 +68,15 @@ public class PdfGenerator {
         PdfPTable infoTable = new PdfPTable(4);
         infoTable.setWidthPercentage(100);
         try {
-            infoTable.setWidths(new float[]{2f, 3f, 2f, 3f});
+            infoTable.setWidths(new float[]{2.2f, 2.8f, 2.2f, 2.8f});
         } catch (DocumentException e) {}
 
-        addInfoRow(infoTable, "Employee Number", payslipData.get("employeeId"), "Tax Regime", "Regular Tax Regime", normalFont);
-        addInfoRow(infoTable, "Function", "Regular", "Income Tax Number (PAN)", payslipData.get("pan"), normalFont);
-        addInfoRow(infoTable, "Designation", payslipData.get("designation"), "Pay Level", payslipData.get("payLevel"), normalFont);
-        addInfoRow(infoTable, "Location", "Visakhapatnam", "PF account number", "", normalFont);
-        addInfoRow(infoTable, "Bank Details", payslipData.get("bankAccount"), "Department", payslipData.get("department"), normalFont);
-        addInfoRow(infoTable, "Date of joining", payslipData.get("dateOfJoining"), "PR Account Number (PRAN)", payslipData.get("pran"), normalFont);
+        addInfoRow(infoTable, "Employee Number", payslipData.get("employeeId"), "Date of Joining", payslipData.get("dateOfJoining"), normalFont);
+        addInfoRow(infoTable, "Designation", payslipData.get("designation"), "Date of Next Increment", payslipData.get("dateOfNextIncrement") != null ? payslipData.get("dateOfNextIncrement") : "01-Jul-" + year, normalFont);
+        addInfoRow(infoTable, "Department", payslipData.get("department") != null ? payslipData.get("department") : "Finance & Accounts", "PAN Number", payslipData.get("pan"), normalFont);
+        addInfoRow(infoTable, "Category", payslipData.get("category") != null ? payslipData.get("category") : "Non-Teaching Staff", "PRAN / NPS Number", payslipData.get("pran"), normalFont);
+        addInfoRow(infoTable, "Pay Level", "Level-" + payslipData.get("payLevel"), "Tax Regime", payslipData.get("taxRegime") != null ? payslipData.get("taxRegime") : "New Tax Regime", normalFont);
+        addInfoRow(infoTable, "Bank Details", payslipData.get("bankAccount"), "Pay Drawn (Days)", "30 / 30 Days", normalFont);
 
         document.add(infoTable);
         document.add(new Paragraph("\n"));
