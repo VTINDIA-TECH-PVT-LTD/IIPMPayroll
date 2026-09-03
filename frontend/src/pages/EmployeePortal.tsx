@@ -195,9 +195,9 @@ const EmployeePortal: React.FC = () => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 440px;
+    width: 480px;
     max-width: 80%;
-    opacity: 0.08;
+    opacity: 0.16;
     pointer-events: none;
     z-index: 0;
   }
@@ -205,7 +205,7 @@ const EmployeePortal: React.FC = () => {
   /* --- HEADER --- */
   .header-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1; border-bottom: 2px solid #0a3161; padding-bottom: 10px; }
   .header-left { display: flex; align-items: center; gap: 14px; }
-  .header-left img { width: 75px; height: 75px; object-fit: contain; }
+  .header-left img { width: 85px; height: 85px; object-fit: contain; }
   .header-text h1 { font-size: 15px; font-weight: 800; color: #0a3161; line-height: 1.2; margin-bottom: 3px; }
   .header-text .inst-sub { font-size: 9px; font-weight: 700; color: #b45309; margin-bottom: 2px; }
   .header-text .inst-min { font-size: 8.5px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
@@ -305,15 +305,15 @@ const EmployeePortal: React.FC = () => {
 </style></head>
 <body>
 <div class="page">
-  <img src="${logoSrc}" class="watermark" alt="Watermark" onerror="this.style.display='none'"/>
+  <img src="${logoSrc}" class="watermark" alt="Watermark"/>
   
   <!-- Header -->
   <div class="header-box">
     <div class="header-left">
-      <img src="${logoSrc}" alt="Logo" style="width:75px;height:75px;object-fit:contain;"/>
+      <img src="${logoSrc}" alt="Logo" style="width:85px;height:85px;object-fit:contain;"/>
       <div class="header-text">
         <h1>INDIAN INSTITUTE OF PETROLEUM AND ENERGY</h1>
-        <div class="inst-sub">(An Institute of National Importance at par with IITs)</div>
+        <div class="inst-sub">(An Institute of National Importance at par with IITs/IIMs)</div>
         <div class="inst-min">Ministry of Petroleum and Natural Gas, Government of India</div>
         <div class="inst-addr">2nd Floor, AU Engg College Main Block, Andhra University, Visakhapatnam &ndash; 530003, A.P., India</div>
         <div class="inst-contact"><span>E-mail:</span> dr.finance@iipe.ac.in &nbsp;|&nbsp; <span>Website:</span> www.iipe.ac.in</div>

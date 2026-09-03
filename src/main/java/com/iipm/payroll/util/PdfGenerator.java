@@ -35,7 +35,7 @@ public class PdfGenerator {
         title.setAlignment(Element.ALIGN_CENTER);
         document.add(title);
 
-        Paragraph subTitle = new Paragraph("(An Institute of National Importance at par with IITs)\nMinistry of Petroleum and Natural Gas, Government of India", boldFont);
+        Paragraph subTitle = new Paragraph("(An Institute of National Importance at par with IITs/IIMs)\nMinistry of Petroleum and Natural Gas, Government of India", boldFont);
         subTitle.setAlignment(Element.ALIGN_CENTER);
         document.add(subTitle);
 
