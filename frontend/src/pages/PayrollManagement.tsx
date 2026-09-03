@@ -35,8 +35,17 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   // Filters
   const [department, setDepartment] = useState('');
   const [payLevelBand, setPayLevelBand] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'regular' | 'contract'>('all');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
+
+  const isContractUser = (u: any) => {
+    const et = (u?.employeeType || '').toLowerCase();
+    const pl = (u?.payLevel || '').toLowerCase();
+    const fn = (u?.function || '').toLowerCase();
+    const dept = (u?.department || '').toLowerCase();
+    return et.includes('contract') || pl.includes('consolidated') || pl.includes('contract') || pl.includes('fixed') || fn.includes('contract') || dept.includes('contract');
+  };
 
   // Employees & Payroll rows
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -70,6 +79,12 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   });
   const pendingCount = rows.filter(row => !payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId)).length;
   const processedCount = rows.filter(row => payrolls.some((p: any) => p.userId === row.user.id || p.employeeId === row.user.employeeId)).length;
+
+  const filteredPayrolls = payrolls.filter((p: any) => {
+    if (categoryFilter === 'regular') return !isContractUser(p);
+    if (categoryFilter === 'contract') return isContractUser(p);
+    return true;
+  });
 
   useEffect(() => { loadPayrolls(); }, [month, year, tab]);
   useEffect(() => {
@@ -107,6 +122,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
         if (!u.isActive || !u.basicPay) return false;
         if (department && u.department !== department) return false;
         if (payLevelBand && !matchesBand(u.payLevel, payLevelBand)) return false;
+        if (categoryFilter === 'regular' && isContractUser(u)) return false;
+        if (categoryFilter === 'contract' && !isContractUser(u)) return false;
         return true;
       });
       setEmployees(filtered);
@@ -213,8 +230,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     PENDING: '#f59e0b', APPROVED: '#22c55e', REJECTED: '#ef4444', LOCKED: '#8b5cf6', SUBMITTED: '#3b82f6'
   };
 
-  const totalPages = Math.max(1, Math.ceil(payrolls.length / itemsPerPage));
-  const currentPayrolls = payrolls.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredPayrolls.length / itemsPerPage));
+  const currentPayrolls = filteredPayrolls.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleSelectAllPayrolls = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) setSelectedPayrolls(payrolls.map(p => p.id));
@@ -343,6 +360,14 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                 <select className="form-control-iipm" value={department} onChange={e => setDepartment(e.target.value)}>
                   <option value="">All Departments</option>
                   {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="form-label-iipm">Category</label>
+                <select className="form-control-iipm" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value as any)}>
+                  <option value="all">All Personnel</option>
+                  <option value="regular">👔 Regular Staff & Faculty</option>
+                  <option value="contract">📄 Contract Staff</option>
                 </select>
               </div>
               <div>
@@ -584,6 +609,33 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
               <input type="number" className="form-control-iipm" value={year} onChange={e => setYear(+e.target.value)} style={{ width: '100px' }} />
             </div>
             <button className="btn-outline-iipm" onClick={loadPayrolls}>Refresh</button>
+
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={() => setCategoryFilter('all')}
+                className={`btn-iipm ${categoryFilter === 'all' ? 'btn-accent-iipm' : 'btn-outline-iipm'}`}
+                style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+              >
+                All ({payrolls.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategoryFilter('regular')}
+                className={`btn-iipm ${categoryFilter === 'regular' ? 'btn-accent-iipm' : 'btn-outline-iipm'}`}
+                style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+              >
+                👔 Regular ({payrolls.filter(p => !isContractUser(p)).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategoryFilter('contract')}
+                className={`btn-iipm ${categoryFilter === 'contract' ? 'btn-accent-iipm' : 'btn-outline-iipm'}`}
+                style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+              >
+                📄 Contract ({payrolls.filter(p => isContractUser(p)).length})
+              </button>
+            </div>
           </div>
 
           <div className="card-iipm" style={{ padding: '0', maxWidth: '100%', overflow: 'hidden' }}>

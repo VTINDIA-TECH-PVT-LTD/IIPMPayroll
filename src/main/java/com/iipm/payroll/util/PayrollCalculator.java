@@ -151,6 +151,12 @@ public class PayrollCalculator {
 
     /** CGHS Deduction based on Pay Level */
     public double calculateCGHS(String payLevel) {
+        if (payLevel == null || payLevel.isBlank()) return 250.0;
+        if (payLevel.equalsIgnoreCase("Consolidated") ||
+            payLevel.equalsIgnoreCase("Contract") ||
+            payLevel.equalsIgnoreCase("Fixed")) {
+            return 0.0;
+        }
         int level = parseLevelNumber(payLevel);
         if (level >= 12) return 1000.0;
         if (level >= 7) return 650.0;
@@ -320,10 +326,12 @@ public class PayrollCalculator {
 
     private int parseLevelNumber(String payLevel) {
         if (payLevel == null || payLevel.isBlank()) return 10;
-        String cleaned = payLevel.replaceAll("[^0-9]", "");
-        if (cleaned.isEmpty()) return 10;
-        try { return Integer.parseInt(cleaned); }
-        catch (NumberFormatException e) { return 10; }
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)").matcher(payLevel);
+        if (m.find()) {
+            try { return Integer.parseInt(m.group(1)); }
+            catch (Exception e) {}
+        }
+        return 10;
     }
 
     private void updateConfiguration(Map<String, Double> settings) {

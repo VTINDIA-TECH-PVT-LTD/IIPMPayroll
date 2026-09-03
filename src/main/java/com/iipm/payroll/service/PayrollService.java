@@ -232,7 +232,8 @@ public class PayrollService {
             boolean levelMatch = true;
             if (payLevelBand != null && !payLevelBand.isEmpty() && user.getPayLevel() != null) {
                 try {
-                    int l = Integer.parseInt(user.getPayLevel());
+                    String cleanLevel = user.getPayLevel().replaceAll("\\D+", "");
+                    int l = Integer.parseInt(cleanLevel);
                     if (payLevelBand.equals("1 to 5")) levelMatch = (l >= 1 && l <= 5);
                     else if (payLevelBand.equals("6 to 9")) levelMatch = (l >= 6 && l <= 9);
                     else if (payLevelBand.equals("10 to 17")) levelMatch = (l >= 10 && l <= 17);

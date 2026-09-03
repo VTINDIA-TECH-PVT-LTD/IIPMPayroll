@@ -108,10 +108,27 @@ const UserManagement: React.FC = () => {
     } catch { setMsg({ type: 'error', text: 'Update failed.' }); }
   };
 
-  const filtered = users.filter(u =>
-    `${u.firstName} ${u.lastName} ${u.employeeId} ${u.department} ${u.designation} ${u.role}`
-      .toLowerCase().includes(search.toLowerCase())
-  );
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'regular' | 'contract'>('all');
+
+  const isContractUser = (u: any) => {
+    const et = (u.employeeType || '').toLowerCase();
+    const pl = (u.payLevel || '').toLowerCase();
+    const fn = (u.function || '').toLowerCase();
+    const dept = (u.department || '').toLowerCase();
+    return et.includes('contract') || pl.includes('consolidated') || pl.includes('contract') || pl.includes('fixed') || fn.includes('contract') || dept.includes('contract');
+  };
+
+  const filtered = users.filter(u => {
+    const matchesSearch = `${u.firstName} ${u.lastName} ${u.employeeId} ${u.department} ${u.designation} ${u.role}`
+      .toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    if (categoryFilter === 'regular') return !isContractUser(u) && u.role !== 'SUPER_ADMIN' && u.role !== 'ADMIN_ADMIN' && u.role !== 'ADMIN_OPERATOR';
+    if (categoryFilter === 'contract') return isContractUser(u);
+    return true;
+  });
+
+  const regularCount = users.filter(u => !isContractUser(u) && u.role !== 'SUPER_ADMIN' && u.role !== 'ADMIN_ADMIN' && u.role !== 'ADMIN_OPERATOR').length;
+  const contractCount = users.filter(u => isContractUser(u)).length;
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   const currentData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -253,12 +270,40 @@ const UserManagement: React.FC = () => {
         </div>
       )}
 
+      {/* Category Bifurcation Tabs */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+        <button
+          type="button"
+          onClick={() => { setCategoryFilter('all'); setCurrentPage(1); }}
+          className={`btn-iipm ${categoryFilter === 'all' ? 'btn-accent-iipm' : 'btn-outline-iipm'}`}
+          style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+        >
+          All Employees ({users.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => { setCategoryFilter('regular'); setCurrentPage(1); }}
+          className={`btn-iipm ${categoryFilter === 'regular' ? 'btn-accent-iipm' : 'btn-outline-iipm'}`}
+          style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+        >
+          👔 Regular (Faculty & Staff) ({regularCount})
+        </button>
+        <button
+          type="button"
+          onClick={() => { setCategoryFilter('contract'); setCurrentPage(1); }}
+          className={`btn-iipm ${categoryFilter === 'contract' ? 'btn-accent-iipm' : 'btn-outline-iipm'}`}
+          style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+        >
+          📄 Contract Staff ({contractCount})
+        </button>
+      </div>
+
       {/* Search + Stats */}
       <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', alignItems: 'center' }}>
         <input className="form-control-iipm" placeholder="🔍  Search by name, ID, department..." value={search}
           onChange={e => setSearch(e.target.value)} style={{ maxWidth: '400px' }} />
         <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginLeft: 'auto' }}>
-          {filtered.length} of {users.length} employees
+          Showing {filtered.length} of {users.length} total
         </span>
       </div>
 
