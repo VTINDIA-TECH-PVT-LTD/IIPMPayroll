@@ -99,6 +99,25 @@ const EmployeePortal: React.FC = () => {
     return inWords(num).trim();
   };
 
+  const getLastWorkingDayOfMonth = (year: number, month: number): Date => {
+    // month is 1-indexed (1 = Jan, ..., 12 = Dec)
+    const d = new Date(year, month, 0); // Last day of month
+    // Saturday (6) and Sunday (0) are holidays -> step back to Friday
+    if (d.getDay() === 6) {
+      d.setDate(d.getDate() - 1);
+    } else if (d.getDay() === 0) {
+      d.setDate(d.getDate() - 2);
+    }
+    return d;
+  };
+
+  const formatPayDate = (year: number, month: number): string => {
+    const d = getLastWorkingDayOfMonth(year, month);
+    const day = String(d.getDate()).padStart(2, '0');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${day}-${monthNames[d.getMonth()]}-${d.getFullYear()}`;
+  };
+
   const printPayslip = async () => {
     if (!selectedPayroll) return;
     const p = selectedPayroll;
@@ -110,6 +129,7 @@ const EmployeePortal: React.FC = () => {
     const name = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : '';
     const words = numberToWords(Math.round(p.netSalary || 0));
     const monthLabel = months[p.month - 1];
+    const payDateStr = formatPayDate(p.year, p.month);
     const fmt = (n: number) => (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const logoUrl = `${window.location.origin}/IIPMPayroll/logo.png`;
     const npsEmpE = p.npsEmployerShare || 0;
@@ -148,38 +168,8 @@ const EmployeePortal: React.FC = () => {
     transform: translate(-50%, -50%);
     width: 520px;
     max-width: 85%;
-    opacity: 0.12;
-    z-index: 0;
+    opacity: 0.04;
     pointer-events: none;
-  }
-
-  /* --- HEADER --- */
-  .header-box { display: flex; justify-content: space-between; margin-bottom: 12px; position: relative; z-index: 1; }
-  .header-left { display: flex; align-items: center; gap: 15px; }
-  .header-left img { width: 85px; height: 85px; object-fit: contain; }
-  .header-text h1 { font-size: 18px; font-weight: 800; color: #0a3161; line-height: 1.2; margin-bottom: 6px; width: 350px;}
-  .header-text p { font-size: 10px; color: #475569; margin-bottom: 2px; }
-  .header-text p span { color: #0a3161; font-weight: 500; }
-  
-  .header-right { width: 250px; display: flex; flex-direction: column; gap: 6px; }
-  .ps-badge { background: #0a3161; color: white; border-radius: 6px; text-align: center; padding: 10px; }
-  .ps-badge .title { font-size: 16px; font-weight: 700; letter-spacing: 1px; }
-  .ps-badge .subtitle { font-size: 10px; font-weight: 500; margin-top: 2px; }
-  
-  .pay-dates { background: rgba(240, 244, 248, 0.7); border: 1px solid #c9d9eb; border-radius: 6px; padding: 8px; }
-  .date-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 10.5px;}
-  .date-row:last-child { margin-bottom: 0; }
-  .date-row .icon { width: 14px; height: 14px; margin-right: 8px; color: #0a3161; }
-  .date-row .lbl { font-weight: 600; width: 70px; color: #0a3161; }
-  .date-row .val { font-weight: 700; color: #0f172a; white-space: nowrap; }
-
-  /* --- DETAILS --- */
-  .details-box { border: 1px solid #c9d9eb; border-radius: 6px; position: relative; padding: 25px 15px 15px 15px; margin-bottom: 15px; background: rgba(255, 255, 255, 0.35); z-index: 1; }
-  .emp-name-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.95); padding: 0 15px; font-size: 14px; font-weight: 700; color: #0a3161; }
-  
-  .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 40px; }
-  .detail-row { display: flex; font-size: 10.5px; }
-  .detail-row .lbl { width: 140px; color: #334155; font-weight: 500; }
   .detail-row .sep { width: 15px; font-weight: 500; color: #94a3b8; }
   .detail-row .val { flex: 1; font-weight: 600; color: #0f172a; }
 
@@ -275,7 +265,7 @@ const EmployeePortal: React.FC = () => {
         <div class="date-row">
           <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
           <div class="lbl">Pay Date</div>
-          <div class="val">01-${months[p.month === 12 ? 0 : p.month].substring(0,3)}-${p.month === 12 ? p.year + 1 : p.year}</div>
+          <div class="val">${payDateStr}</div>
         </div>
         <div class="date-row">
           <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

@@ -283,6 +283,14 @@ const ReportsPage: React.FC = () => {
       return true;
     });
     const totalAmount = filtered.reduce((s: number, p: any) => s + (p.netSalary || 0), 0);
+    const getLastWorkingDay = (yr: number, m: number): string => {
+      const d = new Date(yr, m, 0);
+      if (d.getDay() === 6) d.setDate(d.getDate() - 1);
+      else if (d.getDay() === 0) d.setDate(d.getDate() - 2);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      return `${dd}/${mm}/${d.getFullYear()}`;
+    };
 
     const html = `
       <!DOCTYPE html>
@@ -311,7 +319,7 @@ const ReportsPage: React.FC = () => {
         <table class="ref-table">
           <tr>
             <td>Ref No: IIPE/PAYROLL/${year}/${shortMonths[month - 1].toUpperCase()}</td>
-            <td class="text-right">Date: ${new Date().toLocaleDateString('en-GB')}</td>
+            <td class="text-right">Date: ${getLastWorkingDay(year, month)}</td>
           </tr>
         </table>
         <p>To,<br><b>The Branch Manager,</b><br>State Bank of India,<br>AU College of Engineering Campus Branch,<br>Visakhapatnam - 530003</p>
