@@ -14,10 +14,10 @@ const ArrearsCalculator: React.FC = () => {
   const [daMonths, setDaMonths] = useState<string[]>(['January \'26', 'February \'26', 'March \'26']);
 
   const [signatures, setSignatures] = useState({
-    preparedBy: 'S.SIRISHA',
-    verifiedBy1: 'Y RAMA RAO',
-    verifiedBy2: 'DR. B.MURALI KRISHNA',
-    approvedBy: 'SHRI.RAM PHAL DWIVEDI'
+    preparedBy: 'Y RAMA RAO',
+    verifiedBy1: 'Ch KALIKA DEVI',
+    verifiedBy2: 'SATYANARAYAN MOHANTY',
+    approvedBy: 'SHRI. RAM PHAL DWIVEDI'
   });
 
   useEffect(() => {

@@ -122,7 +122,7 @@ function App() {
               <Route path="/payroll"    element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'FA_OPERATOR']}><PayrollManagement mode="process" /></RoleRoute>} />
               <Route path="/approvals"  element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'FA_ADMIN']}><PayrollManagement mode="approve" /></RoleRoute>} />
               <Route path="/it-approvals" element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'FA_OPERATOR']}><ITApprovals /></RoleRoute>} />
-              <Route path="/arrears"    element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'FA_OPERATOR']}><ArrearsCalculator /></RoleRoute>} />
+              <Route path="/arrears"    element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'FA_OPERATOR', 'FA_ADMIN']}><ArrearsCalculator /></RoleRoute>} />
 
               {/* Reports */}
               <Route path="/reports"  element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'FA_OPERATOR', 'FA_ADMIN']}><ReportsPage /></RoleRoute>} />
