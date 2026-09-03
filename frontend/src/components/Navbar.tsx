@@ -74,11 +74,11 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <img src={process.env.PUBLIC_URL + "/logo.png"} alt="IIPM" className="sidebar-brand-logo" onError={(e) => {
+        <img src={process.env.PUBLIC_URL + "/logo.png"} alt="IIPE" className="sidebar-brand-logo" onError={(e) => {
           (e.target as HTMLImageElement).style.display = 'none';
         }} />
         <div className="sidebar-brand-text">
-          <div className="sidebar-brand-name">IIPM Payroll</div>
+          <div className="sidebar-brand-name">IIPE Payroll</div>
           <div className="sidebar-brand-sub">Management System</div>
         </div>
       </div>
