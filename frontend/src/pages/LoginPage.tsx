@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
+import iipeLogo from '../assets/logo.png';
 import '../styles/LoginPage.css';
 
 interface LoginPageProps {
@@ -38,8 +39,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     <div className="login-page">
       {/* Left Panel */}
       <div className="login-left">
-        <img src={process.env.PUBLIC_URL + "/logo.png"} alt="IIPM Logo" className="login-logo"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+        <img src={iipeLogo} alt="IIPE Logo" className="login-logo" />
         <div className="login-tagline">
           <h1>Indian Institute of<br />Petroleum & Energy</h1>
           <h2>Visakhapatnam</h2>
@@ -59,8 +59,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div className="login-right">
         <div className="login-form-container">
           <div className="login-form-header" style={{ textAlign: 'center' }}>
-            <img src={process.env.PUBLIC_URL + "/logo.png"} alt="IIPM Logo" className="login-logo-mobile"
-                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <img src={iipeLogo} alt="IIPE Logo" className="login-logo-mobile" />
             <h3>Welcome back</h3>
             <p>Sign in to access the Payroll Management System</p>
           </div>

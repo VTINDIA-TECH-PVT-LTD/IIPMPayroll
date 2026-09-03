@@ -84,10 +84,9 @@ function App() {
   };
 
   const defaultRoute = () => {
-    if (role === 'SUPER_ADMIN') return <AdminDashboard />;
-    if (role === 'ADMIN_ADMIN' || role === 'ADMIN_OPERATOR') return <AdminDashboard />;
-    if (role === 'FA_ADMIN') return <AdminDashboard />; // Pending Salary / Approvals screen later
-    if (role === 'FA_OPERATOR') return <PayrollManagement />;
+    if (role === 'SUPER_ADMIN' || role === 'ADMIN_ADMIN' || role === 'ADMIN_OPERATOR' || role === 'FA_ADMIN' || role === 'FA_OPERATOR') {
+      return <AdminDashboard />;
+    }
     return <EmployeeDashboard />;
   };
 

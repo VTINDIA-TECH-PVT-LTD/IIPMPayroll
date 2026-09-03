@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { UserContext } from '../App';
 import api from '../services/api';
+import iipeLogo from '../assets/logo.png';
 import '../styles/Navbar.css';
 import { 
   LayoutDashboard, Users, Settings, Database,
@@ -74,9 +75,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <img src={process.env.PUBLIC_URL + "/logo.png"} alt="IIPE" className="sidebar-brand-logo" onError={(e) => {
-          (e.target as HTMLImageElement).style.display = 'none';
-        }} />
+        <img src={iipeLogo} alt="IIPE" className="sidebar-brand-logo" />
         <div className="sidebar-brand-text">
           <div className="sidebar-brand-name">IIPE Payroll</div>
           <div className="sidebar-brand-sub">Management System</div>
