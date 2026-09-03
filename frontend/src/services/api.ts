@@ -109,7 +109,10 @@ class ApiService {
   async getSalaryRegister(month: number, year: number): Promise<any> { return (await this.api.get(`/reports/salary-register/${month}/${year}`)).data.data; }
   async getNPSReport(year: number): Promise<any> { return (await this.api.get(`/reports/nps/${year}`)).data.data; }
   async getTDSReport(year: number): Promise<any> { return (await this.api.get(`/reports/tds/${year}`)).data.data; }
-  async getYTDReport(userId: string): Promise<any> { return (await this.api.get(`/reports/ytd/${userId}`)).data.data; }
+  async getYTDReport(userId: string = 'all', year?: number): Promise<any> { 
+    const url = year ? `/reports/ytd/${userId}?year=${year}` : `/reports/ytd/${userId}`;
+    return (await this.api.get(url)).data.data; 
+  }
   async getSalaryComparison(userId: string): Promise<any> { return (await this.api.get(`/reports/comparison/${userId}`)).data.data; }
   async getMonthlyTrend(userId: string, year: number): Promise<any> { return (await this.api.get(`/reports/trend/${userId}/${year}`)).data.data; }
   async getDepartmentReport(month: number, year: number): Promise<any> { return (await this.api.get(`/reports/department/${month}/${year}`)).data.data; }

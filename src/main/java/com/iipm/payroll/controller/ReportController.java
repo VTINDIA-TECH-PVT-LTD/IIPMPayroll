@@ -70,10 +70,13 @@ public class ReportController {
         }
     }
 
-    @GetMapping("/ytd/{userId}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getYTDReport(@PathVariable String userId) {
+    @GetMapping({"/ytd", "/ytd/{userId}"})
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getYTDReport(
+            @PathVariable(required = false) String userId,
+            @RequestParam(required = false) Integer year) {
         try {
-            Map<String, Object> report = reportService.getYTDReport(userId);
+            int targetYear = (year != null && year > 0) ? year : java.time.Year.now().getValue();
+            Map<String, Object> report = reportService.getYTDReport(userId, targetYear);
             return ResponseEntity.ok(ApiResponse.success("YTD Report retrieved", report));
         } catch (Exception e) {
             log.error("Error generating YTD report", e);

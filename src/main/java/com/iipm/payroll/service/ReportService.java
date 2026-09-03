@@ -116,31 +116,79 @@ public class ReportService {
     }
 
     public Map<String, Object> getYTDReport(String userId) {
-        int currentYear = Year.now().getValue();
-        List<Payroll> payrolls = payrollRepository.findByUserIdAndYear(userId, currentYear);
+        return getYTDReport(userId, Year.now().getValue());
+    }
 
-        double totalGross = payrolls.stream().mapToDouble(Payroll::getGrossSalary).sum();
-        double totalDeductions = payrolls.stream().mapToDouble(Payroll::getTotalDeductions).sum();
-        double totalNet = payrolls.stream().mapToDouble(Payroll::getNetSalary).sum();
+    public Map<String, Object> getYTDReport(String userId, int year) {
+        List<Payroll> payrolls;
+        String employeeName = "All Employees (Institute Consolidated)";
+        String employeeId = "ALL";
+
+        if (userId == null || userId.trim().isEmpty() || "all".equalsIgnoreCase(userId)) {
+            payrolls = payrollRepository.findByYear(year);
+        } else {
+            payrolls = payrollRepository.findByUserIdOrEmployeeIdAndYear(userId, userId, year);
+            if (payrolls.isEmpty()) {
+                User u = userRepository.findById(userId)
+                        .or(() -> userRepository.findByEmployeeId(userId))
+                        .orElse(null);
+                if (u != null) {
+                    payrolls = payrollRepository.findByUserIdOrEmployeeIdAndYear(u.getId(), u.getEmployeeId(), year);
+                    employeeName = u.getName();
+                    employeeId = u.getEmployeeId();
+                }
+            } else {
+                User u = userRepository.findById(payrolls.get(0).getUserId())
+                        .or(() -> userRepository.findByEmployeeId(payrolls.get(0).getEmployeeId()))
+                        .orElse(null);
+                if (u != null) {
+                    employeeName = u.getName();
+                    employeeId = u.getEmployeeId();
+                }
+            }
+        }
+
+        double totalBasic = payrolls.stream().mapToDouble(Payroll::getBasicPay).sum();
         double totalDA = payrolls.stream().mapToDouble(Payroll::getDa).sum();
         double totalHRA = payrolls.stream().mapToDouble(Payroll::getHra).sum();
         double totalTA = payrolls.stream().mapToDouble(Payroll::getTa).sum();
-        double totalNPS = payrolls.stream().mapToDouble(p -> p.getNpsEmployeeShare()).sum();
-        double totalTDS = payrolls.stream().mapToDouble(Payroll::getTds).sum();
+        double totalOtherAllowances = payrolls.stream().mapToDouble(Payroll::getOtherAllowances).sum();
+        double totalNpsEmployer = payrolls.stream().mapToDouble(Payroll::getNpsEmployerShare).sum();
+        double totalGross = payrolls.stream().mapToDouble(Payroll::getGrossSalary).sum();
 
-        int monthsProcessed = payrolls.size();
-        double averageMonthly = monthsProcessed > 0 ? totalGross / monthsProcessed : 0;
+        double totalTDS = payrolls.stream().mapToDouble(Payroll::getTds).sum();
+        double totalNPS = payrolls.stream().mapToDouble(p -> p.getNpsEmployeeShare()).sum();
+        double totalPT = payrolls.stream().mapToDouble(Payroll::getProfessionalTax).sum();
+        double totalCGHS = payrolls.stream().mapToDouble(Payroll::getCghs).sum();
+        double totalOtherDeductions = payrolls.stream().mapToDouble(Payroll::getOtherDeductions).sum();
+        double totalDeductions = payrolls.stream().mapToDouble(Payroll::getTotalDeductions).sum();
+        double totalNet = payrolls.stream().mapToDouble(p -> p.getNetSalary() != null ? p.getNetSalary() : (p.getGrossSalary() - p.getTotalDeductions())).sum();
+
+        // Calculate unique distinct months processed
+        long distinctMonths = payrolls.stream().map(Payroll::getMonth).distinct().count();
+        int monthsProcessed = (int) distinctMonths;
+        if (monthsProcessed == 0 && !payrolls.isEmpty()) monthsProcessed = payrolls.size();
+
+        double averageMonthly = monthsProcessed > 0 ? (totalGross / monthsProcessed) : 0;
 
         Map<String, Object> result = new HashMap<>();
         result.put("userId", userId);
-        result.put("year", currentYear);
+        result.put("employeeName", employeeName);
+        result.put("employeeId", employeeId);
+        result.put("year", year);
         result.put("monthsProcessed", monthsProcessed);
+        result.put("totalBasicPay", totalBasic);
         result.put("totalGrossSalary", totalGross);
         result.put("totalDA", totalDA);
         result.put("totalHRA", totalHRA);
         result.put("totalTA", totalTA);
+        result.put("totalOtherAllowances", totalOtherAllowances);
+        result.put("totalNpsEmployer", totalNpsEmployer);
         result.put("totalNPS", totalNPS);
         result.put("totalTDS", totalTDS);
+        result.put("totalPT", totalPT);
+        result.put("totalCGHS", totalCGHS);
+        result.put("totalOtherDeductions", totalOtherDeductions);
         result.put("totalDeductions", totalDeductions);
         result.put("totalNetSalary", totalNet);
         result.put("averageMonthly", averageMonthly);

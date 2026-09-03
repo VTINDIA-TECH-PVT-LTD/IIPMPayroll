@@ -49,7 +49,7 @@ const ReportsPage: React.FC = () => {
       else if (tab === 'nps')  result = await apiService.getNPSReport(year);
       else if (tab === 'tds')  result = await apiService.getTDSReport(year);
       else if (tab === 'dept') result = await apiService.getDepartmentReport(month, year);
-      else if (tab === 'ytd')  result = await apiService.getYTDReport(userCtx?.userId || '');
+      else if (tab === 'ytd')  result = await apiService.getYTDReport(userId || 'all', year);
       else if (tab === 'comparison') {
         if (!userId) { setLoading(false); return; }
         result = await apiService.getSalaryComparison(userId);
@@ -440,15 +440,25 @@ const ReportsPage: React.FC = () => {
               </select>
             </div>
           )}
-          {tab === 'comparison' ? (
+          {tab === 'comparison' && (
             <div>
               <label className="form-label-iipm">Select Employee</label>
-              <select className="form-control-iipm" value={userId} onChange={e => setUserId(e.target.value)} style={{ width: '250px' }}>
+              <select className="form-control-iipm" value={userId} onChange={e => setUserId(e.target.value)} style={{ width: '280px' }}>
                 <option value="">-- Select Employee --</option>
-                {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.id})</option>)}
+                {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employeeId || e.id})</option>)}
               </select>
             </div>
-          ) : (
+          )}
+          {tab === 'ytd' && (
+            <div>
+              <label className="form-label-iipm">Select Employee</label>
+              <select className="form-control-iipm" value={userId} onChange={e => setUserId(e.target.value)} style={{ width: '280px' }}>
+                <option value="">🏢 All Employees (Institute Consolidated)</option>
+                {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employeeId || e.id})</option>)}
+              </select>
+            </div>
+          )}
+          {tab !== 'comparison' && (
             <div>
               <label className="form-label-iipm">Year</label>
               <input type="number" className="form-control-iipm" value={year} onChange={e => setYear(+e.target.value)} style={{ width: '100px' }} />
@@ -882,12 +892,12 @@ const ReportsPage: React.FC = () => {
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
             {[
-              { label: 'Months Processed', value: fmtN(data.monthsProcessed), color: '#3b82f6' },
+              { label: 'Months Processed', value: `${fmtN(data.monthsProcessed)} Months`, color: '#3b82f6' },
               { label: 'Total Gross Salary', value: fmt(data.totalGrossSalary), color: '#c9a84c' },
-              { label: 'Total TDS', value: fmt(data.totalTDS), color: '#ef4444' },
-              { label: 'Total NPS', value: fmt(data.totalNPS), color: '#8b5cf6' },
-              { label: 'Total Net Salary', value: fmt(data.totalNetSalary), color: '#22c55e' },
-              { label: 'Avg Monthly', value: fmt(data.averageMonthly), color: '#f59e0b' },
+              { label: 'Total TDS Deducted', value: fmt(data.totalTDS), color: '#ef4444' },
+              { label: 'Total NPS (Employee)', value: fmt(data.totalNPS), color: '#8b5cf6' },
+              { label: 'Total Net Disbursed', value: fmt(data.totalNetSalary), color: '#22c55e' },
+              { label: 'Avg Monthly Gross', value: fmt(data.averageMonthly), color: '#f59e0b' },
             ].map((s, i) => (
               <div className="stat-card" key={i}>
                 <div className="stat-label">{s.label}</div>
@@ -896,24 +906,45 @@ const ReportsPage: React.FC = () => {
             ))}
           </div>
           <div className="card-iipm" style={{ padding: '20px' }}>
-            <h3 style={{ marginBottom: '4px' }}>Year-to-Date Summary — {data.year}</h3>
-            <p style={{ marginBottom: '20px', fontSize: '0.85rem' }}>Cumulative earnings and deductions from April to current month</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Year-to-Date Summary — {data.year}</h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  {data.employeeName} {data.employeeId && data.employeeId !== 'ALL' ? `(${data.employeeId})` : ''} • Cumulative earnings and deductions from April to current month
+                </p>
+              </div>
+            </div>
             <table className="table-iipm">
-              <thead><tr><th>Component</th><th>Annual Total</th><th>Monthly Avg</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Salary Component</th>
+                  <th>Category</th>
+                  <th style={{ textAlign: 'right' }}>Annual Cumulative Total</th>
+                  <th style={{ textAlign: 'right' }}>Monthly Average</th>
+                </tr>
+              </thead>
               <tbody>
                 {[
-                  { label: 'Basic Pay', annual: data.totalGrossSalary * 0.45, key: 'bp' },
-                  { label: 'Dearness Allowance', annual: data.totalDA, key: 'da' },
-                  { label: 'HRA', annual: data.totalHRA, key: 'hra' },
-                  { label: 'Transport Allowance', annual: data.totalTA, key: 'ta' },
-                  { label: 'TDS Deducted', annual: data.totalTDS, key: 'tds' },
-                  { label: 'NPS (Employee 10%)', annual: data.totalNPS, key: 'nps' },
-                  { label: 'Net Salary', annual: data.totalNetSalary, key: 'net' },
+                  { label: 'Basic Pay', cat: 'Earning', annual: data.totalBasicPay || (data.totalGrossSalary * 0.45), key: 'bp', color: '#0f172a' },
+                  { label: 'Dearness Allowance (DA)', cat: 'Earning', annual: data.totalDA, key: 'da', color: '#0f172a' },
+                  { label: 'House Rent Allowance (HRA)', cat: 'Earning', annual: data.totalHRA, key: 'hra', color: '#0f172a' },
+                  { label: 'Transport Allowance (TA + DA on TA)', cat: 'Earning', annual: data.totalTA, key: 'ta', color: '#0f172a' },
+                  { label: 'Other Allowances / Dean Special Allowance', cat: 'Earning', annual: data.totalOtherAllowances, key: 'otherAllow', color: '#0f172a' },
+                  { label: 'NPS Employer Contribution (14%)', cat: 'Earning', annual: data.totalNpsEmployer, key: 'npsEmployer', color: '#0f172a' },
+                  { label: 'TOTAL GROSS SALARY', cat: 'Total Earning', annual: data.totalGrossSalary, key: 'gross', color: '#c9a84c', bold: true },
+                  { label: 'Tax Deducted at Source (TDS)', cat: 'Deduction', annual: data.totalTDS, key: 'tds', color: '#ef4444' },
+                  { label: 'NPS Employee Contribution (10%)', cat: 'Deduction', annual: data.totalNPS, key: 'nps', color: '#8b5cf6' },
+                  { label: 'Professional Tax (PT)', cat: 'Deduction', annual: data.totalPT, key: 'pt', color: '#64748b' },
+                  { label: 'CGHS / Medical Contribution', cat: 'Deduction', annual: data.totalCGHS, key: 'cghs', color: '#64748b' },
+                  { label: 'Other Deductions / Salary Recovery', cat: 'Deduction', annual: data.totalOtherDeductions, key: 'otherDed', color: '#64748b' },
+                  { label: 'TOTAL DEDUCTIONS', cat: 'Total Deduction', annual: data.totalDeductions, key: 'totDed', color: '#ef4444', bold: true },
+                  { label: 'TOTAL NET SALARY DISBURSED', cat: 'Net Pay', annual: data.totalNetSalary, key: 'net', color: '#22c55e', bold: true },
                 ].map(row => (
-                  <tr key={row.key}>
+                  <tr key={row.key} style={{ background: row.bold ? '#f8fafc' : 'transparent', fontWeight: row.bold ? 700 : 400 }}>
                     <td>{row.label}</td>
-                    <td style={{ fontWeight: 600 }}>{fmt(row.annual)}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{fmt((row.annual || 0) / Math.max(data.monthsProcessed, 1))}</td>
+                    <td><span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{row.cat}</span></td>
+                    <td style={{ textAlign: 'right', color: row.color, fontWeight: row.bold ? 700 : 600 }}>{fmt(row.annual)}</td>
+                    <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>{fmt((row.annual || 0) / Math.max(data.monthsProcessed, 1))}</td>
                   </tr>
                 ))}
               </tbody>

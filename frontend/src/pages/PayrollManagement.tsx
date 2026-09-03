@@ -193,19 +193,20 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     const ptAnnual = (settings.PT_AMOUNT || 200) * 12;
     
     const taxableIncome = Math.max(0, annualGross - stdDeduction - sec80CCD2 - ptAnnual);
-    if (taxableIncome <= 300000) return 0;
+    
+    // Rebate u/s 87A: Under New Tax Regime (Budget 2024 / FY 2024-25 / FY 2025-26),
+    // any employee having taxable income up to ₹7,00,000 gets full rebate (Nil Tax / 0 TDS)
+    if (taxableIncome <= 700000) return 0;
     
     let annualTax = 0;
     if (taxableIncome > 1500000) {
-      annualTax = 150000 + (taxableIncome - 1500000) * 0.30;
+      annualTax = 140000 + (taxableIncome - 1500000) * 0.30;
     } else if (taxableIncome > 1200000) {
-      annualTax = 90000 + (taxableIncome - 1200000) * 0.20;
-    } else if (taxableIncome > 900000) {
-      annualTax = 45000 + (taxableIncome - 900000) * 0.15;
-    } else if (taxableIncome > 600000) {
-      annualTax = 15000 + (taxableIncome - 600000) * 0.10;
-    } else if (taxableIncome > 300000) {
-      annualTax = (taxableIncome - 300000) * 0.05;
+      annualTax = 80000 + (taxableIncome - 1200000) * 0.20;
+    } else if (taxableIncome > 1000000) {
+      annualTax = 50000 + (taxableIncome - 1000000) * 0.15;
+    } else if (taxableIncome > 700000) {
+      annualTax = 20000 + (taxableIncome - 700000) * 0.10;
     }
     const monthlyTds = Math.round((annualTax * 1.04) / 12);
     return Math.round(monthlyTds / 100) * 100;
