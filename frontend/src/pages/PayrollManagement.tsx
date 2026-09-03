@@ -12,6 +12,13 @@ interface Employee {
   payLevel: string;
   payIndex: number;
   basicPay: number;
+  employeeType?: string;
+  deanAllowance?: number;
+  specialAllowance?: number;
+  otherDeductions?: number;
+  taOverride?: number;
+  cghsOverride?: number;
+  tds?: number;
 }
 
 interface PayrollRow {
@@ -492,28 +499,44 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                   {filteredRows.map((row, i) => {
                     const u = row.user;
                     const isContract = isContractUser(u);
+                    const isDirector = (u.employeeId === 'DIR001') || (u.payLevel && String(u.payLevel).includes('17')) || (u.designation && u.designation.toLowerCase().includes('director'));
+                    const isRegistrar = u.employeeId === 'NT1022';
                     const bp = u.basicPay || 0;
-                    const daPct = (settings.DA_PERCENTAGE || 62) / 100;
+                    const daPct = (settings.DA_PERCENTAGE || 60) / 100;
                     const hraPct = (settings.HRA_PERCENTAGE || 20) / 100;
                     const npsEmpPct = (settings.NPS_EMPLOYEE_PERCENTAGE || 10) / 100;
-                    const npsEmployerPct = (settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100;
+                    const npsEmployerPct = (settings.NPS_EMPLOYER_PERCENTAGE || 14) / 100;
 
                     const da = isContract ? 0 : Math.round(bp * daPct);
-                    const hra = isContract ? 0 : Math.round(bp * hraPct);
-                    const level = parseInt(String(u.payLevel).replace(/\D/g, '') || '10', 10);
-                    const taBase = level >= 10 ? (settings.TA_FIXED_AMOUNT || 3600) : (settings.TA_FIXED_AMOUNT ? settings.TA_FIXED_AMOUNT / 2 : 1800);
-                    const taDaPct = (settings.TA_DA_PERCENTAGE || 62) / 100;
-                    const ta = isContract ? 0 : Math.round(taBase * (1 + taDaPct));
+                    const hra = (isContract || isDirector || isRegistrar) ? 0 : Math.round(bp * hraPct);
                     
-                    const npsEmp = isContract ? 0 : Math.round((bp + da) * npsEmpPct);
-                    const npsEmployer = isContract ? 0 : Math.round((bp + da) * npsEmployerPct);
-                    const gross = isContract ? bp : (bp + da + hra + ta + npsEmployer); 
+                    const level = parseInt(String(u.payLevel).replace(/\D/g, '') || '10', 10);
+                    let ta = 0;
+                    if (u.taOverride !== undefined && u.taOverride !== null) {
+                      ta = u.taOverride;
+                    } else if (isContract || isDirector || isRegistrar) {
+                      ta = 0;
+                    } else if (level >= 10) {
+                      const taBase = settings.TA_FIXED_AMOUNT || 3600;
+                      const taDaPct = (settings.TA_DA_PERCENTAGE || 60) / 100;
+                      ta = Math.round(taBase * (1 + taDaPct));
+                    } else if (level >= 1 && level <= 9) {
+                      const taBase = 1800;
+                      const taDaPct = (settings.TA_DA_PERCENTAGE || 60) / 100;
+                      ta = Math.round(taBase * (1 + taDaPct));
+                    }
+                    
+                    const deanAllowance = u.deanAllowance || u.specialAllowance || 0;
+                    const npsEmp = (isContract || isDirector) ? 0 : Math.round((bp + da) * npsEmpPct);
+                    const npsEmployer = (isContract || isDirector) ? 0 : Math.round((bp + da) * npsEmployerPct);
+                    const gross = isContract ? (bp + deanAllowance) : (bp + da + hra + ta + npsEmployer + deanAllowance); 
                     
                     const pt = settings.PT_AMOUNT || 200;
                     const cghs = isContract ? 0 : (level >= 12 ? 1000 : (level >= 7 ? 650 : (level === 6 ? 450 : 250)));
                     
                     const tdsVal = row.tds === '' ? 0 : Number(row.tds);
-                    const totalDed = tdsVal + npsEmp + pt + cghs + row.otherDeductions + (isContract ? 0 : npsEmployer);
+                    const otherDed = row.otherDeductions !== undefined ? Number(row.otherDeductions) : (u.otherDeductions || 0);
+                    const totalDed = tdsVal + npsEmp + pt + cghs + otherDed + ((isContract || isDirector) ? 0 : npsEmployer);
                     const net = gross - totalDed;
                     
                     return (
@@ -527,7 +550,9 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                         <td>{fmt(da)}</td>
                         <td>{fmt(ta)}</td>
                         <td>{fmt(hra)}</td>
-                        <td>{fmt(0)}</td> {/* Dean/Warden Allowance - can be updated later if needed */}
+                        <td style={{ color: deanAllowance > 0 ? 'var(--primary)' : 'inherit', fontWeight: deanAllowance > 0 ? 600 : 400 }}>
+                          {fmt(deanAllowance)}
+                        </td>
                         <td>{fmt(npsEmployer)}</td>
                         <td style={{ fontWeight: 600, background: '#f8fafc' }}>{fmt(gross)}</td>
                         <td>{fmt(pt)}</td>

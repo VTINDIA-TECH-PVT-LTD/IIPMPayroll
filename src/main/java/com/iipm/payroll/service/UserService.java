@@ -65,6 +65,12 @@ public class UserService {
                 .bankName(userDTO.getBankName())
                 .pan(userDTO.getPan())
                 .aadhar(userDTO.getAadhar())
+                .deanAllowance(userDTO.getDeanAllowance())
+                .specialAllowance(userDTO.getSpecialAllowance())
+                .otherDeductions(userDTO.getOtherDeductions())
+                .taOverride(userDTO.getTaOverride())
+                .cghsOverride(userDTO.getCghsOverride())
+                .tds(userDTO.getTds())
                 .role(UserRole.valueOf(userDTO.getRole()))
                 .isActive(true)
                 .createdAt(LocalDateTime.now())
@@ -112,6 +118,12 @@ public class UserService {
         user.setBankName(userDTO.getBankName());
         user.setPan(userDTO.getPan());
         user.setAadhar(userDTO.getAadhar());
+        user.setDeanAllowance(userDTO.getDeanAllowance());
+        user.setSpecialAllowance(userDTO.getSpecialAllowance());
+        user.setOtherDeductions(userDTO.getOtherDeductions());
+        user.setTaOverride(userDTO.getTaOverride());
+        user.setCghsOverride(userDTO.getCghsOverride());
+        user.setTds(userDTO.getTds());
         if (userDTO.getRole() != null) {
             user.setRole(UserRole.valueOf(userDTO.getRole()));
         }
@@ -214,6 +226,12 @@ public class UserService {
                 .bankName(user.getBankName())
                 .pan(user.getPan())
                 .aadhar(user.getAadhar())
+                .deanAllowance(user.getDeanAllowance())
+                .specialAllowance(user.getSpecialAllowance())
+                .otherDeductions(user.getOtherDeductions())
+                .taOverride(user.getTaOverride())
+                .cghsOverride(user.getCghsOverride())
+                .tds(user.getTds())
                 .role(user.getRole().toString())
                 .isActive(user.getIsActive() != null && user.getIsActive())
                 .createdAt(user.getCreatedAt())

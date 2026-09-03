@@ -65,6 +65,14 @@ public class UserDTO {
     private String pfAccountNumber;
     private String pranAccountNumber;
 
+    // Allowances & Deductions
+    private Double deanAllowance;
+    private Double specialAllowance;
+    private Double otherDeductions;
+    private Double taOverride;
+    private Double cghsOverride;
+    private Double tds;
+
     private String role;
 
     @com.fasterxml.jackson.annotation.JsonProperty("isActive")

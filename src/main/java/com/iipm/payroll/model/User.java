@@ -52,6 +52,14 @@ public class User {
     private String pfAccountNumber;
     private String pranAccountNumber;
 
+    // Allowances & Deductions
+    private Double deanAllowance;
+    private Double specialAllowance;
+    private Double otherDeductions;
+    private Double taOverride;
+    private Double cghsOverride;
+    private Double tds;
+
     // Bank Details
     private String bankAccountNumber;
     private String ifscCode;
