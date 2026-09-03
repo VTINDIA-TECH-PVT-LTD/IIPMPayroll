@@ -491,29 +491,29 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                 <tbody>
                   {filteredRows.map((row, i) => {
                     const u = row.user;
+                    const isContract = isContractUser(u);
                     const bp = u.basicPay || 0;
                     const daPct = (settings.DA_PERCENTAGE || 62) / 100;
                     const hraPct = (settings.HRA_PERCENTAGE || 20) / 100;
                     const npsEmpPct = (settings.NPS_EMPLOYEE_PERCENTAGE || 10) / 100;
                     const npsEmployerPct = (settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100;
 
-                    const da = Math.round(bp * daPct);
-                    const hra = Math.round(bp * hraPct);
-                    const level = parseInt(u.payLevel || '10');
+                    const da = isContract ? 0 : Math.round(bp * daPct);
+                    const hra = isContract ? 0 : Math.round(bp * hraPct);
+                    const level = parseInt(String(u.payLevel).replace(/\D/g, '') || '10', 10);
                     const taBase = level >= 10 ? (settings.TA_FIXED_AMOUNT || 3600) : (settings.TA_FIXED_AMOUNT ? settings.TA_FIXED_AMOUNT / 2 : 1800);
                     const taDaPct = (settings.TA_DA_PERCENTAGE || 62) / 100;
-                    const ta = Math.round(taBase * (1 + taDaPct));
+                    const ta = isContract ? 0 : Math.round(taBase * (1 + taDaPct));
                     
-                    const npsEmp = Math.round((bp + da) * npsEmpPct);
-                    const npsEmployer = Math.round((bp + da) * npsEmployerPct);
-                    const gross = bp + da + hra + ta + npsEmployer; 
+                    const npsEmp = isContract ? 0 : Math.round((bp + da) * npsEmpPct);
+                    const npsEmployer = isContract ? 0 : Math.round((bp + da) * npsEmployerPct);
+                    const gross = isContract ? bp : (bp + da + hra + ta + npsEmployer); 
                     
                     const pt = settings.PT_AMOUNT || 200;
-                    const baseCghs = settings.CGHS_AMOUNT || 1000;
-                    const cghs = level >= 12 ? baseCghs : (level >= 7 ? baseCghs * 0.65 : (level === 6 ? baseCghs * 0.45 : baseCghs * 0.25));
+                    const cghs = isContract ? 0 : (level >= 12 ? 1000 : (level >= 7 ? 650 : (level === 6 ? 450 : 250)));
                     
                     const tdsVal = row.tds === '' ? 0 : Number(row.tds);
-                    const totalDed = tdsVal + npsEmp + pt + cghs + row.otherDeductions + npsEmployer;
+                    const totalDed = tdsVal + npsEmp + pt + cghs + row.otherDeductions + (isContract ? 0 : npsEmployer);
                     const net = gross - totalDed;
                     
                     return (

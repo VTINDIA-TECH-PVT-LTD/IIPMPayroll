@@ -152,16 +152,16 @@ public class PayrollCalculator {
     /** CGHS Deduction based on Pay Level */
     public double calculateCGHS(String payLevel) {
         if (payLevel == null || payLevel.isBlank()) return 250.0;
-        if (payLevel.equalsIgnoreCase("Consolidated") ||
-            payLevel.equalsIgnoreCase("Contract") ||
-            payLevel.equalsIgnoreCase("Fixed")) {
+        String pl = payLevel.toLowerCase();
+        if (pl.contains("consolidated") || pl.contains("contract") || pl.contains("fixed") || pl.contains("none")) {
             return 0.0;
         }
         int level = parseLevelNumber(payLevel);
         if (level >= 12) return 1000.0;
         if (level >= 7) return 650.0;
         if (level == 6) return 450.0;
-        return 250.0;
+        if (level >= 1 && level <= 5) return 250.0;
+        return 0.0;
     }
 
     /** NPS Employee Share = (Basic + DA) × 10% */
