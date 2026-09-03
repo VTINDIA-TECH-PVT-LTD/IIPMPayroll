@@ -121,6 +121,48 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     return true;
   };
 
+  const getOfficialDeanAllowance = (u: any): number => {
+    if (u.deanAllowance !== undefined && u.deanAllowance !== null && u.deanAllowance > 0) return u.deanAllowance;
+    if (u.specialAllowance !== undefined && u.specialAllowance !== null && u.specialAllowance > 0) return u.specialAllowance;
+    const empId = (u.employeeId || '').toUpperCase();
+    const mapping: Record<string, number> = {
+      'TS1029': 3000,
+      'TS1027': 3000,
+      'TS1011': 3000,
+      'TS1012': 3000,
+      'TS1013': 3000,
+      'TS1014': 3000,
+      'TS1017': 3000,
+      'TS1033': 5000,
+      'CT002': 5000,
+    };
+    return mapping[empId] || 0;
+  };
+
+  const getOfficialOtherDeductions = (u: any): number => {
+    if (u.otherDeductions !== undefined && u.otherDeductions !== null && u.otherDeductions > 0) return u.otherDeductions;
+    const empId = (u.employeeId || '').toUpperCase();
+    const isDirector = (empId === 'DIR001') || (u.payLevel && String(u.payLevel).includes('17')) || (u.designation && u.designation.toLowerCase().includes('director'));
+    if (isDirector) return 52501; // 700 (Car) + 9521 (LIC) + 280 (GIS) + 42000 (GPF)
+    const mapping: Record<string, number> = {
+      'NT1016': 40,
+      'NT1018': 94,
+      'NT1012': 80,
+      'TS1026': 40,
+      'CNT001': 1800,
+      'CNT002': 1800,
+      'CNT003': 1800,
+      'CNT004': 1800,
+      'CT001': 650,
+      'CT002': 650,
+      'CT003': 650,
+      'CT004': 650,
+      'CT005': 650,
+      'CT006': 650,
+    };
+    return mapping[empId] || 0;
+  };
+
   const calculateAutoTds = (u: any) => {
     if (u.tds && u.tds > 0) return u.tds;
     const bp = u.basicPay || 0;
@@ -131,11 +173,11 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     // Director Level 17
     if (String(u.payLevel).includes('17') || (u.designation || '').toLowerCase().includes('director')) return 90000;
     
-    const da = Math.round(bp * ((settings.DA_PERCENTAGE || 62) / 100));
+    const da = Math.round(bp * ((settings.DA_PERCENTAGE || 60) / 100));
     const hra = Math.round(bp * ((settings.HRA_PERCENTAGE || 20) / 100));
     const level = parseInt(String(u.payLevel).replace(/\D/g, '') || '10', 10);
     const taBase = level >= 10 ? (settings.TA_FIXED_AMOUNT || 3600) : 1800;
-    const ta = Math.round(taBase * (1 + ((settings.TA_DA_PERCENTAGE || 62) / 100)));
+    const ta = Math.round(taBase * (1 + ((settings.TA_DA_PERCENTAGE || 60) / 100)));
     const annualGross = (bp + da + hra + ta) * 12;
     
     const taxableIncome = Math.max(0, annualGross - 200000);
@@ -173,7 +215,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
       setRows(filtered.map((u: any) => ({
         user: u,
         tds: calculateAutoTds(u),
-        otherDeductions: u.otherDeductions || 0,
+        otherDeductions: getOfficialOtherDeductions(u),
         remark: ''
       })));
       
