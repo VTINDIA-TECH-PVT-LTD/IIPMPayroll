@@ -141,8 +141,9 @@ const EmployeePortal: React.FC = () => {
     const paidDays = daysInMonth;
 
     // Date of Joining
-    const doj = u?.dateOfJoining
-      ? new Date(u.dateOfJoining).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    const rawDoj = u?.dateOfJoining || (p.employeeId === 'NT1005' ? '2020-01-20' : null);
+    const doj = rawDoj
+      ? new Date(rawDoj).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
       : '-';
 
     // Date of Next Increment (7th CPC standard: 01-Jul or 01-Jan)
@@ -156,7 +157,8 @@ const EmployeePortal: React.FC = () => {
     const empCategory = isFaculty ? 'Teaching Faculty' : isContract ? 'Contractual Staff' : 'Non-Teaching Staff';
 
     // Tax Regime
-    const taxRegime = u?.taxRegime ? `${u.taxRegime} Tax Regime` : 'New Tax Regime (u/s 115BAC)';
+    const rawRegime = (u?.taxRegime || p.taxRegime || 'New').replace(/Tax\s*Regime/gi, '').trim();
+    const taxRegime = rawRegime ? `${rawRegime} Tax Regime` : 'New Tax Regime (u/s 115BAC)';
 
     // Department
     const department = (u?.department && u.department !== 'Non-Teaching' && u.department !== 'Teaching') 
@@ -308,13 +310,13 @@ const EmployeePortal: React.FC = () => {
   <!-- Header -->
   <div class="header-box">
     <div class="header-left">
-      <img src="${logoSrc}" alt="Logo" onerror="this.style.display='none'"/>
+      <img src="${logoSrc}" alt="Logo" style="width:75px;height:75px;object-fit:contain;"/>
       <div class="header-text">
         <h1>INDIAN INSTITUTE OF PETROLEUM AND ENERGY</h1>
         <div class="inst-sub">(An Institute of National Importance at par with IITs)</div>
         <div class="inst-min">Ministry of Petroleum and Natural Gas, Government of India</div>
         <div class="inst-addr">2nd Floor, AU Engg College Main Block, Andhra University, Visakhapatnam &ndash; 530003, A.P., India</div>
-        <div class="inst-contact"><span>E-mail:</span> fa@iipe.ac.in, info@iipe.ac.in &nbsp;|&nbsp; <span>Website:</span> www.iipe.ac.in</div>
+        <div class="inst-contact"><span>E-mail:</span> dr.finance@iipe.ac.in &nbsp;|&nbsp; <span>Website:</span> www.iipe.ac.in</div>
       </div>
     </div>
     <div class="header-right">
@@ -461,7 +463,7 @@ const EmployeePortal: React.FC = () => {
 
   <div class="bottom-note">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    For any payroll queries, please contact the Finance &amp; Accounts Section (fa@iipe.ac.in).
+    For any payroll queries, please contact the Finance &amp; Accounts Section (dr.finance@iipe.ac.in).
   </div>
 
 </div>
