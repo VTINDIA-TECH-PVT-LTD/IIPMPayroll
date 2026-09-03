@@ -126,24 +126,46 @@ const EmployeePortal: React.FC = () => {
       if (userCtx?.userId) u = await apiService.getUserById(userCtx.userId);
     } catch (e) { console.error("Could not fetch user details", e); }
 
-    const name = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : '';
+    const name = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : (p.employeeName || '');
     const words = numberToWords(Math.round(p.netSalary || 0));
     const monthLabel = months[p.month - 1];
     const payDateStr = formatPayDate(p.year, p.month);
     const fmt = (n: number) => (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const logoUrl = `${window.location.origin}/IIPMPayroll/logo.png`;
     const npsEmpE = p.npsEmployerShare || 0;
     const npsEmpD = p.npsEmployerShare || 0;
-    const totalEarnings = (p.basicPay||0) + (p.da||0) + (p.hra||0) + (p.ta||0) + npsEmpE;
+    const totalEarnings = (p.basicPay || 0) + (p.da || 0) + (p.hra || 0) + (p.ta || 0) + (p.otherAllowances || 0) + npsEmpE;
+    
+    // Days in Month & Paid Days
+    const daysInMonth = new Date(p.year, p.month, 0).getDate();
+    const paidDays = daysInMonth;
+
+    // Date of Joining
     const doj = u?.dateOfJoining
       ? new Date(u.dateOfJoining).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-      : '';
+      : '-';
+
+    // Date of Next Increment (7th CPC standard: 01-Jul or 01-Jan)
+    const dni = u?.dateOfNextIncrement 
+      ? new Date(u.dateOfNextIncrement).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      : (p.month < 7 ? `01-Jul-${p.year}` : `01-Jul-${p.year + 1}`);
+
+    // Category (Teaching / Non-Teaching / Contract)
+    const isContract = (p.employeeType || u?.employeeType || u?.function || '').toLowerCase().includes('contract') || (p.payLevel || u?.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
+    const isFaculty = (p.employeeId || '').startsWith('TS') && !isContract;
+    const empCategory = isFaculty ? 'Teaching Faculty' : isContract ? 'Contractual Staff' : 'Non-Teaching Staff';
+
+    // Tax Regime
+    const taxRegime = u?.taxRegime ? `${u.taxRegime} Tax Regime` : 'New Tax Regime (u/s 115BAC)';
+
+    // Department
+    const department = u?.department || p.department || 'Finance & Accounts';
 
     const deductionPercentage = totalEarnings > 0 ? ((p.totalDeductions / totalEarnings) * 100).toFixed(2) : '0.00';
     const logoSrc = window.location.origin + process.env.PUBLIC_URL + '/logo.png';
+    
     const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/>
-<title>Pay Slip - ${monthLabel} ${p.year}</title>
+<title>Pay Slip - ${monthLabel} ${p.year} - ${p.employeeId}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   @page { size: A4; margin: 8mm; }
@@ -152,13 +174,13 @@ const EmployeePortal: React.FC = () => {
   
   .page {
     max-width: 800px;
-    margin: 20px auto;
+    margin: 15px auto;
     background: #fff;
-    padding: 20px;
+    padding: 22px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     border-radius: 8px;
     position: relative;
-    min-height: 1000px;
+    min-height: 980px;
   }
 
   .watermark {
@@ -166,84 +188,117 @@ const EmployeePortal: React.FC = () => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 520px;
-    max-width: 85%;
-    opacity: 0.04;
+    width: 440px;
+    max-width: 80%;
+    opacity: 0.08;
     pointer-events: none;
-  .detail-row .sep { width: 15px; font-weight: 500; color: #94a3b8; }
-  .detail-row .val { flex: 1; font-weight: 600; color: #0f172a; }
+    z-index: 0;
+  }
+
+  /* --- HEADER --- */
+  .header-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; position: relative; z-index: 1; border-bottom: 2px solid #0a3161; padding-bottom: 10px; }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-left img { width: 75px; height: 75px; object-fit: contain; }
+  .header-text h1 { font-size: 15px; font-weight: 800; color: #0a3161; line-height: 1.2; margin-bottom: 3px; }
+  .header-text .inst-sub { font-size: 9px; font-weight: 700; color: #b45309; margin-bottom: 2px; }
+  .header-text .inst-min { font-size: 8.5px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+  .header-text .inst-addr { font-size: 8px; color: #475569; margin-bottom: 2px; }
+  .header-text .inst-contact { font-size: 8px; color: #64748b; }
+  .header-text span { color: #0a3161; font-weight: 600; }
+  
+  .header-right { width: 230px; display: flex; flex-direction: column; gap: 6px; }
+  .ps-badge { background: #0a3161; color: white; border-radius: 6px; text-align: center; padding: 6px 10px; }
+  .ps-badge .title { font-size: 14px; font-weight: 800; letter-spacing: 0.5px; }
+  .ps-badge .subtitle { font-size: 9px; font-weight: 500; margin-top: 1px; }
+  
+  .pay-dates { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; }
+  .date-row { display: flex; align-items: center; margin-bottom: 4px; font-size: 9px; }
+  .date-row:last-child { margin-bottom: 0; }
+  .date-row .icon { width: 12px; height: 12px; margin-right: 6px; color: #0a3161; flex-shrink: 0; }
+  .date-row .lbl { font-weight: 600; width: 75px; color: #475569; }
+  .date-row .val { font-weight: 700; color: #0f172a; white-space: nowrap; }
+
+  /* --- DETAILS BOX --- */
+  .details-box { border: 1px solid #cbd5e1; border-radius: 6px; position: relative; padding: 18px 14px 12px 14px; margin-bottom: 12px; background: rgba(255, 255, 255, 0.7); z-index: 1; }
+  .emp-name-badge { position: absolute; top: -9px; left: 18px; background: #0a3161; color: #fff; padding: 2px 12px; font-size: 10.5px; font-weight: 700; border-radius: 4px; letter-spacing: 0.3px; }
+  
+  .details-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 14px; }
+  .detail-row { display: flex; font-size: 9px; }
+  .detail-row .lbl { width: 110px; color: #475569; font-weight: 500; flex-shrink: 0; }
+  .detail-row .sep { width: 10px; font-weight: 500; color: #94a3b8; }
+  .detail-row .val { flex: 1; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cat-badge { background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 3px; font-size: 8.5px; font-weight: 700; }
 
   /* --- SALARY TABLES --- */
   .salary-container { position: relative; margin-bottom: -1px; z-index: 1; }
+  .tables-wrapper { display: flex; gap: 12px; position: relative; }
   
-  .tables-wrapper { display: flex; gap: 15px; position: relative; }
-  
-  .sal-table { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.35); }
-  .sal-table .header-row { display: flex; align-items: center; padding: 8px 12px; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
+  .sal-table { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.7); }
+  .sal-table .header-row { display: flex; align-items: center; padding: 6px 10px; font-size: 11px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
   .sal-table.earn { border-color: #bbf7d0; }
-  .sal-table.earn .header-row { color: #166534; background: rgba(240, 253, 244, 0.75); border-bottom-color: #bbf7d0; }
+  .sal-table.earn .header-row { color: #166534; background: rgba(240, 253, 244, 0.9); border-bottom-color: #bbf7d0; }
   .sal-table.ded { border-color: #fecaca; }
-  .sal-table.ded .header-row { color: #991b1b; background: rgba(254, 242, 242, 0.75); border-bottom-color: #fecaca; }
+  .sal-table.ded .header-row { color: #991b1b; background: rgba(254, 242, 242, 0.9); border-bottom-color: #fecaca; }
   
   .sal-table table { width: 100%; border-collapse: collapse; background: transparent; }
-  .sal-table th { background: rgba(250, 250, 250, 0.5); font-size: 9.5px; font-weight: 700; padding: 6px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; }
+  .sal-table th { background: rgba(248, 250, 252, 0.8); font-size: 9px; font-weight: 700; padding: 5px 10px; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; }
   .sal-table th.amt-col { text-align: right; }
   .sal-table.earn th { color: #166534; }
   .sal-table.ded th { color: #991b1b; }
 
-  .sal-table td { padding: 7px 12px; font-size: 10.5px; border-bottom: 1px dashed rgba(226, 232, 240, 0.8); color: #334155; font-weight: 500; background: transparent; }
-  .sal-table td.amt-col { text-align: right; color: #0f172a; font-weight: 600; }
+  .sal-table td { padding: 5.5px 10px; font-size: 9.5px; border-bottom: 1px dashed rgba(226, 232, 240, 0.9); color: #334155; font-weight: 500; background: transparent; }
+  .sal-table td.amt-col { text-align: right; color: #0f172a; font-weight: 700; font-family: monospace; font-size: 10px; }
   
-  .total-row td { font-weight: 700 !important; font-size: 11px !important; border-top: 1px solid #e2e8f0; border-bottom: none !important; background: rgba(255,255,255,0.4) !important; }
+  .total-row td { font-weight: 800 !important; font-size: 10.5px !important; border-top: 1px solid #cbd5e1; border-bottom: none !important; background: rgba(248, 250, 252, 0.9) !important; }
   .sal-table.earn .total-row td { color: #166534 !important; }
   .sal-table.ded .total-row td { color: #991b1b !important; }
 
   /* --- NET PAY --- */
-  .net-pay-box { margin: 15px auto; width: 350px; text-align: center; border: 1px solid #0a3161; border-radius: 6px; overflow: hidden; position: relative; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.75); }
-  .net-pay-header { background: #0a3161; color: white; padding: 6px; font-weight: 700; font-size: 12px; letter-spacing: 1px; }
-  .net-pay-body { padding: 12px; background: transparent; }
-  .net-pay-amount { font-size: 24px; font-weight: 800; color: #0a3161; margin-bottom: 4px; }
-  .net-pay-words { font-size: 9.5px; color: #475569; font-weight: 500; font-style: italic; }
+  .net-pay-box { margin: 12px auto; width: 340px; text-align: center; border: 1.5px solid #0a3161; border-radius: 6px; overflow: hidden; position: relative; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.04); background: #fff; }
+  .net-pay-header { background: #0a3161; color: white; padding: 5px; font-weight: 800; font-size: 11px; letter-spacing: 1px; }
+  .net-pay-body { padding: 8px 12px; }
+  .net-pay-amount { font-size: 22px; font-weight: 800; color: #0a3161; margin-bottom: 2px; font-family: monospace; }
+  .net-pay-words { font-size: 8.5px; color: #475569; font-weight: 600; font-style: italic; }
 
   /* --- SUMMARY CARDS --- */
-  .summary-cards { display: flex; justify-content: space-between; border: 1px solid #c9d9eb; border-radius: 6px; padding: 12px 20px; margin-bottom: 15px; position: relative; z-index: 1; background: rgba(255, 255, 255, 0.4); }
-  .card { display: flex; align-items: center; gap: 10px; background: transparent; }
-  .card-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-  .card-icon svg { width: 20px; height: 20px; }
-  .card.earn .card-icon { background: rgba(240, 253, 244, 0.7); color: #166534; }
-  .card.ded .card-icon { background: rgba(254, 242, 242, 0.7); color: #991b1b; }
-  .card.net .card-icon { background: rgba(240, 246, 255, 0.7); color: #0a3161; }
-  .card.perc .card-icon { background: rgba(250, 245, 255, 0.7); color: #6b21a8; }
-  .card-info .lbl { font-size: 9px; font-weight: 700; color: #64748b; margin-bottom: 2px; text-transform: uppercase; }
-  .card-info .val { font-size: 13px; font-weight: 800; }
+  .summary-cards { display: flex; justify-content: space-between; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 16px; margin-bottom: 12px; position: relative; z-index: 1; background: #f8fafc; }
+  .card { display: flex; align-items: center; gap: 8px; background: transparent; }
+  .card-icon { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .card-icon svg { width: 16px; height: 16px; }
+  .card.earn .card-icon { background: #dcfce7; color: #166534; }
+  .card.ded .card-icon { background: #fee2e2; color: #991b1b; }
+  .card.net .card-icon { background: #dbeafe; color: #0a3161; }
+  .card.perc .card-icon { background: #f3e8ff; color: #6b21a8; }
+  .card-info .lbl { font-size: 8px; font-weight: 700; color: #64748b; margin-bottom: 1px; text-transform: uppercase; }
+  .card-info .val { font-size: 11.5px; font-weight: 800; }
   .card.earn .val { color: #166534; }
   .card.ded .val { color: #991b1b; }
   .card.net .val { color: #0a3161; }
   .card.perc .val { color: #6b21a8; }
-  .card-info .sub { font-size: 8px; color: #94a3b8; }
+  .card-info .sub { font-size: 7.5px; color: #94a3b8; }
 
   /* --- FOOTER --- */
-  .footer-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; position: relative; z-index: 1; }
-  .footer-words { font-size: 10px; font-weight: 600; color: #0f172a; }
-  .footer-words span { font-weight: 500; color: #475569; display: block; margin-top: 4px; }
+  .footer-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px; position: relative; z-index: 1; }
+  .footer-words { font-size: 9px; font-weight: 700; color: #0f172a; max-width: 450px; }
+  .footer-words span { font-weight: 500; color: #475569; display: block; margin-top: 2px; }
   
-  .auth-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 15px; display: flex; align-items: center; gap: 12px; background: rgba(248, 250, 252, 0.6); }
-  .auth-box svg { width: 24px; height: 24px; color: #0ea5e9; }
-  .auth-box div { font-size: 9.5px; color: #334155; font-weight: 500; }
+  .auth-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; background: #f8fafc; }
+  .auth-box svg { width: 20px; height: 20px; color: #0284c7; flex-shrink: 0; }
+  .auth-box div { font-size: 8px; color: #334155; font-weight: 600; line-height: 1.2; }
   
-  .bottom-note { text-align: center; margin-top: 30px; font-size: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 6px; position: relative; z-index: 1; }
-  .bottom-note svg { width: 14px; height: 14px; }
+  .bottom-note { text-align: center; margin-top: 20px; font-size: 8.5px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 4px; position: relative; z-index: 1; border-top: 1px dashed #e2e8f0; padding-top: 8px; }
+  .bottom-note svg { width: 12px; height: 12px; }
 
   @media print {
     body { background: #fff; }
-    .page { margin: 0; padding: 0; box-shadow: none; max-width: none; min-height: auto; border-radius: 0; }
+    .page { margin: 0; padding: 12px; box-shadow: none; max-width: none; min-height: auto; border-radius: 0; }
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 </style></head>
 <body>
 <div class="page">
-  <img src="${logoSrc}" class="watermark" onerror="this.style.display='none'"/>
+  <img src="${logoSrc}" class="watermark" alt="Watermark" onerror="this.style.display='none'"/>
   
   <!-- Header -->
   <div class="header-box">
@@ -251,26 +306,32 @@ const EmployeePortal: React.FC = () => {
       <img src="${logoSrc}" alt="Logo" onerror="this.style.display='none'"/>
       <div class="header-text">
         <h1>INDIAN INSTITUTE OF PETROLEUM AND ENERGY</h1>
-        <p>FAB, Vangal, Sabbavaram, Anakapalle &ndash; 531035</p>
-        <p>Visakhapatnam, Andhra Pradesh, India</p>
-        <p style="margin-top:4px;"><span>E-mail:</span> pr@iipe.ac.in, fa@iipe.ac.in &nbsp;|&nbsp; <span>Website:</span> www.iipe.ac.in</p>
+        <div class="inst-sub">(An Institute of National Importance at par with IITs)</div>
+        <div class="inst-min">Ministry of Petroleum and Natural Gas, Government of India</div>
+        <div class="inst-addr">2nd Floor, AU Engg College Main Block, Andhra University, Visakhapatnam &ndash; 530003, A.P., India</div>
+        <div class="inst-contact"><span>E-mail:</span> fa@iipe.ac.in, info@iipe.ac.in &nbsp;|&nbsp; <span>Website:</span> www.iipe.ac.in</div>
       </div>
     </div>
     <div class="header-right">
       <div class="ps-badge">
         <div class="title">PAY SLIP</div>
-        <div class="subtitle">for ${monthLabel}-${p.year}</div>
+        <div class="subtitle">for ${monthLabel} ${p.year}</div>
       </div>
       <div class="pay-dates">
         <div class="date-row">
           <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-          <div class="lbl">Pay Date</div>
+          <div class="lbl">Pay Date:</div>
           <div class="val">${payDateStr}</div>
         </div>
         <div class="date-row">
           <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <div class="lbl">Pay Period</div>
-          <div class="val">01-${monthLabel.substring(0,3)}-${p.year} to ${new Date(p.year, p.month, 0).getDate()}-${monthLabel.substring(0,3)}-${p.year}</div>
+          <div class="lbl">Pay Period:</div>
+          <div class="val">01-${monthLabel.substring(0,3)}-${p.year} to ${daysInMonth}-${monthLabel.substring(0,3)}-${p.year}</div>
+        </div>
+        <div class="date-row">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <div class="lbl">Pay Drawn:</div>
+          <div class="val">${paidDays} / ${daysInMonth} Days</div>
         </div>
       </div>
     </div>
@@ -278,29 +339,32 @@ const EmployeePortal: React.FC = () => {
 
   <!-- Details Box -->
   <div class="details-box">
-    <div class="emp-name-badge">Mr/Ms. ${name}</div>
+    <div class="emp-name-badge">${name} (${p.employeeId || '-'})</div>
     <div class="details-grid">
       <!-- Col 1 -->
       <div class="detail-row"><div class="lbl">Employee Number</div><div class="sep">:</div><div class="val">${p.employeeId||'-'}</div></div>
+      <div class="detail-row"><div class="lbl">Date of Joining</div><div class="sep">:</div><div class="val">${doj}</div></div>
       <div class="detail-row"><div class="lbl">PAN Number</div><div class="sep">:</div><div class="val">${u?.pan||'-'}</div></div>
       
+      <!-- Col 2 -->
       <div class="detail-row"><div class="lbl">Designation</div><div class="sep">:</div><div class="val">${u?.designation||'-'}</div></div>
-      <div class="detail-row"><div class="lbl">PF Account Number</div><div class="sep">:</div><div class="val">${u?.pfAccountNumber||'-'}</div></div>
+      <div class="detail-row"><div class="lbl">Date of Next Increment</div><div class="sep">:</div><div class="val">${dni}</div></div>
+      <div class="detail-row"><div class="lbl">PRAN / NPS Number</div><div class="sep">:</div><div class="val">${u?.pranAccountNumber||'-'}</div></div>
       
-      <div class="detail-row"><div class="lbl">Department</div><div class="sep">:</div><div class="val">${u?.department||'-'}</div></div>
-      <div class="detail-row"><div class="lbl">PRAN (PF) Number</div><div class="sep">:</div><div class="val">${u?.pranAccountNumber||'-'}</div></div>
-      
-      <div class="detail-row"><div class="lbl">Location</div><div class="sep">:</div><div class="val">${u?.location||'Visakhapatnam'}</div></div>
-      <div class="detail-row"><div class="lbl">Tax Regime</div><div class="sep">:</div><div class="val">${u?.taxRegime||'Regular Tax Regime'}</div></div>
-      
-      <div class="detail-row"><div class="lbl">Date of Joining</div><div class="sep">:</div><div class="val">${doj||'-'}</div></div>
-      <div class="detail-row"><div class="lbl">Income Tax Status</div><div class="sep">:</div><div class="val">${p.tds > 0 ? 'Taxable' : 'Non-Taxable'}</div></div>
-      
-      <div class="detail-row"><div class="lbl">Bank Details</div><div class="sep">:</div><div class="val">${u?.bankName?`${u.bankName} ${u.bankAccountNumber?'(****'+String(u.bankAccountNumber).slice(-4)+')':''}`:'-'}</div></div>
+      <!-- Col 3 -->
+      <div class="detail-row"><div class="lbl">Department</div><div class="sep">:</div><div class="val">${department}</div></div>
       <div class="detail-row"><div class="lbl">Pay Level</div><div class="sep">:</div><div class="val">Level-${u?.payLevel||p.payLevel||'-'}</div></div>
+      <div class="detail-row"><div class="lbl">Bank Name</div><div class="sep">:</div><div class="val">${u?.bankName||'State Bank of India'}</div></div>
       
-      <div class="detail-row"><div class="lbl">Payment Mode</div><div class="sep">:</div><div class="val">Bank Transfer</div></div>
-      <div class="detail-row"><div class="lbl">PR Account Number (IPRAN)</div><div class="sep">:</div><div class="val">${u?.pranAccountNumber||'-'}</div></div>
+      <!-- Col 4 -->
+      <div class="detail-row"><div class="lbl">Category</div><div class="sep">:</div><div class="val"><span class="cat-badge">${empCategory}</span></div></div>
+      <div class="detail-row"><div class="lbl">Pay Drawn (No. of Days)</div><div class="sep">:</div><div class="val">${paidDays} Days</div></div>
+      <div class="detail-row"><div class="lbl">Bank Account No.</div><div class="sep">:</div><div class="val">${u?.bankAccountNumber?`(****${String(u.bankAccountNumber).slice(-4)})`:'-'}</div></div>
+      
+      <!-- Col 5 -->
+      <div class="detail-row"><div class="lbl">Tax Regime</div><div class="sep">:</div><div class="val">${taxRegime}</div></div>
+      <div class="detail-row"><div class="lbl">Income Tax Status</div><div class="sep">:</div><div class="val">${p.tds > 0 ? 'Taxable' : 'Non-Taxable'}</div></div>
+      <div class="detail-row"><div class="lbl">IFSC Code</div><div class="sep">:</div><div class="val">${u?.ifscCode||'SBIN0003170'}</div></div>
     </div>
   </div>
 
@@ -310,7 +374,7 @@ const EmployeePortal: React.FC = () => {
       <!-- Earnings -->
       <div class="sal-table earn">
         <div class="header-row">
-          <svg style="width:16px;height:16px;margin-right:8px;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
+          <svg style="width:14px;height:14px;margin-right:6px;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
           EARNINGS
         </div>
         <table>
@@ -320,8 +384,9 @@ const EmployeePortal: React.FC = () => {
             <tr><td>Dearness Allowance (DA)</td><td class="amt-col">${fmt(p.da)}</td></tr>
             <tr><td>House Rent Allowance (HRA)</td><td class="amt-col">${fmt(p.hra)}</td></tr>
             <tr><td>Transport Allowance (TA)</td><td class="amt-col">${fmt(p.ta)}</td></tr>
-            <tr><td>NPS (Employer)</td><td class="amt-col">${fmt(npsEmpE)}</td></tr>
-            <tr class="total-row"><td>TOTAL EARNINGS</td><td class="amt-col">${fmt(totalEarnings)}</td></tr>
+            ${(p.otherAllowances || 0) > 0 ? `<tr><td>Special / Dean Allowance</td><td class="amt-col">${fmt(p.otherAllowances)}</td></tr>` : ''}
+            <tr><td>NPS Employer Contribution (14%)</td><td class="amt-col">${fmt(npsEmpE)}</td></tr>
+            <tr class="total-row"><td>TOTAL EARNINGS (GROSS)</td><td class="amt-col">${fmt(totalEarnings)}</td></tr>
           </tbody>
         </table>
       </div>
@@ -329,19 +394,18 @@ const EmployeePortal: React.FC = () => {
       <!-- Deductions -->
       <div class="sal-table ded">
         <div class="header-row">
-          <svg style="width:16px;height:16px;margin-right:8px;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
+          <svg style="width:14px;height:14px;margin-right:6px;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
           DEDUCTIONS
         </div>
         <table>
           <thead><tr><th>Particulars</th><th class="amt-col">Amount (INR)</th></tr></thead>
           <tbody>
-            <tr><td>NPS (Employee)</td><td class="amt-col">${fmt(p.npsEmployeeShare)}</td></tr>
-            <tr><td>Provident Fund (PF)</td><td class="amt-col">0.00</td></tr>
-            <tr><td>NPS EMP D</td><td class="amt-col">${fmt(npsEmpD)}</td></tr>
-            <tr><td>Professional Tax</td><td class="amt-col">${fmt(p.professionalTax)}</td></tr>
-            <tr><td>CGHS</td><td class="amt-col">${fmt(p.cghs)}</td></tr>
-            ${p.tds > 0 ? `<tr><td>Income Tax (TDS)</td><td class="amt-col">${fmt(p.tds)}</td></tr>` : ''}
-            ${p.otherDeductions > 0 ? `<tr><td>Other Deductions</td><td class="amt-col">${fmt(p.otherDeductions)}</td></tr>` : ''}
+            <tr><td>NPS Employee Contribution (10%)</td><td class="amt-col">${fmt(p.npsEmployeeShare)}</td></tr>
+            <tr><td>NPS Employer Share (Deduction)</td><td class="amt-col">${fmt(npsEmpD)}</td></tr>
+            <tr><td>Professional Tax (PT)</td><td class="amt-col">${fmt(p.professionalTax)}</td></tr>
+            <tr><td>CGHS / Medical Contribution</td><td class="amt-col">${fmt(p.cghs)}</td></tr>
+            ${p.tds > 0 ? `<tr><td>Income Tax (TDS)</td><td class="amt-col">${fmt(p.tds)}</td></tr>` : '<tr><td>Income Tax (TDS)</td><td class="amt-col">0.00</td></tr>'}
+            ${p.otherDeductions > 0 ? `<tr><td>Other Deductions / Salary Recovery</td><td class="amt-col">${fmt(p.otherDeductions)}</td></tr>` : ''}
             <tr class="total-row"><td>TOTAL DEDUCTIONS</td><td class="amt-col">${fmt(p.totalDeductions)}</td></tr>
           </tbody>
         </table>
@@ -351,7 +415,7 @@ const EmployeePortal: React.FC = () => {
 
   <!-- Net Pay Box -->
   <div class="net-pay-box">
-    <div class="net-pay-header">NET PAY</div>
+    <div class="net-pay-header">NET PAYABLE AMOUNT</div>
     <div class="net-pay-body">
       <div class="net-pay-amount">₹ ${fmt(p.netSalary)}</div>
       <div class="net-pay-words">(${words} Only)</div>
@@ -386,13 +450,13 @@ const EmployeePortal: React.FC = () => {
     </div>
     <div class="auth-box">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-      <div>This is a computer generated pay slip<br>and does not require signature.</div>
+      <div>This is a computer generated pay slip<br>and does not require physical signature.</div>
     </div>
   </div>
 
   <div class="bottom-note">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    For any queries, please contact the Accounts Department.
+    For any payroll queries, please contact the Finance &amp; Accounts Section (fa@iipe.ac.in).
   </div>
 
 </div>
