@@ -47,8 +47,11 @@ class ApiService {
       (error) => {
         if (error.response && error.response.status === 401) {
           localStorage.removeItem('authToken');
-          if (window.location.pathname !== '/IIPMPayroll/login') {
-            window.location.href = '/IIPMPayroll/login';
+          const prefix = window.location.pathname.startsWith('/IIPEPayroll')
+            ? '/IIPEPayroll'
+            : (window.location.pathname.startsWith('/IIPE') ? '/IIPE' : '/IIPMPayroll');
+          if (!window.location.pathname.endsWith('/login')) {
+            window.location.href = prefix + '/login';
           }
         }
         return Promise.reject(error);

@@ -91,9 +91,17 @@ function App() {
     return <EmployeeDashboard />;
   };
 
+  const getBasename = () => {
+    const path = window.location.pathname;
+    if (path.startsWith('/IIPEPayroll')) return '/IIPEPayroll';
+    if (path.startsWith('/IIPE')) return '/IIPE';
+    if (path.startsWith('/IIPMPayroll')) return '/IIPMPayroll';
+    return '';
+  };
+
   return (
     <UserContext.Provider value={{ isAuthenticated, role, userId, username }}>
-      <Router basename="/IIPMPayroll">
+      <Router basename={getBasename()}>
         <div className="App">
           {isAuthenticated && <Navbar onLogout={handleLogout} />}
           <div className={isAuthenticated ? 'main-content' : 'auth-wrapper'} style={!isAuthenticated ? { width: '100%', flex: 1 } : {}}>
