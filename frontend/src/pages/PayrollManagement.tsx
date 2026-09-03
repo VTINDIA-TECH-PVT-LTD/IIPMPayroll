@@ -215,9 +215,12 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     setMsg(null);
     try {
       const tdsMap: Record<string, number> = {};
+      const otherDeductionsMap: Record<string, number> = {};
       const remarksMap: Record<string, string> = {};
+      
       rows.forEach(r => { 
         if (r.tds !== '') tdsMap[r.user.id] = Number(r.tds);
+        if (r.otherDeductions !== undefined) otherDeductionsMap[r.user.id] = Number(r.otherDeductions);
         remarksMap[r.user.id] = r.remark;
       });
       
@@ -227,22 +230,105 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
         month,
         year,
         tdsMap,
+        otherDeductionsMap,
         remarksMap
       };
       
-      await apiService.api.post('/payroll/bulk', payload);
-      setMsg({ type: 'success', text: `✓ Payroll records submitted for approval successfully!` });
-      
-      // Also automatically export the approval sheet
-      await handleExportApprovalSheet();
+      const res = await apiService.api.post('/payroll/bulk', payload);
+      const count = res.data?.data?.length || rows.length;
+      setMsg({ type: 'success', text: `✓ ${count} payroll records submitted for approval successfully!` });
 
-      loadPayrolls();
+      await loadPayrolls();
       setTab('view');
     } catch (e: any) {
       setMsg({ type: 'error', text: e.response?.data?.message || 'Error processing payroll.' });
     } finally {
       setLoading(false);
     }
+  };
+
+  const exportGridToExcel = () => {
+    if (filteredRows.length === 0) {
+      setMsg({ type: 'error', text: 'No rows to export. Please click "Fetch List" first.' });
+      return;
+    }
+    
+    const exportData = filteredRows.map((row, i) => {
+      const u = row.user;
+      const isContract = isContractUser(u);
+      const isDirector = (u.employeeId === 'DIR001') || (u.payLevel && String(u.payLevel).includes('17')) || (u.designation && u.designation.toLowerCase().includes('director'));
+      const isRegistrar = u.employeeId === 'NT1022';
+      const bp = u.basicPay || 0;
+      const daPct = (settings.DA_PERCENTAGE || 60) / 100;
+      const hraPct = (settings.HRA_PERCENTAGE || 20) / 100;
+      const npsEmpPct = (settings.NPS_EMPLOYEE_PERCENTAGE || 10) / 100;
+      const npsEmployerPct = (settings.NPS_EMPLOYER_PERCENTAGE || 14) / 100;
+
+      const da = isContract ? 0 : Math.round(bp * daPct);
+      const hra = (isContract || isDirector || isRegistrar) ? 0 : Math.round(bp * hraPct);
+      
+      const level = parseInt(String(u.payLevel).replace(/\D/g, '') || '10', 10);
+      let ta = 0;
+      if (u.taOverride !== undefined && u.taOverride !== null) {
+        ta = u.taOverride;
+      } else if (isContract || isDirector || isRegistrar) {
+        ta = 0;
+      } else if (level >= 10) {
+        const taBase = settings.TA_FIXED_AMOUNT || 3600;
+        const taDaPct = (settings.TA_DA_PERCENTAGE || 60) / 100;
+        ta = Math.round(taBase * (1 + taDaPct));
+      } else if (level >= 1 && level <= 9) {
+        const taBase = 1800;
+        const taDaPct = (settings.TA_DA_PERCENTAGE || 60) / 100;
+        ta = Math.round(taBase * (1 + taDaPct));
+      }
+      
+      const deanAllowance = u.deanAllowance || u.specialAllowance || 0;
+      const npsEmp = (isContract || isDirector) ? 0 : Math.round((bp + da) * npsEmpPct);
+      const npsEmployer = (isContract || isDirector) ? 0 : Math.round((bp + da) * npsEmployerPct);
+      const gross = isContract ? (bp + deanAllowance) : (bp + da + hra + ta + npsEmployer + deanAllowance); 
+      
+      const pt = settings.PT_AMOUNT || 200;
+      const cghs = isContract ? 0 : (level >= 12 ? 1000 : (level >= 7 ? 650 : (level === 6 ? 450 : 250)));
+      
+      const tdsVal = row.tds === '' ? 0 : Number(row.tds);
+      const otherDed = row.otherDeductions !== undefined ? Number(row.otherDeductions) : (u.otherDeductions || 0);
+      const totalDed = tdsVal + npsEmp + pt + cghs + otherDed + ((isContract || isDirector) ? 0 : npsEmployer);
+      const net = gross - totalDed;
+
+      return {
+        'Sl.No': i + 1,
+        'Employee ID': u.employeeId || '',
+        'Name of the Employee': `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+        'Designation': u.designation || '',
+        'Pay Level': `Level-${u.payLevel || ''}`,
+        'Basic Pay (Rs.)': bp,
+        'DA 60% (Rs.)': da,
+        'TA (Rs.)': ta,
+        'HRA 20% (Rs.)': hra,
+        'Dean / Warden Allowance (Rs.)': deanAllowance,
+        'NPS Employer Share (Rs.)': npsEmployer,
+        'Gross Salary (Rs.)': gross,
+        'Professional Tax (Rs.)': pt,
+        'TDS (Rs.)': tdsVal,
+        'NPS Employee Share (Rs.)': npsEmp,
+        'CGHS Contribution (Rs.)': cghs,
+        'Other Deductions (Rs.)': otherDed,
+        'Total Deductions (Rs.)': totalDed,
+        'Net Salary (Rs.)': net,
+        'Remark': row.remark || ''
+      };
+    });
+
+    import('xlsx').then(XLSX => {
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `Salary_${months[month - 1]}_${year}`);
+      XLSX.writeFile(wb, `IIPE_Salary_Statement_${months[month - 1]}_${year}.xlsx`);
+      setMsg({ type: 'success', text: `✓ Salary register exported to Excel successfully!` });
+    }).catch(() => {
+      setMsg({ type: 'error', text: 'Error generating Excel export.' });
+    });
   };
 
   const handleApprove = async (id: string) => {
@@ -323,40 +409,42 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   };
 
   const exportPayrolls = () => {
-    const data = payrolls.map(p => ({
+    if (payrolls.length === 0) {
+      setMsg({ type: 'error', text: 'No records to export.' });
+      return;
+    }
+    const data = payrolls.map((p, i) => ({
+      'Sl.No': i + 1,
       'Employee ID': p.employeeId,
-      'Month': p.month,
+      'Employee Name': userMap[p.employeeId] || p.employeeName || '',
+      'Month': months[p.month - 1] || p.month,
       'Year': p.year,
-      'Gross Salary': p.grossSalary,
-      'Net Salary': p.netSalary,
-      'Status': p.status,
-      'TDS': p.tds,
-      'Other Deductions': p.otherDeductions,
+      'Basic Pay (Rs.)': p.basicPay || 0,
+      'DA (Rs.)': p.da || 0,
+      'TA (Rs.)': p.ta || 0,
+      'HRA (Rs.)': p.hra || 0,
+      'Dean/Warden Allowance (Rs.)': p.otherAllowances || 0,
+      'NPS Employer Share (Rs.)': p.npsEmployerShare || 0,
+      'Gross Salary (Rs.)': p.grossSalary || 0,
+      'Professional Tax (Rs.)': p.professionalTax || 0,
+      'TDS (Rs.)': p.tds || 0,
+      'NPS Employee Share (Rs.)': p.npsEmployeeShare || 0,
+      'CGHS (Rs.)': p.cghs || 0,
+      'Other Deductions (Rs.)': p.otherDeductions || 0,
+      'Total Deductions (Rs.)': p.totalDeductions || 0,
+      'Net Salary (Rs.)': p.netSalary || 0,
+      'Status': p.status || '',
       'Remark': p.remark || ''
     }));
     import('xlsx').then(XLSX => {
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Payrolls");
-      XLSX.writeFile(wb, `Payrolls_${months[month - 1]}_${year}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Payroll Register");
+      XLSX.writeFile(wb, `IIPE_Payroll_Register_${months[month - 1]}_${year}.xlsx`);
+      setMsg({ type: 'success', text: `✓ Payroll register exported to Excel successfully!` });
+    }).catch(() => {
+      setMsg({ type: 'error', text: 'Error generating Excel export.' });
     });
-  };
-
-  const handleExportApprovalSheet = async () => {
-    try {
-      setLoading(true);
-      const blob = await apiService.exportApprovalSheet(month, year);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Approval_Sheet_${months[month - 1]}_${year}.xlsx`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setMsg({ type: 'error', text: 'Error generating approval sheet.' });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const isAdmin = apiService.isSuperAdmin() || apiService.isFAAdmin();
@@ -464,9 +552,14 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                     );
                   })}
                 </div>
-                <button className="btn-accent-iipm" onClick={submitBulkPayroll} disabled={loading}>
-                  {loading ? 'Processing...' : 'Submit For Approval & Export'}
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button className="btn-outline-iipm" onClick={exportGridToExcel} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 16px', fontWeight: 600, fontSize: '0.85rem' }}>
+                    📊 Export to Excel
+                  </button>
+                  <button className="btn-accent-iipm" onClick={submitBulkPayroll} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 18px', fontWeight: 600, fontSize: '0.85rem' }}>
+                    {loading ? 'Submitting...' : '📤 Submit For Approval'}
+                  </button>
+                </div>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="table-iipm" style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
@@ -719,8 +812,9 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                     </button>
                   </>
                 )}
-                <button className="btn-accent-iipm" onClick={handleExportApprovalSheet} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>📄 Print Approval Sheet</button>
-                <button className="btn-outline-iipm" onClick={exportPayrolls} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Export Excel</button>
+                <button className="btn-accent-iipm" onClick={exportPayrolls} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 16px', fontSize: '0.85rem', fontWeight: 600 }}>
+                  📊 Export to Excel
+                </button>
               </div>
             </div>
             {payrolls.length === 0 ? (

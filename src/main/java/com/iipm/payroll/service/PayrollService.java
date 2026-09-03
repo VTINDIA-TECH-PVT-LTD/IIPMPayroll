@@ -219,7 +219,8 @@ public class PayrollService {
     }
 
     public List<Payroll> createBulkPayroll(String department, String payLevelBand, int month, int year,
-                                            Map<String, Double> tdsMap, Map<String, String> remarksMap, String createdBy) {
+                                            Map<String, Double> tdsMap, Map<String, Double> otherDeductionsMap,
+                                            Map<String, String> remarksMap, String createdBy) {
         List<User> users = userRepository.findAll();
         List<Payroll> created = new java.util.ArrayList<>();
 
@@ -244,12 +245,12 @@ public class PayrollService {
             if (!Boolean.TRUE.equals(user.getIsActive())) continue;
             if (user.getBasicPay() == null || user.getBasicPay() <= 0) continue;
 
-            // We will check for existing payroll inside the try block to allow updates
-
             // Calculate dynamic TDS if not explicitly provided in the map
             double tds = 0.0;
             if (tdsMap != null && tdsMap.containsKey(user.getId())) {
                 tds = tdsMap.get(user.getId());
+            } else if (user.getTds() != null && user.getTds() > 0) {
+                tds = user.getTds();
             } else {
                 com.iipm.payroll.model.ItDeclaration decl = itDeclarationService.getByUserIdAndFinancialYear(user.getId(), financialYear).orElse(null);
                 double basic = user.getBasicPay();
@@ -259,6 +260,13 @@ public class PayrollService {
                 double projectedIncome = (basic + da + hra + ta) * 12;
                 tds = taxCalculator.calculateMonthlyTds(projectedIncome, decl);
             }
+
+            double otherDeductions = (otherDeductionsMap != null && otherDeductionsMap.containsKey(user.getId()))
+                    ? otherDeductionsMap.get(user.getId())
+                    : (user.getOtherDeductions() != null ? user.getOtherDeductions() : 0.0);
+
+            double deanAllowance = user.getDeanAllowance() != null ? user.getDeanAllowance()
+                    : (user.getSpecialAllowance() != null ? user.getSpecialAllowance() : 0.0);
 
             try {
                 // Check if payroll already exists for this month/year
@@ -272,30 +280,33 @@ public class PayrollService {
                         continue;
                     }
                     // Re-calculate
-                    double currentTds = tdsMap != null ? tdsMap.getOrDefault(user.getId(), 0.0) : 0.0;
                     Map<String, Double> settings = settingService.getAllPayrollSettings();
                     
                     Map<String, Object> calculation = payrollCalculator.calculateMonthlySalary(
                         user.getBasicPay() != null ? user.getBasicPay() : 0,
                         user.getPayLevel() != null ? user.getPayLevel() : "10",
-                        currentTds,
-                        0.0,
+                        tds,
+                        otherDeductions,
                         settings
                     );
+
+                    double gross = ((Number) calculation.get("grossSalary")).doubleValue() + deanAllowance;
+                    double net = ((Number) calculation.get("netSalary")).doubleValue() + deanAllowance;
 
                     existing.setBasicPay(((Number) calculation.get("basicPay")).doubleValue());
                     existing.setDa(((Number) calculation.get("da")).doubleValue());
                     existing.setHra(((Number) calculation.get("hra")).doubleValue());
                     existing.setTa(((Number) calculation.get("ta")).doubleValue());
                     existing.setNpsEmployerShare(((Number) calculation.get("npsEmployerShare")).doubleValue());
-                    existing.setGrossSalary(((Number) calculation.get("grossSalary")).doubleValue());
+                    existing.setOtherAllowances(deanAllowance);
+                    existing.setGrossSalary(gross);
                     existing.setTds(((Number) calculation.get("tds")).doubleValue());
                     existing.setProfessionalTax(((Number) calculation.get("professionalTax")).doubleValue());
                     existing.setNpsEmployeeShare(((Number) calculation.get("npsEmployeeShare")).doubleValue());
                     existing.setCghs(((Number) calculation.get("cghs")).doubleValue());
                     existing.setOtherDeductions(((Number) calculation.get("otherDeductions")).doubleValue());
                     existing.setTotalDeductions(((Number) calculation.get("totalDeductions")).doubleValue());
-                    existing.setNetSalary(((Number) calculation.get("netSalary")).doubleValue());
+                    existing.setNetSalary(net);
                     existing.setStatus("PENDING");
                     existing.setUpdatedAt(java.time.LocalDateTime.now());
                     existing.setUpdatedBy(createdBy);
@@ -308,7 +319,12 @@ public class PayrollService {
 
                 String remark = remarksMap != null ? remarksMap.getOrDefault(user.getId(), "") : "";
 
-                payroll = createPayroll(user.getId(), month, year, tds, 0, createdBy);
+                payroll = createPayroll(user.getId(), month, year, tds, otherDeductions, createdBy);
+                if (deanAllowance > 0) {
+                    payroll.setOtherAllowances(deanAllowance);
+                    payroll.setGrossSalary(payroll.getGrossSalary() + deanAllowance);
+                    payroll.setNetSalary(payroll.getNetSalary() + deanAllowance);
+                }
                 payroll.setRemark(remark);
                 payroll.setStatus("PENDING"); // Submitted for approval
                 payrollRepository.save(payroll);

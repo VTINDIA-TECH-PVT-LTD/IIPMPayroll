@@ -199,11 +199,16 @@ public class PayrollController {
             tdsRaw.forEach((k, v) -> tdsMap.put(k, ((Number) v).doubleValue()));
 
             @SuppressWarnings("unchecked")
+            Map<String, Object> otherDedRaw = (Map<String, Object>) bulkData.getOrDefault("otherDeductionsMap", new java.util.HashMap<>());
+            Map<String, Double> otherDeductionsMap = new java.util.HashMap<>();
+            otherDedRaw.forEach((k, v) -> otherDeductionsMap.put(k, ((Number) v).doubleValue()));
+
+            @SuppressWarnings("unchecked")
             Map<String, Object> remarksRaw = (Map<String, Object>) bulkData.getOrDefault("remarksMap", new java.util.HashMap<>());
             Map<String, String> remarksMap = new java.util.HashMap<>();
             remarksRaw.forEach((k, v) -> remarksMap.put(k, String.valueOf(v)));
 
-            List<Payroll> payrolls = payrollService.createBulkPayroll(department, payLevel, month, year, tdsMap, remarksMap, createdBy);
+            List<Payroll> payrolls = payrollService.createBulkPayroll(department, payLevel, month, year, tdsMap, otherDeductionsMap, remarksMap, createdBy);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Bulk payroll created: " + payrolls.size() + " records", payrolls));
         } catch (Exception e) {
