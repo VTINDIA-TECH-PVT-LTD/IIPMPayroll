@@ -43,6 +43,7 @@ public class User {
     private String payLevel;
     private Integer payIndex;
     private Double basicPay;
+    private String employeeType;
     
     // Additional official fields
     private String function;

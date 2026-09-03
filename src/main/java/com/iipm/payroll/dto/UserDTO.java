@@ -58,6 +58,13 @@ public class UserDTO {
 
     private String aadhar;
 
+    private String employeeType;
+    private String function;
+    private String location;
+    private String taxRegime;
+    private String pfAccountNumber;
+    private String pranAccountNumber;
+
     private String role;
 
     @com.fasterxml.jackson.annotation.JsonProperty("isActive")

@@ -54,6 +54,12 @@ public class UserService {
                 .payLevel(userDTO.getPayLevel())
                 .payIndex(userDTO.getPayIndex())
                 .basicPay(userDTO.getBasicPay())
+                .employeeType(userDTO.getEmployeeType())
+                .function(userDTO.getFunction())
+                .location(userDTO.getLocation())
+                .taxRegime(userDTO.getTaxRegime())
+                .pfAccountNumber(userDTO.getPfAccountNumber())
+                .pranAccountNumber(userDTO.getPranAccountNumber())
                 .bankAccountNumber(userDTO.getBankAccountNumber())
                 .ifscCode(userDTO.getIfscCode())
                 .bankName(userDTO.getBankName())
@@ -95,6 +101,12 @@ public class UserService {
         user.setPayLevel(userDTO.getPayLevel());
         user.setPayIndex(userDTO.getPayIndex());
         user.setBasicPay(userDTO.getBasicPay());
+        user.setEmployeeType(userDTO.getEmployeeType());
+        user.setFunction(userDTO.getFunction());
+        user.setLocation(userDTO.getLocation());
+        user.setTaxRegime(userDTO.getTaxRegime());
+        user.setPfAccountNumber(userDTO.getPfAccountNumber());
+        user.setPranAccountNumber(userDTO.getPranAccountNumber());
         user.setBankAccountNumber(userDTO.getBankAccountNumber());
         user.setIfscCode(userDTO.getIfscCode());
         user.setBankName(userDTO.getBankName());
@@ -188,7 +200,15 @@ public class UserService {
                 .profilePicture(user.getProfilePicture())
                 .designation(user.getDesignation())
                 .department(user.getDepartment())
+                .payLevel(user.getPayLevel())
+                .payIndex(user.getPayIndex())
                 .basicPay(user.getBasicPay())
+                .employeeType(user.getEmployeeType())
+                .function(user.getFunction())
+                .location(user.getLocation())
+                .taxRegime(user.getTaxRegime())
+                .pfAccountNumber(user.getPfAccountNumber())
+                .pranAccountNumber(user.getPranAccountNumber())
                 .bankAccountNumber(user.getBankAccountNumber())
                 .ifscCode(user.getIfscCode())
                 .bankName(user.getBankName())
