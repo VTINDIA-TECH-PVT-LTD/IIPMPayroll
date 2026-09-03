@@ -137,8 +137,20 @@ const EmployeePortal: React.FC = () => {
     min-height: 1000px;
   }
 
+  .watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 520px;
+    max-width: 85%;
+    opacity: 0.12;
+    z-index: 0;
+    pointer-events: none;
+  }
+
   /* --- HEADER --- */
-  .header-box { display: flex; justify-content: space-between; margin-bottom: 12px; }
+  .header-box { display: flex; justify-content: space-between; margin-bottom: 12px; position: relative; z-index: 1; }
   .header-left { display: flex; align-items: center; gap: 15px; }
   .header-left img { width: 85px; height: 85px; object-fit: contain; }
   .header-text h1 { font-size: 18px; font-weight: 800; color: #0a3161; line-height: 1.2; margin-bottom: 6px; width: 350px;}
@@ -150,7 +162,7 @@ const EmployeePortal: React.FC = () => {
   .ps-badge .title { font-size: 16px; font-weight: 700; letter-spacing: 1px; }
   .ps-badge .subtitle { font-size: 10px; font-weight: 500; margin-top: 2px; }
   
-  .pay-dates { background: #f0f4f8; border: 1px solid #c9d9eb; border-radius: 6px; padding: 8px; }
+  .pay-dates { background: rgba(240, 244, 248, 0.7); border: 1px solid #c9d9eb; border-radius: 6px; padding: 8px; }
   .date-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 10.5px;}
   .date-row:last-child { margin-bottom: 0; }
   .date-row .icon { width: 14px; height: 14px; margin-right: 8px; color: #0a3161; }
@@ -158,8 +170,8 @@ const EmployeePortal: React.FC = () => {
   .date-row .val { font-weight: 700; color: #0f172a; white-space: nowrap; }
 
   /* --- DETAILS --- */
-  .details-box { border: 1px solid #c9d9eb; border-radius: 6px; position: relative; padding: 25px 15px 15px 15px; margin-bottom: 15px; }
-  .emp-name-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 15px; font-size: 14px; font-weight: 700; color: #0a3161; }
+  .details-box { border: 1px solid #c9d9eb; border-radius: 6px; position: relative; padding: 25px 15px 15px 15px; margin-bottom: 15px; background: rgba(255, 255, 255, 0.35); z-index: 1; }
+  .emp-name-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.95); padding: 0 15px; font-size: 14px; font-weight: 700; color: #0a3161; }
   
   .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 40px; }
   .detail-row { display: flex; font-size: 10.5px; }
@@ -168,47 +180,46 @@ const EmployeePortal: React.FC = () => {
   .detail-row .val { flex: 1; font-weight: 600; color: #0f172a; }
 
   /* --- SALARY TABLES --- */
-  .salary-container { position: relative; margin-bottom: -1px; } /* overlap with net pay */
-  .watermark { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 450px; opacity: 0.25; z-index: 0; pointer-events: none; }
+  .salary-container { position: relative; margin-bottom: -1px; z-index: 1; }
   
-  .tables-wrapper { display: flex; gap: 15px; position: relative; z-index: 1; }
+  .tables-wrapper { display: flex; gap: 15px; position: relative; }
   
-  .sal-table { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.8); }
+  .sal-table { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.35); }
   .sal-table .header-row { display: flex; align-items: center; padding: 8px 12px; font-size: 12px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
   .sal-table.earn { border-color: #bbf7d0; }
-  .sal-table.earn .header-row { color: #166534; background: #f0fdf4; border-bottom-color: #bbf7d0; }
+  .sal-table.earn .header-row { color: #166534; background: rgba(240, 253, 244, 0.75); border-bottom-color: #bbf7d0; }
   .sal-table.ded { border-color: #fecaca; }
-  .sal-table.ded .header-row { color: #991b1b; background: #fef2f2; border-bottom-color: #fecaca; }
+  .sal-table.ded .header-row { color: #991b1b; background: rgba(254, 242, 242, 0.75); border-bottom-color: #fecaca; }
   
-  .sal-table table { width: 100%; border-collapse: collapse; }
-  .sal-table th { background: #fafafa; font-size: 9.5px; font-weight: 700; padding: 6px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; }
+  .sal-table table { width: 100%; border-collapse: collapse; background: transparent; }
+  .sal-table th { background: rgba(250, 250, 250, 0.5); font-size: 9.5px; font-weight: 700; padding: 6px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; }
   .sal-table th.amt-col { text-align: right; }
   .sal-table.earn th { color: #166534; }
   .sal-table.ded th { color: #991b1b; }
 
-  .sal-table td { padding: 7px 12px; font-size: 10.5px; border-bottom: 1px dashed #e2e8f0; color: #334155; font-weight: 500; }
+  .sal-table td { padding: 7px 12px; font-size: 10.5px; border-bottom: 1px dashed rgba(226, 232, 240, 0.8); color: #334155; font-weight: 500; background: transparent; }
   .sal-table td.amt-col { text-align: right; color: #0f172a; font-weight: 600; }
   
-  .total-row td { font-weight: 700 !important; font-size: 11px !important; border-top: 1px solid #e2e8f0; border-bottom: none !important; }
+  .total-row td { font-weight: 700 !important; font-size: 11px !important; border-top: 1px solid #e2e8f0; border-bottom: none !important; background: rgba(255,255,255,0.4) !important; }
   .sal-table.earn .total-row td { color: #166534 !important; }
   .sal-table.ded .total-row td { color: #991b1b !important; }
 
   /* --- NET PAY --- */
-  .net-pay-box { margin: 15px auto; width: 350px; text-align: center; border: 1px solid #0a3161; border-radius: 6px; overflow: hidden; position: relative; z-index: 2; box-shadow: 0 4px 10px rgba(0,0,0,0.05); background: #fff; }
+  .net-pay-box { margin: 15px auto; width: 350px; text-align: center; border: 1px solid #0a3161; border-radius: 6px; overflow: hidden; position: relative; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.05); background: rgba(255, 255, 255, 0.75); }
   .net-pay-header { background: #0a3161; color: white; padding: 6px; font-weight: 700; font-size: 12px; letter-spacing: 1px; }
-  .net-pay-body { padding: 12px; }
+  .net-pay-body { padding: 12px; background: transparent; }
   .net-pay-amount { font-size: 24px; font-weight: 800; color: #0a3161; margin-bottom: 4px; }
   .net-pay-words { font-size: 9.5px; color: #475569; font-weight: 500; font-style: italic; }
 
   /* --- SUMMARY CARDS --- */
-  .summary-cards { display: flex; justify-content: space-between; border: 1px solid #c9d9eb; border-radius: 6px; padding: 12px 20px; margin-bottom: 15px; }
-  .card { display: flex; align-items: center; gap: 10px; }
+  .summary-cards { display: flex; justify-content: space-between; border: 1px solid #c9d9eb; border-radius: 6px; padding: 12px 20px; margin-bottom: 15px; position: relative; z-index: 1; background: rgba(255, 255, 255, 0.4); }
+  .card { display: flex; align-items: center; gap: 10px; background: transparent; }
   .card-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
   .card-icon svg { width: 20px; height: 20px; }
-  .card.earn .card-icon { background: #f0fdf4; color: #166534; }
-  .card.ded .card-icon { background: #fef2f2; color: #991b1b; }
-  .card.net .card-icon { background: #f0f6ff; color: #0a3161; }
-  .card.perc .card-icon { background: #faf5ff; color: #6b21a8; }
+  .card.earn .card-icon { background: rgba(240, 253, 244, 0.7); color: #166534; }
+  .card.ded .card-icon { background: rgba(254, 242, 242, 0.7); color: #991b1b; }
+  .card.net .card-icon { background: rgba(240, 246, 255, 0.7); color: #0a3161; }
+  .card.perc .card-icon { background: rgba(250, 245, 255, 0.7); color: #6b21a8; }
   .card-info .lbl { font-size: 9px; font-weight: 700; color: #64748b; margin-bottom: 2px; text-transform: uppercase; }
   .card-info .val { font-size: 13px; font-weight: 800; }
   .card.earn .val { color: #166534; }
@@ -218,15 +229,15 @@ const EmployeePortal: React.FC = () => {
   .card-info .sub { font-size: 8px; color: #94a3b8; }
 
   /* --- FOOTER --- */
-  .footer-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; }
+  .footer-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; position: relative; z-index: 1; }
   .footer-words { font-size: 10px; font-weight: 600; color: #0f172a; }
   .footer-words span { font-weight: 500; color: #475569; display: block; margin-top: 4px; }
   
-  .auth-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 15px; display: flex; align-items: center; gap: 12px; background: #f8fafc; }
+  .auth-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 15px; display: flex; align-items: center; gap: 12px; background: rgba(248, 250, 252, 0.6); }
   .auth-box svg { width: 24px; height: 24px; color: #0ea5e9; }
   .auth-box div { font-size: 9.5px; color: #334155; font-weight: 500; }
   
-  .bottom-note { text-align: center; margin-top: 30px; font-size: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .bottom-note { text-align: center; margin-top: 30px; font-size: 10px; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 6px; position: relative; z-index: 1; }
   .bottom-note svg { width: 14px; height: 14px; }
 
   @media print {
@@ -238,6 +249,7 @@ const EmployeePortal: React.FC = () => {
 </style></head>
 <body>
 <div class="page">
+  <img src="${logoSrc}" class="watermark" onerror="this.style.display='none'"/>
   
   <!-- Header -->
   <div class="header-box">
@@ -300,8 +312,6 @@ const EmployeePortal: React.FC = () => {
 
   <!-- Salary Tables -->
   <div class="salary-container">
-    <img src="${logoSrc}" class="watermark" onerror="this.style.display='none'"/>
-    
     <div class="tables-wrapper">
       <!-- Earnings -->
       <div class="sal-table earn">
