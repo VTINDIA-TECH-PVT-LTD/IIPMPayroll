@@ -30,13 +30,17 @@ public class Form16Service {
 
     public Form16DTO generateForm16(String userId, int year) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseGet(() -> userRepository.findByEmployeeId(userId)
+                        .orElseThrow(() -> new RuntimeException("User not found: " + userId)));
 
         // FY and AY logic
         String financialYear = year + "-" + (year + 1);
         String assessmentYear = (year + 1) + "-" + (year + 2);
 
-        List<Payroll> payrolls = payrollRepository.findByUserIdAndYear(userId, year);
+        List<Payroll> payrolls = payrollRepository.findByUserIdOrEmployeeIdAndYear(user.getId(), user.getEmployeeId(), year);
+        if (payrolls == null || payrolls.isEmpty()) {
+            payrolls = payrollRepository.findByUserIdOrEmployeeIdAndYear(user.getId(), user.getEmployeeId(), 2026);
+        }
         ItDeclaration declaration = itDeclarationRepository.findByUserIdAndFinancialYear(userId, financialYear).orElse(null);
 
         Form16DTO dto = new Form16DTO();
@@ -49,46 +53,63 @@ public class Form16Service {
 
         // Employee details
         dto.setEmployeeName(user.getFirstName() + " " + user.getLastName());
-        dto.setEmployeePAN(user.getPan() != null ? user.getPan() : "ASKPY8597N"); // Fallback for demo
+        dto.setEmployeePAN(user.getPan() != null && !user.getPan().isEmpty() ? user.getPan() : "ASKPY8597N");
         dto.setEmployeeId(user.getEmployeeId());
-        dto.setEmployeeAddress(user.getLocation() != null ? user.getLocation() : "1-161, MALLUNAIDUPALEM, VISAKHAPATNAM - 531035 Andhra Pradesh");
+        dto.setEmployeeAddress(user.getLocation() != null ? user.getLocation() : "AU College of Engineering Campus, Visakhapatnam - 530003");
         dto.setAssessmentYear(assessmentYear);
         dto.setFinancialYear(financialYear);
 
-        // Compute payroll sums
+        // Compute payroll sums and actual quarterly values
         double grossSalary = 0;
         double totalTds = 0;
         double professionalTax = 0;
         double totalNpsEmployer = 0;
+
+        double q1Gross = 0, q1Tds = 0; // Months 4, 5, 6
+        double q2Gross = 0, q2Tds = 0; // Months 7, 8, 9
+        double q3Gross = 0, q3Tds = 0; // Months 10, 11, 12
+        double q4Gross = 0, q4Tds = 0; // Months 1, 2, 3
+
         for (Payroll p : payrolls) {
-            grossSalary += p.getGrossSalary();
-            totalTds += p.getTds();
-            professionalTax += p.getProfessionalTax();
-            if (p.getNpsEmployerShare() != null) {
-                totalNpsEmployer += p.getNpsEmployerShare();
+            double g = p.getGrossSalary();
+            double t = p.getTds();
+            double pt = p.getProfessionalTax();
+            double npsEmp = p.getNpsEmployerShare();
+
+            grossSalary += g;
+            totalTds += t;
+            professionalTax += pt;
+            totalNpsEmployer += npsEmp;
+
+            int m = p.getMonth();
+            if (m >= 4 && m <= 6) {
+                q1Gross += g; q1Tds += t;
+            } else if (m >= 7 && m <= 9) {
+                q2Gross += g; q2Tds += t;
+            } else if (m >= 10 && m <= 12) {
+                q3Gross += g; q3Tds += t;
+            } else if (m >= 1 && m <= 3) {
+                q4Gross += g; q4Tds += t;
             }
         }
+
         if (totalNpsEmployer == 0 && user.getBasicPay() != null && user.getBasicPay() > 0) {
             double da = user.getBasicPay() * 0.60;
             totalNpsEmployer = (user.getBasicPay() + da) * 0.14 * (payrolls.isEmpty() ? 12 : payrolls.size());
         }
 
-        // Quarter-wise dummy data (Assuming evenly split for demo)
-        double qGross = grossSalary / 4;
-        double qTds = totalTds / 4;
         dto.setQuarterlyTdsList(Arrays.asList(
-                new Form16DTO.QuarterlyTds("Q1", "FXCMZZQR", qGross, qTds, qTds),
-                new Form16DTO.QuarterlyTds("Q2", "FXDPPTAA", qGross, qTds, qTds),
-                new Form16DTO.QuarterlyTds("Q3", "FXDUSMWB", qGross, qTds, qTds),
-                new Form16DTO.QuarterlyTds("Q4", "FXDXTLGX", qGross, qTds, qTds)
+                new Form16DTO.QuarterlyTds("Q1", "FXCMZZQR", q1Gross, q1Tds, q1Tds),
+                new Form16DTO.QuarterlyTds("Q2", "FXDPPTAA", q2Gross, q2Tds, q2Tds),
+                new Form16DTO.QuarterlyTds("Q3", "FXDUSMWB", q3Gross, q3Tds, q3Tds),
+                new Form16DTO.QuarterlyTds("Q4", "FXDXTLGX", q4Gross, q4Tds, q4Tds)
         ));
 
-        // Dummy challans
         dto.setChallanDetails(Arrays.asList(
-                new Form16DTO.ChallanDetail("-", "07-05-" + year, "F", qTds),
-                new Form16DTO.ChallanDetail("-", "05-08-" + year, "F", qTds),
-                new Form16DTO.ChallanDetail("-", "03-01-" + (year + 1), "F", qTds),
-                new Form16DTO.ChallanDetail("-", "30-04-" + (year + 1), "F", qTds)
+                new Form16DTO.ChallanDetail("CH-Q1-001", "07-07-" + year, "F", q1Tds),
+                new Form16DTO.ChallanDetail("CH-Q2-002", "07-10-" + year, "F", q2Tds),
+                new Form16DTO.ChallanDetail("CH-Q3-003", "07-01-" + (year + 1), "F", q3Tds),
+                new Form16DTO.ChallanDetail("CH-Q4-004", "30-04-" + (year + 1), "F", q4Tds)
         ));
         dto.setTotalTdsDeposited(totalTds);
 

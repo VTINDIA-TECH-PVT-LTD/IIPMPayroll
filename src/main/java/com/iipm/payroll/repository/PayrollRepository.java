@@ -27,4 +27,10 @@ public interface PayrollRepository extends MongoRepository<Payroll, String> {
 
     @Query("{ 'userId': ?0, 'year': ?1 }")
     List<Payroll> findByUserIdAndYear(String userId, int year);
+
+    @Query("{ 'employeeId': ?0, 'year': ?1 }")
+    List<Payroll> findByEmployeeIdAndYear(String employeeId, int year);
+
+    @Query("{ '$or': [ { 'userId': ?0 }, { 'employeeId': ?1 } ], 'year': ?2 }")
+    List<Payroll> findByUserIdOrEmployeeIdAndYear(String userId, String employeeId, int year);
 }

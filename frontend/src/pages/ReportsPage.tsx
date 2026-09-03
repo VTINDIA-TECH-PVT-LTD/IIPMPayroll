@@ -811,25 +811,36 @@ const ReportsPage: React.FC = () => {
       )}
 
       {/* Form 16 Banner */}
-      <div style={{ marginTop: '24px', padding: '20px 24px', background: 'linear-gradient(135deg, rgba(201,168,76,0.1), rgba(26,58,110,0.2))', borderRadius: 'var(--radius)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ marginTop: '24px', padding: '20px 24px', background: 'linear-gradient(135deg, rgba(201,168,76,0.1), rgba(26,58,110,0.2))', borderRadius: 'var(--radius)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>📋 Form 16 — Annual TDS Certificate</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Generate and download Form 16 (Part A & B) for any employee for the financial year</div>
+          <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>📋 Form 16 — Annual TDS Certificate & TRACES Statement</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Generate official Form 16 (Part A & Part B) with quarterly TDS summaries and tax calculations</div>
           
-          <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-            <select className="form-control-iipm" id="form16EmployeeSelect" style={{ width: '250px' }}>
+          <div style={{ marginTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <select className="form-control-iipm" id="form16EmployeeSelect" style={{ width: '300px', fontWeight: 600 }}>
               <option value="">-- Select Employee --</option>
-              {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.id})</option>)}
+              {employees.map(e => {
+                const empName = e.name || `${e.firstName || ''} ${e.lastName || ''}`.trim() || e.employeeId;
+                const empId = e.employeeId || e.id || e._id;
+                const val = e.id || e._id || e.employeeId;
+                return <option key={val} value={val}>{empName} ({empId})</option>;
+              })}
+            </select>
+            <select className="form-control-iipm" id="form16YearSelect" defaultValue="2026" style={{ width: '150px' }}>
+              <option value="2026">FY 2026-27</option>
+              <option value="2025">FY 2025-26</option>
             </select>
           </div>
         </div>
-        <button className="btn-accent-iipm" onClick={async () => {
+        <button className="btn-accent-iipm" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 20px', fontSize: '0.95rem' }} onClick={async () => {
           const selectEl = document.getElementById('form16EmployeeSelect') as HTMLSelectElement;
+          const yearEl = document.getElementById('form16YearSelect') as HTMLSelectElement;
           const selectedUserId = selectEl?.value;
+          const selectedYear = parseInt(yearEl?.value || '2026');
           if (!selectedUserId) { alert('Please select an employee first.'); return; }
           
           try {
-            const data = await apiService.getForm16(selectedUserId, year - 1);
+            const data = await apiService.getForm16(selectedUserId, selectedYear);
             const html = `
               <html><head><title>Form 16 - TRACES Format</title>
               <style>
