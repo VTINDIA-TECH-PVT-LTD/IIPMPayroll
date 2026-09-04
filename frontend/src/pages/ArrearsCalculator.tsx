@@ -25,8 +25,41 @@ const ArrearsCalculator: React.FC = () => {
 
   useEffect(() => {
     apiService.getAllUsers().then(data => {
-      setUsers(data.filter((u: any) => u.isActive));
-    }).catch(console.error);
+      const list: any[] = Array.isArray(data) ? data : [];
+      const empList = list.filter((u: any) => {
+        const eid = (u.employeeId || '').toUpperCase();
+        return (
+          eid.startsWith('TS') || 
+          eid.startsWith('NT') || 
+          eid.startsWith('CT') || 
+          eid.startsWith('CNT') || 
+          u.role === 'EMPLOYEE'
+        );
+      });
+      const finalUsers = empList.length > 0 ? empList : list;
+      setUsers(finalUsers);
+
+      // Auto populate on page load
+      const initialRows = finalUsers.map((u, idx) => {
+        const monthsObj: any = {};
+        daMonths.forEach(m => {
+          monthsObj[m] = { da: 0, ta: 0 };
+        });
+        return {
+          id: Date.now() + idx,
+          employeeNo: u.employeeId || '',
+          name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+          basic: u.basicPay || 0,
+          payLevel: u.payLevel || '',
+          transportAllowance: u.transportAllowance || (u.payLevel && parseInt(u.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600),
+          months: monthsObj,
+          tds: 0
+        };
+      });
+      setDaRows(initialRows);
+    }).catch(err => {
+      console.error('Error fetching users:', err);
+    });
   }, []);
 
   // PROMOTION LOGIC
