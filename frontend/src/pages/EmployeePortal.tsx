@@ -15,6 +15,7 @@ const EmployeePortal: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   const [tdsProjection, setTdsProjection] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [showPayslipModal, setShowPayslipModal] = useState(false);
   const [activePayslipHtml, setActivePayslipHtml] = useState<string>('');
 
@@ -68,14 +69,16 @@ const EmployeePortal: React.FC = () => {
   const loadMyPayrolls = async () => {
     try {
       setLoading(true);
-      const [payrollData, ytdData, tdsProjData] = await Promise.allSettled([
+      const [payrollData, ytdData, tdsProjData, userData] = await Promise.allSettled([
         apiService.getPayrollsByUser(userCtx!.userId!),
         apiService.getYTDReport(userCtx!.userId!),
         apiService.getTdsProjection(userCtx!.userId!, 2026),
+        apiService.getUserById(userCtx!.userId!),
       ]);
       if (payrollData.status === 'fulfilled') setPayrolls(payrollData.value);
       if (ytdData.status === 'fulfilled')    setYtd(ytdData.value?.data || ytdData.value);
       if (tdsProjData.status === 'fulfilled') setTdsProjection(tdsProjData.value);
+      if (userData.status === 'fulfilled')   setUserProfile(userData.value);
     } catch { }
     finally { setLoading(false); }
   };
@@ -158,7 +161,8 @@ const EmployeePortal: React.FC = () => {
   };
 
   const generatePayslipHtml = (p: any, u: any): string => {
-    const rawName = (u?.name || (u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : '') || p.employeeName || 'Mr. Y Rama Rao').trim();
+    const user = u || userProfile;
+    const rawName = (user?.name || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || p.employeeName || 'Mr. Y Rama Rao').trim();
     const name = (rawName.startsWith('Mr.') || rawName.startsWith('Dr.') || rawName.startsWith('Prof.') || rawName.startsWith('Ms.') || rawName.startsWith('Mrs.')) ? rawName : `Mr. ${rawName}`;
     const words = numberToWords(Math.round(p.netSalary || 0));
     const monthLabel = months[p.month - 1];
@@ -166,34 +170,40 @@ const EmployeePortal: React.FC = () => {
     const fmt = (n: number) => (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const npsEmpE = p.npsEmployerShare || 0;
     const npsEmpD = p.npsEmployerShare || 0;
-    const totalEarnings = (p.basicPay || 0) + (p.da || 0) + (p.hra || 0) + (p.ta || 0) + (p.otherAllowances || 0) + npsEmpE;
+    const totalEarnings = (p.basicPay || 0) + (p.da || 0) + (p.hra || 0) + (p.ta || 0) + (p.daArrears || 0) + (p.promotionArrears || 0) + (p.arrears || 0) + (p.otherAllowances || 0) + npsEmpE;
     
     const daysInMonth = new Date(p.year, p.month, 0).getDate();
     const paidDays = daysInMonth;
 
-    const rawDoj = u?.dateOfJoining || (p.employeeId === 'NT1005' ? '2020-01-20' : null);
-    const doj = rawDoj
-      ? new Date(rawDoj).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-      : '-';
+    const rawDoj = user?.dateOfJoining || user?.joiningDate || (p.employeeId === 'NT1005' ? '20-Jan-2020' : null);
+    let doj = '-';
+    if (rawDoj) {
+      if (typeof rawDoj === 'string' && /^\d{1,2}-[A-Za-z]{3}-\d{4}$/.test(rawDoj.trim())) {
+        doj = rawDoj.trim();
+      } else {
+        const d = new Date(rawDoj);
+        doj = !isNaN(d.getTime()) ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-') : String(rawDoj);
+      }
+    }
 
-    const dni = u?.dateOfNextIncrement 
-      ? new Date(u.dateOfNextIncrement).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    const dni = user?.dateOfNextIncrement 
+      ? new Date(user.dateOfNextIncrement).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
       : (p.month < 7 ? `01-Jul-${p.year}` : `01-Jul-${p.year + 1}`);
 
-    const isContract = (p.employeeType || u?.employeeType || u?.function || '').toLowerCase().includes('contract') || (p.payLevel || u?.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
+    const isContract = (p.employeeType || user?.employeeType || user?.function || '').toLowerCase().includes('contract') || (p.payLevel || user?.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
     const isFaculty = (p.employeeId || '').startsWith('TS') && !isContract;
     const empCategory = isFaculty ? 'Teaching Faculty' : isContract ? 'Contractual Staff' : 'Non-Teaching Staff';
 
-    const rawRegime = (u?.taxRegime || p.taxRegime || 'New').replace(/Tax\s*Regime/gi, '').trim();
+    const rawRegime = (user?.taxRegime || p.taxRegime || 'New').replace(/Tax\s*Regime/gi, '').trim();
     const taxRegime = rawRegime ? `${rawRegime} Tax Regime` : 'New Tax Regime (u/s 115BAC)';
 
-    const department = (u?.department && u.department !== 'Non-Teaching' && u.department !== 'Teaching') 
-      ? u.department 
+    const department = (user?.department && user.department !== 'Non-Teaching' && user.department !== 'Teaching') 
+      ? user.department 
       : ((p.employeeId || '').startsWith('TS') ? 'Academic & Research' : 'Finance & Accounts');
 
     const deductionPercentage = totalEarnings > 0 ? ((p.totalDeductions / totalEarnings) * 100).toFixed(2) : '0.00';
     const logoSrc = IIPE_LOGO_BASE64;
-    const cleanLevel = (u?.payLevel || p.payLevel || '-').replace(/^Level-?/i, '');
+    const cleanLevel = (user?.payLevel || p.payLevel || '-').replace(/^Level-?/i, '');
     const displayLevel = cleanLevel !== '-' ? `Level-${cleanLevel}` : '-';
     
     return `<!DOCTYPE html>
@@ -890,6 +900,11 @@ const EmployeePortal: React.FC = () => {
                 <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</div>
                   <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, background: `${statusColor[selectedPayroll.status]}20`, color: statusColor[selectedPayroll.status] }}>{selectedPayroll.status}</span>
                 </div>
+                {userProfile?.pan && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PAN Number</div><div style={{ fontWeight: 600 }}>{userProfile.pan}</div></div>}
+                {userProfile?.pranAccountNumber && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PRAN Number</div><div style={{ fontWeight: 600 }}>{userProfile.pranAccountNumber}</div></div>}
+                {(userProfile?.dateOfJoining || userProfile?.joiningDate) && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date of Joining</div><div style={{ fontWeight: 600 }}>{userProfile.dateOfJoining || userProfile.joiningDate}</div></div>}
+                {userProfile?.designation && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Designation</div><div style={{ fontWeight: 600 }}>{userProfile.designation}</div></div>}
+                {userProfile?.bankAccountNumber && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Bank A/C</div><div style={{ fontWeight: 600 }}>{userProfile.bankName || 'SBI'} (****{String(userProfile.bankAccountNumber).slice(-4)})</div></div>}
                 {selectedPayroll.approvedBy && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Approved By</div><div style={{ fontWeight: 600 }}>{selectedPayroll.approvedBy}</div></div>}
               </div>
 
@@ -905,9 +920,12 @@ const EmployeePortal: React.FC = () => {
                         ['DA (53%)', selectedPayroll.da],
                         ['HRA (20%)', selectedPayroll.hra],
                         ['Transport Allowance', selectedPayroll.ta],
+                        selectedPayroll.daArrears ? ['DA Arrears', selectedPayroll.daArrears] : null,
+                        selectedPayroll.promotionArrears ? ['Promotional Arrears', selectedPayroll.promotionArrears] : null,
+                        selectedPayroll.arrears ? ['Arrears', selectedPayroll.arrears] : null,
                         ['Other Allowances', selectedPayroll.otherAllowances || 0],
                         ['NPS Employer (14%)', selectedPayroll.npsEmployerShare || 0],
-                      ].map(([label, val]) => (
+                      ].filter(Boolean).map(([label, val]: any) => (
                         <tr key={String(label)}>
                           <td>{label}</td>
                           <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmt(Number(val))}</td>
