@@ -122,7 +122,7 @@ public class PdfGenerator {
         addSalaryRow(salaryTable, "Transport Allowance", df.format(ta), "Income Tax (TDS)", df.format(tds), false);
         
         if (daArrears > 0) {
-            addSalaryRow(salaryTable, "DA Arrears", df.format(daArrears), "", "", false);
+            addSalaryRow(salaryTable, "DA&TA Arrears", df.format(daArrears), "", "", false);
         }
         if (promotionArrears > 0) {
             addSalaryRow(salaryTable, "Promotional Arrears", df.format(promotionArrears), "", "", false);

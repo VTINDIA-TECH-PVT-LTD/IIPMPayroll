@@ -425,7 +425,7 @@ const EmployeePortal: React.FC = () => {
             <tr><td>Dearness Allowance (DA)</td><td class="amt-col">${fmt(p.da)}</td></tr>
             <tr><td>House Rent Allowance (HRA)</td><td class="amt-col">${fmt(p.hra)}</td></tr>
             <tr><td>Transport Allowance (TA)</td><td class="amt-col">${fmt(p.ta)}</td></tr>
-            ${(p.daArrears || 0) > 0 ? `<tr><td>DA Arrears</td><td class="amt-col" style="color:#0a3161;font-weight:700;">${fmt(p.daArrears)}</td></tr>` : ''}
+            ${(p.daArrears || 0) > 0 ? `<tr><td>DA&TA Arrears</td><td class="amt-col" style="color:#0a3161;font-weight:700;">${fmt(p.daArrears)}</td></tr>` : ''}
             ${(p.promotionArrears || 0) > 0 ? `<tr><td>Promotional Arrears</td><td class="amt-col" style="color:#0a3161;font-weight:700;">${fmt(p.promotionArrears)}</td></tr>` : ''}
             ${(p.arrears || 0) > 0 ? `<tr><td>Arrears</td><td class="amt-col" style="color:#0a3161;font-weight:700;">${fmt(p.arrears)}</td></tr>` : ''}
             ${(p.otherAllowances || 0) > 0 ? `<tr><td>Special / Dean Allowance</td><td class="amt-col">${fmt(p.otherAllowances)}</td></tr>` : ''}
