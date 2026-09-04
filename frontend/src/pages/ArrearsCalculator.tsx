@@ -12,6 +12,9 @@ const ArrearsCalculator: React.FC = () => {
   // TA/DA Arrears State
   const [daRows, setDaRows] = useState<any[]>([]);
   const [daMonths, setDaMonths] = useState<string[]>(['January \'26', 'February \'26', 'March \'26']);
+  const [bulkOldDa, setBulkOldDa] = useState<number>(50);
+  const [bulkNewDa, setBulkNewDa] = useState<number>(53);
+  const [bulkCategory, setBulkCategory] = useState<'all' | 'staff' | 'faculty'>('all');
 
   const [signatures, setSignatures] = useState({
     preparedBy: 'Y RAMA RAO',
@@ -111,6 +114,59 @@ const ArrearsCalculator: React.FC = () => {
     const monthsObj: any = {};
     daMonths.forEach(m => monthsObj[m] = { da: 0, ta: 0 });
     setDaRows([...daRows, { id: Date.now(), employeeNo: '', name: '', basic: 0, months: monthsObj, tds: 0 }]);
+  };
+
+  const loadAllEmployeesToTable = (category: 'all' | 'staff' | 'faculty') => {
+    let filtered = users;
+    if (category === 'staff') {
+      filtered = users.filter(u => (u.employeeId || '').toUpperCase().startsWith('NT') || (u.employeeId || '').toUpperCase().startsWith('CNT'));
+    } else if (category === 'faculty') {
+      filtered = users.filter(u => (u.employeeId || '').toUpperCase().startsWith('TS') || (u.employeeId || '').toUpperCase().startsWith('CT') || u.department === 'Faculty');
+    }
+
+    const newRows = filtered.map((u, idx) => {
+      const monthsObj: any = {};
+      daMonths.forEach(m => {
+        monthsObj[m] = { da: 0, ta: 0 };
+      });
+      return {
+        id: Date.now() + idx,
+        employeeNo: u.employeeId || '',
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+        basic: u.basicPay || 0,
+        payLevel: u.payLevel || '',
+        transportAllowance: u.transportAllowance || (u.payLevel && parseInt(u.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600),
+        months: monthsObj,
+        tds: 0
+      };
+    });
+    setDaRows(newRows);
+  };
+
+  const autoCalculateBulkDA = () => {
+    const diffPct = (bulkNewDa - bulkOldDa) / 100;
+    if (diffPct <= 0 && !window.confirm(`DA Hike is ${diffPct * 100}%. Do you want to proceed with calculation?`)) {
+      return;
+    }
+
+    setDaRows(daRows.map(r => {
+      const u = users.find(usr => usr.employeeId === r.employeeNo);
+      const basic = r.basic || u?.basicPay || 0;
+      const taBase = r.transportAllowance || u?.transportAllowance || 3600;
+      
+      const updatedMonths: any = {};
+      daMonths.forEach(m => {
+        const daAmt = Math.round(basic * diffPct);
+        const taAmt = Math.round(taBase * diffPct);
+        updatedMonths[m] = { da: daAmt, ta: taAmt };
+      });
+
+      return {
+        ...r,
+        basic: basic,
+        months: updatedMonths
+      };
+    }));
   };
 
   const updateDaRow = (id: number, field: string, value: any) => {
@@ -217,13 +273,100 @@ const ArrearsCalculator: React.FC = () => {
 
       {tab === 'tada' && (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="btn-primary-iipm" onClick={addDaRow}>+ Add Employee</button>
-              <button className="btn-iipm" onClick={addDaMonth} style={{ background: '#6366f1', color: 'white' }}>+ Add Month Column</button>
+          {/* Bulk Action and Auto-Calculation Toolbar */}
+          <div className="card-iipm" style={{ padding: '16px 20px', marginBottom: '20px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+              
+              {/* Left: Load Employees */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>1. Load Employees:</span>
+                <select 
+                  className="form-control-iipm" 
+                  value={bulkCategory} 
+                  onChange={e => setBulkCategory(e.target.value as any)}
+                  style={{ width: '190px', padding: '6px 10px', fontSize: '0.85rem' }}
+                >
+                  <option value="all">👥 All Employees ({users.length})</option>
+                  <option value="staff">👔 Non-Teaching Staff</option>
+                  <option value="faculty">🎓 Teaching Faculty</option>
+                </select>
+                <button 
+                  className="btn-primary-iipm" 
+                  onClick={() => loadAllEmployeesToTable(bulkCategory)}
+                  style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  ⚡ Populate Employees ({daRows.length > 0 ? `${daRows.length} Loaded` : 'Click to Load'})
+                </button>
+                <button className="btn-iipm" onClick={addDaRow} style={{ background: '#fff', border: '1px solid #cbd5e1', padding: '6px 12px', fontSize: '0.85rem' }}>+ Add Single</button>
+                <button className="btn-iipm" onClick={addDaMonth} style={{ background: '#6366f1', color: 'white', padding: '6px 12px', fontSize: '0.85rem' }}>+ Add Month</button>
+                {daRows.length > 0 && (
+                  <button className="btn-iipm" onClick={() => setDaRows([])} style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', padding: '6px 12px', fontSize: '0.85rem' }}>Clear All</button>
+                )}
+              </div>
+
+              {/* Right: Export Button */}
+              <div>
+                <button className="btn-iipm" onClick={exportDaExcel} style={{ background: '#22c55e', color: 'white', fontWeight: 600, padding: '8px 18px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 2px 4px rgba(34,197,94,0.2)' }}>
+                  📊 Export to Excel ({daRows.length} Records)
+                </button>
+              </div>
             </div>
-            <button className="btn-iipm" onClick={exportDaExcel} style={{ background: '#22c55e', color: 'white' }}>Export to Excel</button>
+
+            {/* Sub-bar: 1-Click DA Rate Calculator */}
+            <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>2. DA Revision Rate:</span>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Old DA%:</span>
+                <input 
+                  type="number" 
+                  className="form-control-iipm" 
+                  value={bulkOldDa} 
+                  onChange={e => setBulkOldDa(Number(e.target.value))} 
+                  style={{ width: '70px', padding: '4px 8px', fontSize: '0.85rem' }} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>New DA%:</span>
+                <input 
+                  type="number" 
+                  className="form-control-iipm" 
+                  value={bulkNewDa} 
+                  onChange={e => setBulkNewDa(Number(e.target.value))} 
+                  style={{ width: '70px', padding: '4px 8px', fontSize: '0.85rem' }} 
+                />
+              </div>
+
+              <span style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
+                Hike: {(bulkNewDa - bulkOldDa).toFixed(1)}%
+              </span>
+
+              <button 
+                className="btn-iipm" 
+                onClick={autoCalculateBulkDA} 
+                disabled={daRows.length === 0}
+                style={{ 
+                  background: daRows.length > 0 ? '#0284c7' : '#94a3b8', 
+                  color: 'white', 
+                  fontWeight: 600, 
+                  padding: '6px 16px', 
+                  fontSize: '0.85rem', 
+                  cursor: daRows.length > 0 ? 'pointer' : 'not-allowed',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px' 
+                }}
+              >
+                🚀 Auto-Calculate All Employees (1-Click)
+              </button>
+
+              <span style={{ fontSize: '0.78rem', color: '#64748b', marginLeft: 'auto' }}>
+                * Computes Basic × Diff% + TA × Diff% + NPS 14% across all {daMonths.length} months
+              </span>
+            </div>
           </div>
+
           <div className="table-card-iipm" style={{ overflowX: 'auto', paddingBottom: '200px' }}>
             <table className="table-iipm" style={{ minWidth: `${1000 + (daMonths.length * 150)}px`, fontSize: '0.8rem' }}>
               <thead>
@@ -250,8 +393,8 @@ const ArrearsCalculator: React.FC = () => {
                 <tr>
                   {daMonths.map(m => (
                     <React.Fragment key={m + "_sub"}>
-                      <th style={{ background: '#eef2ff', borderLeft: '1px solid #c7d2fe' }}>DA 60%</th>
-                      <th style={{ background: '#eef2ff' }}>TA</th>
+                      <th style={{ background: '#eef2ff', borderLeft: '1px solid #c7d2fe' }}>DA Diff ({(bulkNewDa - bulkOldDa) > 0 ? `+${(bulkNewDa - bulkOldDa).toFixed(1)}%` : 'DA'})</th>
+                      <th style={{ background: '#eef2ff' }}>TA Diff</th>
                     </React.Fragment>
                   ))}
                 </tr>
