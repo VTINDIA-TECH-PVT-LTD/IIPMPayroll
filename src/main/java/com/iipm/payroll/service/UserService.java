@@ -201,13 +201,12 @@ public class UserService {
     }
 
     private UserDTO convertToDTO(User user) {
-        if (user == null) return null;
         return UserDTO.builder()
                 .id(user.getId())
-                .username(user.getUsername() != null ? user.getUsername() : "")
-                .employeeId(user.getEmployeeId() != null ? user.getEmployeeId() : "")
-                .firstName(user.getFirstName() != null ? user.getFirstName() : "")
-                .lastName(user.getLastName() != null ? user.getLastName() : "")
+                .username(user.getUsername())
+                .employeeId(user.getEmployeeId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .profilePicture(user.getProfilePicture())
@@ -233,7 +232,7 @@ public class UserService {
                 .taOverride(user.getTaOverride())
                 .cghsOverride(user.getCghsOverride())
                 .tds(user.getTds())
-                .role(user.getRole() != null ? user.getRole().toString() : "EMPLOYEE")
+                .role(user.getRole().toString())
                 .isActive(user.getIsActive() != null && user.getIsActive())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())

@@ -52,38 +52,37 @@ public class UserController {
     public ResponseEntity<ApiResponse<List<UserDTO>>> getAllUsers(@RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
             List<User> users = userService.getAllUsers();
-            if (users == null) {
-                return ResponseEntity.ok(ApiResponse.success("Users retrieved", List.of()));
-            }
             
-            boolean isStaffOrAdmin = true;
-            if (userId != null && !userId.trim().isEmpty()) {
+            boolean isStaffOrAdmin = false;
+            if (userId != null) {
                 try {
                     User caller = userService.getUserById(userId);
-                    if (caller != null && caller.getRole() != null) {
-                        isStaffOrAdmin = !com.iipm.payroll.model.UserRole.EMPLOYEE.equals(caller.getRole());
+                    if (caller != null && (
+                        com.iipm.payroll.model.UserRole.SUPER_ADMIN.equals(caller.getRole()) ||
+                        com.iipm.payroll.model.UserRole.FA_ADMIN.equals(caller.getRole()) ||
+                        com.iipm.payroll.model.UserRole.FA_OPERATOR.equals(caller.getRole()) ||
+                        com.iipm.payroll.model.UserRole.ADMIN_ADMIN.equals(caller.getRole()) ||
+                        com.iipm.payroll.model.UserRole.ADMIN_OPERATOR.equals(caller.getRole())
+                    )) {
+                        isStaffOrAdmin = true;
                     }
                 } catch (Exception ignore) {
-                    // Default to true
+                    // Ignore error if user is not found
                 }
             }
             
             if (!isStaffOrAdmin) {
                 users = users.stream()
-                        .filter(u -> u != null && u.getRole() != null && com.iipm.payroll.model.UserRole.EMPLOYEE.equals(u.getRole()))
+                        .filter(u -> com.iipm.payroll.model.UserRole.EMPLOYEE.equals(u.getRole()))
                         .toList();
             }
 
-            List<UserDTO> userDTOs = users.stream()
-                    .filter(java.util.Objects::nonNull)
-                    .map(this::convertToDTO)
-                    .filter(java.util.Objects::nonNull)
-                    .toList();
+            List<UserDTO> userDTOs = users.stream().map(this::convertToDTO).toList();
             return ResponseEntity.ok(ApiResponse.success("Users retrieved", userDTOs));
         } catch (Exception e) {
             log.error("Error retrieving users", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Error retrieving users: " + e.getMessage(), null));
+                    .body(ApiResponse.error("Error retrieving users", null));
         }
     }
 
@@ -161,13 +160,12 @@ public class UserController {
     }
 
     private UserDTO convertToDTO(User user) {
-        if (user == null) return null;
         return UserDTO.builder()
                 .id(user.getId())
-                .username(user.getUsername() != null ? user.getUsername() : "")
-                .employeeId(user.getEmployeeId() != null ? user.getEmployeeId() : "")
-                .firstName(user.getFirstName() != null ? user.getFirstName() : "")
-                .lastName(user.getLastName() != null ? user.getLastName() : "")
+                .username(user.getUsername())
+                .employeeId(user.getEmployeeId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .designation(user.getDesignation())
@@ -192,7 +190,7 @@ public class UserController {
                 .taOverride(user.getTaOverride())
                 .cghsOverride(user.getCghsOverride())
                 .tds(user.getTds())
-                .role(user.getRole() != null ? user.getRole().toString() : "EMPLOYEE")
+                .role(user.getRole().toString())
                 .isActive(user.getIsActive() != null && user.getIsActive())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())

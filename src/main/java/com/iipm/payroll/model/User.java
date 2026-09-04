@@ -81,12 +81,7 @@ public class User {
     private String updatedBy;
 
     // Roles
-    private String profilePhotoUrl;
+    private Set<String> roles;
 
-    public String getName() {
-        String f = firstName != null ? firstName : "";
-        String l = lastName != null ? lastName : "";
-        String full = (f + " " + l).trim();
-        return full.isEmpty() ? (username != null ? username : employeeId) : full;
-    }
+    private String profilePhotoUrl;
 }
