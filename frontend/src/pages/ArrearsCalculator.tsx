@@ -50,31 +50,13 @@ const ArrearsCalculator: React.FC = () => {
           eid.startsWith('NT') || 
           eid.startsWith('CT') || 
           eid.startsWith('CNT') || 
+          eid.startsWith('CMED') ||
           u.role === 'EMPLOYEE'
         );
       });
       const finalUsers = empList.length > 0 ? empList : list;
       setUsers(finalUsers);
-
-      // Auto populate on page load with pre-computed values for each month
-      const initialRows = finalUsers.map((u, idx) => {
-        const monthsObj: any = {};
-        const taBase = u.transportAllowance || (u.payLevel && parseInt(u.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600);
-        daMonths.forEach(m => {
-          monthsObj[m] = computeMonthArrears(u.basicPay || 0, taBase, u.payLevel || '', bulkOldDa, bulkNewDa);
-        });
-        return {
-          id: Date.now() + idx,
-          employeeNo: u.employeeId || '',
-          name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
-          basic: u.basicPay || 0,
-          payLevel: u.payLevel || '',
-          transportAllowance: taBase,
-          months: monthsObj,
-          tds: 0
-        };
-      });
-      setDaRows(initialRows);
+      loadAllEmployeesToTable(bulkCategory, finalUsers);
     }).catch(err => {
       console.error('Error fetching users:', err);
     });
@@ -206,20 +188,43 @@ const ArrearsCalculator: React.FC = () => {
     setDaRows([...daRows, { id: Date.now(), employeeNo: '', name: '', basic: 0, payLevel: '', transportAllowance: 3600, months: monthsObj, tds: 0 }]);
   };
 
-  const loadAllEmployeesToTable = (category: 'all' | 'staff' | 'faculty' | 'contract') => {
-    let filtered = users;
+  const loadAllEmployeesToTable = async (category: 'all' | 'staff' | 'faculty' | 'contract', userListOverride?: any[]) => {
+    let list = userListOverride || users;
+    if (!list || list.length === 0) {
+      try {
+        const data = await apiService.getAllUsers();
+        const raw: any[] = Array.isArray(data) ? data : [];
+        const empList = raw.filter((u: any) => {
+          const eid = (u.employeeId || '').toUpperCase();
+          return (
+            eid.startsWith('TS') || 
+            eid.startsWith('NT') || 
+            eid.startsWith('CT') || 
+            eid.startsWith('CNT') || 
+            eid.startsWith('CMED') ||
+            u.role === 'EMPLOYEE'
+          );
+        });
+        list = empList.length > 0 ? empList : raw;
+        setUsers(list);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+      }
+    }
+
+    let filtered = list || [];
     if (category === 'staff') {
-      filtered = users.filter(u => {
+      filtered = (list || []).filter(u => {
         const eid = (u.employeeId || '').toUpperCase();
         return (eid.startsWith('NT') || eid.startsWith('NTS')) && !eid.startsWith('CNT');
       });
     } else if (category === 'faculty') {
-      filtered = users.filter(u => {
+      filtered = (list || []).filter(u => {
         const eid = (u.employeeId || '').toUpperCase();
         return (eid.startsWith('TS') || u.department === 'Faculty') && !eid.startsWith('CT');
       });
     } else if (category === 'contract') {
-      filtered = users.filter(u => {
+      filtered = (list || []).filter(u => {
         const eid = (u.employeeId || '').toUpperCase();
         return eid.startsWith('CNT') || eid.startsWith('CT') || eid.startsWith('CMED');
       });
@@ -527,10 +532,10 @@ const ArrearsCalculator: React.FC = () => {
                   }}
                   style={{ width: '220px', padding: '6px 10px', fontSize: '0.85rem' }}
                 >
-                  <option value="all">🌐 All Staff & Faculty ({users.length})</option>
-                  <option value="faculty">🎓 Regular Teaching Faculty (34)</option>
-                  <option value="staff">👔 Regular Non-Teaching (20)</option>
-                  <option value="contract">📋 Contract Employees (14)</option>
+                  <option value="all">🌐 All Staff & Faculty ({users.length > 0 ? users.length : 'All (68)'})</option>
+                  <option value="faculty">🎓 Regular Teaching Faculty ({users.filter(u => ((u.employeeId || '').toUpperCase().startsWith('TS') || u.department === 'Faculty') && !(u.employeeId || '').toUpperCase().startsWith('CT')).length || 34})</option>
+                  <option value="staff">👔 Regular Non-Teaching ({users.filter(u => ((u.employeeId || '').toUpperCase().startsWith('NT') || (u.employeeId || '').toUpperCase().startsWith('NTS')) && !(u.employeeId || '').toUpperCase().startsWith('CNT')).length || 20})</option>
+                  <option value="contract">📋 Contract Employees ({users.filter(u => (u.employeeId || '').toUpperCase().startsWith('CNT') || (u.employeeId || '').toUpperCase().startsWith('CT') || (u.employeeId || '').toUpperCase().startsWith('CMED')).length || 14})</option>
                 </select>
                 <button 
                   className="btn-primary-iipm" 
