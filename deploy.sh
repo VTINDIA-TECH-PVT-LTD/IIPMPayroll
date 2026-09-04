@@ -21,11 +21,14 @@ fi
 # 2. Update backend
 echo "Restarting backend..."
 pkill -9 -f "iipm-payroll-system" || true
-sleep 3
+pkill -9 -f "target/iipm-payroll-system" || true
+sleep 2
 
-# Start backend with disown
-BUILD_ID=dontKillMe nohup java -jar target/iipm-payroll-system-0.0.1-SNAPSHOT.jar > /var/www/html/iipm-repo/backend.log 2>&1 &
-disown
-echo "Backend restarted successfully in background."
+# Verify java location
+which java || echo "java command check"
+
+# Start backend cleanly detached with setsid and input redirection
+setsid nohup java -jar /var/www/html/iipm-repo/target/iipm-payroll-system-0.0.1-SNAPSHOT.jar > /var/www/html/iipm-repo/backend.log 2>&1 < /dev/null &
+sleep 2
 
 echo "Deployment script finished at $(date)."
