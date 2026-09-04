@@ -98,6 +98,10 @@ public class PdfGenerator {
         double hra = getDouble(payslipData, "hra");
         double npsEmpShare = getDouble(payslipData, "npsEmployerShare");
         double ta = getDouble(payslipData, "ta");
+        double daArrears = getDouble(payslipData, "daArrears");
+        double promotionArrears = getDouble(payslipData, "promotionArrears");
+        double arrears = getDouble(payslipData, "arrears");
+        double otherAllowances = getDouble(payslipData, "otherAllowances");
         double totalEarnings = getDouble(payslipData, "grossSalary");
 
         double cghs = getDouble(payslipData, "cghs");
@@ -116,7 +120,22 @@ public class PdfGenerator {
         addSalaryRow(salaryTable, "HRA", df.format(hra), "NPS Employer Share D", df.format(npsEmployer), false);
         addSalaryRow(salaryTable, "NPS Employer Share E", df.format(npsEmpShare), "Professional Tax", df.format(pt), false);
         addSalaryRow(salaryTable, "Transport Allowance", df.format(ta), "Income Tax (TDS)", df.format(tds), false);
-        addSalaryRow(salaryTable, "", "", "Other Deductions", df.format(otherDeductions), false);
+        
+        if (daArrears > 0) {
+            addSalaryRow(salaryTable, "DA Arrears", df.format(daArrears), "", "", false);
+        }
+        if (promotionArrears > 0) {
+            addSalaryRow(salaryTable, "Promotional Arrears", df.format(promotionArrears), "", "", false);
+        }
+        if (arrears > 0) {
+            addSalaryRow(salaryTable, "Arrears", df.format(arrears), "", "", false);
+        }
+        if (otherAllowances > 0) {
+            addSalaryRow(salaryTable, "Special / Dean Allowance", df.format(otherAllowances), "", "", false);
+        }
+        if (otherDeductions > 0) {
+            addSalaryRow(salaryTable, "", "", "Other Deductions", df.format(otherDeductions), false);
+        }
 
         addSalaryRow(salaryTable, "Total Earnings", df.format(totalEarnings), "Total Deductions", df.format(totalDeductions), true);
         
