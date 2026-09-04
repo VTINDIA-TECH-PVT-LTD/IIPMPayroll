@@ -314,7 +314,8 @@ const ReportsPage: React.FC = () => {
       <body>
         <div class="header">
           <div class="title">INDIAN INSTITUTE OF PETROLEUM AND ENERGY</div>
-          <div class="subtitle">2nd Floor, AU Engg College Main Block, Andhra University, Visakhapatnam - 530003</div>
+          <div class="subtitle">(An Institute of National Importance at par with IITs/IIMs) - Ministry of Petroleum and Natural Gas, Govt. of India</div>
+          <div class="subtitle">EAB, Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India</div>
         </div>
         <table class="ref-table">
           <tr>
@@ -322,7 +323,7 @@ const ReportsPage: React.FC = () => {
             <td class="text-right">Date: ${getLastWorkingDay(year, month)}</td>
           </tr>
         </table>
-        <p>To,<br><b>The Branch Manager,</b><br>State Bank of India,<br>AU College of Engineering Campus Branch,<br>Visakhapatnam - 530003</p>
+        <p>To,<br><b>The Branch Manager,</b><br>State Bank of India,<br>Visakhapatnam - 531035</p>
         <p><b>Dear Sir,</b></p>
         <p>We authorize you to debit IIPE Revenue Current Account No. <b>39877553958</b> and remit the following net salary amounts to the respective bank accounts of our employees towards <b>${months[month - 1]} ${year}</b> Salaries:</p>
         <table class="advice-table">
