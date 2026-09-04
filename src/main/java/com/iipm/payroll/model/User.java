@@ -68,7 +68,7 @@ public class User {
     // Personal Details
     private String pan;
     private String aadhar;
-    private LocalDateTime dateOfJoining;
+    private String dateOfJoining;
 
     // Account Status
     private Boolean isActive;

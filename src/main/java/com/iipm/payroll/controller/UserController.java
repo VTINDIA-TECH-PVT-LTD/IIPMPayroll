@@ -53,19 +53,25 @@ public class UserController {
         try {
             List<User> users = userService.getAllUsers();
             
-            boolean isSuperAdmin = false;
+            boolean isStaffOrAdmin = false;
             if (userId != null) {
                 try {
                     User caller = userService.getUserById(userId);
-                    if (caller != null && com.iipm.payroll.model.UserRole.SUPER_ADMIN.equals(caller.getRole())) {
-                        isSuperAdmin = true;
+                    if (caller != null && (
+                        com.iipm.payroll.model.UserRole.SUPER_ADMIN.equals(caller.getRole()) ||
+                        com.iipm.payroll.model.UserRole.FA_ADMIN.equals(caller.getRole()) ||
+                        com.iipm.payroll.model.UserRole.FA_OPERATOR.equals(caller.getRole()) ||
+                        com.iipm.payroll.model.UserRole.ADMIN_ADMIN.equals(caller.getRole()) ||
+                        com.iipm.payroll.model.UserRole.ADMIN_OPERATOR.equals(caller.getRole())
+                    )) {
+                        isStaffOrAdmin = true;
                     }
                 } catch (Exception ignore) {
                     // Ignore error if user is not found
                 }
             }
             
-            if (!isSuperAdmin) {
+            if (!isStaffOrAdmin) {
                 users = users.stream()
                         .filter(u -> com.iipm.payroll.model.UserRole.EMPLOYEE.equals(u.getRole()))
                         .toList();
