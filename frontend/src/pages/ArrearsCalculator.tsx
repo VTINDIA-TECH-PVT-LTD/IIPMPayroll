@@ -25,6 +25,21 @@ const ArrearsCalculator: React.FC = () => {
     approvedBy: 'SHRI. RAM PHAL DWIVEDI'
   });
 
+  // Universal Arrear Computation Helper
+  const computeMonthArrears = (
+    basic: number,
+    transportAllowance: number,
+    payLevel: string,
+    oldDa: number = bulkOldDa,
+    newDa: number = bulkNewDa
+  ) => {
+    const diffPct = Math.max(0, (newDa - oldDa) / 100);
+    const taBase = transportAllowance || (payLevel && parseInt(payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600);
+    const daAmt = Math.round((basic || 0) * diffPct);
+    const taAmt = Math.round(taBase * diffPct);
+    return { da: daAmt, ta: taAmt };
+  };
+
   useEffect(() => {
     apiService.getAllUsers().then(data => {
       const list: any[] = Array.isArray(data) ? data : [];
@@ -41,11 +56,12 @@ const ArrearsCalculator: React.FC = () => {
       const finalUsers = empList.length > 0 ? empList : list;
       setUsers(finalUsers);
 
-      // Auto populate on page load
+      // Auto populate on page load with pre-computed values for each month
       const initialRows = finalUsers.map((u, idx) => {
         const monthsObj: any = {};
+        const taBase = u.transportAllowance || (u.payLevel && parseInt(u.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600);
         daMonths.forEach(m => {
-          monthsObj[m] = { da: 0, ta: 0 };
+          monthsObj[m] = computeMonthArrears(u.basicPay || 0, taBase, u.payLevel || '', bulkOldDa, bulkNewDa);
         });
         return {
           id: Date.now() + idx,
@@ -53,7 +69,7 @@ const ArrearsCalculator: React.FC = () => {
           name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
           basic: u.basicPay || 0,
           payLevel: u.payLevel || '',
-          transportAllowance: u.transportAllowance || (u.payLevel && parseInt(u.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600),
+          transportAllowance: taBase,
           months: monthsObj,
           tds: 0
         };
@@ -67,11 +83,11 @@ const ArrearsCalculator: React.FC = () => {
   // PROMOTION LOGIC
   const calculateRow = (r: any) => {
     const diff = Math.max(0, (r.upgradedPay || 0) - (r.basicPay || 0));
-    const propBasic = r.overridePropBasic !== null ? r.overridePropBasic : Math.round((diff / r.daysInMonth) * r.days);
-    const da = r.overrideDa !== null ? r.overrideDa : Math.round(propBasic * 0.53);
-    const hra = r.overrideHra !== null ? r.overrideHra : Math.round(propBasic * 0.20);
-    const npsEmployer = r.overrideNpsEmployer !== null ? r.overrideNpsEmployer : Math.round((propBasic + da) * 0.14);
-    const npsEmp = r.overrideNpsEmp !== null ? r.overrideNpsEmp : Math.round((propBasic + da) * 0.10);
+    const propBasic = r.overridePropBasic !== null && r.overridePropBasic !== undefined ? r.overridePropBasic : Math.round((diff / (r.daysInMonth || 31)) * (r.days || 0));
+    const da = r.overrideDa !== null && r.overrideDa !== undefined ? r.overrideDa : Math.round(propBasic * (bulkNewDa / 100));
+    const hra = r.overrideHra !== null && r.overrideHra !== undefined ? r.overrideHra : Math.round(propBasic * 0.20);
+    const npsEmployer = r.overrideNpsEmployer !== null && r.overrideNpsEmployer !== undefined ? r.overrideNpsEmployer : Math.round((propBasic + da) * 0.14);
+    const npsEmp = r.overrideNpsEmp !== null && r.overrideNpsEmp !== undefined ? r.overrideNpsEmp : Math.round((propBasic + da) * 0.10);
     const gross = propBasic + da + hra + npsEmployer;
     const tds = r.tds || 0;
     const net = gross - npsEmp - npsEmployer - tds;
@@ -79,7 +95,44 @@ const ArrearsCalculator: React.FC = () => {
   };
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now(), name: '', dateOfPromotion: '', basicPay: 0, upgradedPay: 0, days: 0, daysInMonth: 31, overridePropBasic: null, overrideDa: null, overrideHra: null, overrideNpsEmp: null, overrideNpsEmployer: null, tds: 0 }]);
+    setRows([...rows, { 
+      id: Date.now(), 
+      name: '', 
+      employeeNo: '',
+      dateOfPromotion: '', 
+      basicPay: 0, 
+      upgradedPay: 0, 
+      days: 31, 
+      daysInMonth: 31, 
+      overridePropBasic: null, 
+      overrideDa: null, 
+      overrideHra: null, 
+      overrideNpsEmp: null, 
+      overrideNpsEmployer: null, 
+      tds: 0 
+    }]);
+  };
+
+  const handlePromoEmpSelect = (id: number, empId: string) => {
+    const emp = users.find(u => u.employeeId === empId || u.id === empId);
+    if (!emp) return;
+    const basic = emp.basicPay || 0;
+    // Suggest next increment ~3% rounded to 100
+    const suggestedUpgraded = Math.round((basic * 1.03) / 100) * 100;
+    setRows(rows.map(r => r.id === id ? {
+      ...r,
+      employeeNo: emp.employeeId,
+      name: `${emp.firstName || ''} ${emp.lastName || ''}`.trim(),
+      basicPay: basic,
+      upgradedPay: suggestedUpgraded,
+      days: 31,
+      daysInMonth: 31,
+      overridePropBasic: null,
+      overrideDa: null,
+      overrideHra: null,
+      overrideNpsEmp: null,
+      overrideNpsEmployer: null
+    } : r));
   };
 
   const updateRow = (id: number, field: string, value: any) => {
@@ -147,8 +200,10 @@ const ArrearsCalculator: React.FC = () => {
 
   const addDaRow = () => {
     const monthsObj: any = {};
-    daMonths.forEach(m => monthsObj[m] = { da: 0, ta: 0 });
-    setDaRows([...daRows, { id: Date.now(), employeeNo: '', name: '', basic: 0, months: monthsObj, tds: 0 }]);
+    daMonths.forEach(m => {
+      monthsObj[m] = { da: 0, ta: 0 };
+    });
+    setDaRows([...daRows, { id: Date.now(), employeeNo: '', name: '', basic: 0, payLevel: '', transportAllowance: 3600, months: monthsObj, tds: 0 }]);
   };
 
   const loadAllEmployeesToTable = (category: 'all' | 'staff' | 'faculty' | 'contract') => {
@@ -172,8 +227,9 @@ const ArrearsCalculator: React.FC = () => {
 
     const newRows = filtered.map((u, idx) => {
       const monthsObj: any = {};
+      const taBase = u.transportAllowance || (u.payLevel && parseInt(u.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600);
       daMonths.forEach(m => {
-        monthsObj[m] = { da: 0, ta: 0 };
+        monthsObj[m] = computeMonthArrears(u.basicPay || 0, taBase, u.payLevel || '', bulkOldDa, bulkNewDa);
       });
       return {
         id: Date.now() + idx,
@@ -181,7 +237,7 @@ const ArrearsCalculator: React.FC = () => {
         name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
         basic: u.basicPay || 0,
         payLevel: u.payLevel || '',
-        transportAllowance: u.transportAllowance || (u.payLevel && parseInt(u.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600),
+        transportAllowance: taBase,
         months: monthsObj,
         tds: 0
       };
@@ -189,22 +245,15 @@ const ArrearsCalculator: React.FC = () => {
     setDaRows(newRows);
   };
 
-  const autoCalculateBulkDA = () => {
-    const diffPct = (bulkNewDa - bulkOldDa) / 100;
-    if (diffPct <= 0 && !window.confirm(`DA Hike is ${diffPct * 100}%. Do you want to proceed with calculation?`)) {
-      return;
-    }
-
-    setDaRows(daRows.map(r => {
+  const recalculateAllRowsWithRates = (oldDa: number, newDa: number) => {
+    setDaRows(prevRows => prevRows.map(r => {
       const u = users.find(usr => usr.employeeId === r.employeeNo);
       const basic = r.basic || u?.basicPay || 0;
-      const taBase = r.transportAllowance || u?.transportAllowance || 3600;
+      const taBase = r.transportAllowance || u?.transportAllowance || (r.payLevel && parseInt(r.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600);
       
       const updatedMonths: any = {};
       daMonths.forEach(m => {
-        const daAmt = Math.round(basic * diffPct);
-        const taAmt = Math.round(taBase * diffPct);
-        updatedMonths[m] = { da: daAmt, ta: taAmt };
+        updatedMonths[m] = computeMonthArrears(basic, taBase, r.payLevel || u?.payLevel, oldDa, newDa);
       });
 
       return {
@@ -213,6 +262,20 @@ const ArrearsCalculator: React.FC = () => {
         months: updatedMonths
       };
     }));
+  };
+
+  const handleOldDaChange = (val: number) => {
+    setBulkOldDa(val);
+    recalculateAllRowsWithRates(val, bulkNewDa);
+  };
+
+  const handleNewDaChange = (val: number) => {
+    setBulkNewDa(val);
+    recalculateAllRowsWithRates(bulkOldDa, val);
+  };
+
+  const autoCalculateBulkDA = () => {
+    recalculateAllRowsWithRates(bulkOldDa, bulkNewDa);
   };
 
   const updateDaRow = (id: number, field: string, value: any) => {
@@ -225,6 +288,43 @@ const ArrearsCalculator: React.FC = () => {
       return { ...r, months: { ...r.months, [month]: { ...r.months[month], [field]: value } } };
     }));
   };
+
+  const handleEmpNoChange = (id: number, empNo: string) => {
+    const cleanNo = empNo.trim().toUpperCase();
+    const emp = users.find(u => (u.employeeId || '').toUpperCase() === cleanNo);
+    if (emp) {
+      const basic = emp.basicPay || 0;
+      const taBase = emp.transportAllowance || (emp.payLevel && parseInt(emp.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600);
+      const updatedMonths: any = {};
+      daMonths.forEach(m => {
+        updatedMonths[m] = computeMonthArrears(basic, taBase, emp.payLevel || '', bulkOldDa, bulkNewDa);
+      });
+      setDaRows(daRows.map(r => r.id === id ? {
+        ...r,
+        employeeNo: emp.employeeId,
+        name: `${emp.firstName || ''} ${emp.lastName || ''}`.trim(),
+        basic: basic,
+        payLevel: emp.payLevel || '',
+        transportAllowance: taBase,
+        months: updatedMonths
+      } : r));
+    } else {
+      updateDaRow(id, 'employeeNo', empNo);
+    }
+  };
+
+  const handleBasicChange = (id: number, newBasic: number) => {
+    setDaRows(daRows.map(r => {
+      if (r.id !== id) return r;
+      const u = users.find(usr => usr.employeeId === r.employeeNo);
+      const taBase = r.transportAllowance || u?.transportAllowance || (r.payLevel && parseInt(r.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600);
+      const updatedMonths: any = {};
+      daMonths.forEach(m => {
+        updatedMonths[m] = computeMonthArrears(newBasic, taBase, r.payLevel || u?.payLevel, bulkOldDa, bulkNewDa);
+      });
+      return { ...r, basic: newBasic, months: updatedMonths };
+    }));
+  };
   
   const addSelectedMonth = (mNameCustom?: string) => {
     const mName = mNameCustom || `${selectedMonthName} '${selectedYearVal}`;
@@ -234,15 +334,32 @@ const ArrearsCalculator: React.FC = () => {
     }
     const newMonths = [...daMonths, mName];
     setDaMonths(newMonths);
-    setDaRows(daRows.map(r => ({ ...r, months: { ...r.months, [mName]: { da: 0, ta: 0 } } })));
+
+    // AUTO-POPULATE the newly added month immediately for all rows!
+    setDaRows(prevRows => prevRows.map(r => {
+      const u = users.find(usr => usr.employeeId === r.employeeNo);
+      const basic = r.basic || u?.basicPay || 0;
+      const taBase = r.transportAllowance || u?.transportAllowance || (r.payLevel && parseInt(r.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600);
+      const monthVal = computeMonthArrears(basic, taBase, r.payLevel || u?.payLevel, bulkOldDa, bulkNewDa);
+      return {
+        ...r,
+        months: {
+          ...r.months,
+          [mName]: monthVal
+        }
+      };
+    }));
   };
 
   const applyMonthPreset = (presetMonths: string[]) => {
     setDaMonths(presetMonths);
-    setDaRows(daRows.map(r => {
+    setDaRows(prevRows => prevRows.map(r => {
+      const u = users.find(usr => usr.employeeId === r.employeeNo);
+      const basic = r.basic || u?.basicPay || 0;
+      const taBase = r.transportAllowance || u?.transportAllowance || (r.payLevel && parseInt(r.payLevel.replace(/\D/g, '')) >= 9 ? 7200 : 3600);
       const updatedMonths: any = {};
       presetMonths.forEach(m => {
-        updatedMonths[m] = r.months?.[m] || { da: 0, ta: 0 };
+        updatedMonths[m] = computeMonthArrears(basic, taBase, r.payLevel || u?.payLevel, bulkOldDa, bulkNewDa);
       });
       return { ...r, months: updatedMonths };
     }));
@@ -267,8 +384,8 @@ const ArrearsCalculator: React.FC = () => {
       };
       
       daMonths.forEach(m => {
-        row[`${m} DA 60%`] = r.months[m]?.da || 0;
-        row[`${m} TA`] = r.months[m]?.ta || 0;
+        row[`${m} DA Diff`] = r.months[m]?.da || 0;
+        row[`${m} TA Diff`] = r.months[m]?.ta || 0;
       });
       
       row['Cummulative DA'] = calc.cummDa;
@@ -314,16 +431,25 @@ const ArrearsCalculator: React.FC = () => {
 
   return (
     <div className="page-container">
+      {/* Employee Datalist for fast auto-complete */}
+      <datalist id="all-employees-list">
+        {users.map(u => (
+          <option key={u.id || u.employeeId} value={u.employeeId}>
+            {u.firstName} {u.lastName} ({u.department || 'IIPE'}) — Basic: ₹{u.basicPay || 0}
+          </option>
+        ))}
+      </datalist>
+
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1>Arrears Calculators</h1>
-          <p>Automated calculators for retrospective payouts</p>
+          <p>Automated calculators with instant auto-population for retrospective payouts</p>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border)', marginBottom: '20px' }}>
-        <button onClick={() => setTab('promotion')} style={{ padding: '10px 20px', background: 'none', border: 'none', borderBottom: `2px solid ${tab === 'promotion' ? 'var(--accent)' : 'transparent'}`, color: tab === 'promotion' ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>Promotion Arrears</button>
         <button onClick={() => setTab('tada')} style={{ padding: '10px 20px', background: 'none', border: 'none', borderBottom: `2px solid ${tab === 'tada' ? 'var(--accent)' : 'transparent'}`, color: tab === 'tada' ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>TA & DA Arrears</button>
+        <button onClick={() => setTab('promotion')} style={{ padding: '10px 20px', background: 'none', border: 'none', borderBottom: `2px solid ${tab === 'promotion' ? 'var(--accent)' : 'transparent'}`, color: tab === 'promotion' ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>Promotion Arrears</button>
       </div>
 
       <div className="card-iipm" style={{ padding: '16px 20px', marginBottom: '20px' }}>
@@ -346,7 +472,7 @@ const ArrearsCalculator: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>📅 Step 1: Arrears Months Selection:</span>
-                  <span style={{ fontSize: '0.78rem', color: '#64748b' }}>({daMonths.length} active columns)</span>
+                  <span style={{ fontSize: '0.78rem', color: '#64748b' }}>({daMonths.length} active month columns — auto-populating amounts)</span>
                 </div>
 
                 {/* Quick Presets */}
@@ -372,7 +498,7 @@ const ArrearsCalculator: React.FC = () => {
                   <option value="27">2027</option>
                 </select>
                 <button className="btn-iipm" onClick={() => addSelectedMonth()} style={{ background: '#4f46e5', color: 'white', fontWeight: 600, padding: '5px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  ➕ Add Month Column
+                  ➕ Add Month Column (Auto-populates)
                 </button>
 
                 {/* Active Month Badges */}
@@ -390,11 +516,15 @@ const ArrearsCalculator: React.FC = () => {
             {/* Step 2: Load Employees Toolbar */}
             <div style={{ padding: '14px 0', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>👥 Step 2: Load Employees:</span>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>👥 Step 2: Filter / Load Employees:</span>
                 <select 
                   className="form-control-iipm" 
                   value={bulkCategory} 
-                  onChange={e => setBulkCategory(e.target.value as any)}
+                  onChange={e => {
+                    const cat = e.target.value as any;
+                    setBulkCategory(cat);
+                    loadAllEmployeesToTable(cat);
+                  }}
                   style={{ width: '220px', padding: '6px 10px', fontSize: '0.85rem' }}
                 >
                   <option value="all">🌐 All Staff & Faculty ({users.length})</option>
@@ -433,7 +563,7 @@ const ArrearsCalculator: React.FC = () => {
                   type="number" 
                   className="form-control-iipm" 
                   value={bulkOldDa} 
-                  onChange={e => setBulkOldDa(Number(e.target.value))} 
+                  onChange={e => handleOldDaChange(Number(e.target.value))} 
                   style={{ width: '65px', padding: '4px 8px', fontSize: '0.85rem' }} 
                 />
               </div>
@@ -444,13 +574,13 @@ const ArrearsCalculator: React.FC = () => {
                   type="number" 
                   className="form-control-iipm" 
                   value={bulkNewDa} 
-                  onChange={e => setBulkNewDa(Number(e.target.value))} 
+                  onChange={e => handleNewDaChange(Number(e.target.value))} 
                   style={{ width: '65px', padding: '4px 8px', fontSize: '0.85rem' }} 
                 />
               </div>
 
               <span style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 700 }}>
-                Hike: {(bulkNewDa - bulkOldDa).toFixed(1)}%
+                Hike: {(bulkNewDa - bulkOldDa).toFixed(1)}% (Live Auto-Calculating)
               </span>
 
               <button 
@@ -470,11 +600,11 @@ const ArrearsCalculator: React.FC = () => {
                   boxShadow: daRows.length > 0 ? '0 2px 4px rgba(2,132,199,0.25)' : 'none'
                 }}
               >
-                ⚡ 1-Click Auto Calculate All ({daRows.length} Staff × {daMonths.length} Months)
+                ⚡ Recalculate All ({daRows.length} Staff × {daMonths.length} Months)
               </button>
 
-              <span style={{ fontSize: '0.78rem', color: '#64748b', marginLeft: 'auto' }}>
-                * Auto-computes: Basic × Hike% + TA × Hike% + NPS 14% across all {daMonths.length} months
+              <span style={{ fontSize: '0.78rem', color: '#16a34a', marginLeft: 'auto', fontWeight: 600 }}>
+                ✓ Auto-computed: Basic × Hike% + TA × Hike% across all {daMonths.length} active months
               </span>
             </div>
           </div>
@@ -486,7 +616,7 @@ const ArrearsCalculator: React.FC = () => {
                   <th rowSpan={2}>Sl.No</th>
                   <th rowSpan={2}>Employee No</th>
                   <th rowSpan={2}>Name of the Employee</th>
-                  <th rowSpan={2}>Basic</th>
+                  <th rowSpan={2}>Basic (₹)</th>
                   {daMonths.map(m => (
                     <th colSpan={2} key={m} style={{ textAlign: 'center', background: '#e0e7ff', borderLeft: '1px solid #c7d2fe' }}>
                       {m} <button onClick={() => removeDaMonth(m)} style={{ background:'none', border:'none', color:'red', cursor:'pointer' }}>x</button>
@@ -518,47 +648,72 @@ const ArrearsCalculator: React.FC = () => {
                     <tr key={r.id}>
                       <td>{idx + 1}</td>
                       <td>
-                        <input type="text" className="form-control-iipm" style={{ width: '90px', padding: '4px' }} 
-                          value={r.employeeNo} onChange={e => {
-                            updateDaRow(r.id, 'employeeNo', e.target.value);
-                            const emp = users.find(u => u.employeeId === e.target.value);
-                            if(emp) {
-                              updateDaRow(r.id, 'name', emp.firstName + ' ' + emp.lastName);
-                              updateDaRow(r.id, 'basic', emp.basicPay);
-                            }
-                          }} placeholder="NT1022" />
+                        <input 
+                          type="text" 
+                          list="all-employees-list"
+                          className="form-control-iipm" 
+                          style={{ width: '95px', padding: '4px', fontWeight: 600 }} 
+                          value={r.employeeNo} 
+                          onChange={e => handleEmpNoChange(r.id, e.target.value)} 
+                          placeholder="e.g. TS1001" 
+                        />
                       </td>
                       <td>
-                        <input type="text" className="form-control-iipm" style={{ width: '140px', padding: '4px' }} 
-                          value={r.name} onChange={e => updateDaRow(r.id, 'name', e.target.value)} />
+                        <input 
+                          type="text" 
+                          className="form-control-iipm" 
+                          style={{ width: '150px', padding: '4px' }} 
+                          value={r.name} 
+                          onChange={e => updateDaRow(r.id, 'name', e.target.value)} 
+                        />
                       </td>
                       <td>
-                        <input type="number" className="form-control-iipm" style={{ width: '80px', padding: '4px' }} 
-                          value={r.basic || ''} onChange={e => updateDaRow(r.id, 'basic', Number(e.target.value))} />
+                        <input 
+                          type="number" 
+                          className="form-control-iipm" 
+                          style={{ width: '85px', padding: '4px', fontWeight: 600 }} 
+                          value={r.basic || ''} 
+                          onChange={e => handleBasicChange(r.id, Number(e.target.value))} 
+                        />
                       </td>
                       {daMonths.map(m => (
                         <React.Fragment key={m + "_inputs"}>
                           <td style={{ borderLeft: '1px solid #e2e8f0' }}>
-                            <input type="number" className="form-control-iipm" style={{ width: '70px', padding: '4px' }} 
-                              value={r.months[m]?.da || ''} onChange={e => updateDaMonth(r.id, m, 'da', Number(e.target.value))} />
+                            <input 
+                              type="number" 
+                              className="form-control-iipm" 
+                              style={{ width: '70px', padding: '4px', textAlign: 'right' }} 
+                              value={r.months[m]?.da ?? ''} 
+                              onChange={e => updateDaMonth(r.id, m, 'da', Number(e.target.value))} 
+                            />
                           </td>
                           <td>
-                            <input type="number" className="form-control-iipm" style={{ width: '50px', padding: '4px' }} 
-                              value={r.months[m]?.ta || ''} onChange={e => updateDaMonth(r.id, m, 'ta', Number(e.target.value))} />
+                            <input 
+                              type="number" 
+                              className="form-control-iipm" 
+                              style={{ width: '55px', padding: '4px', textAlign: 'right' }} 
+                              value={r.months[m]?.ta ?? ''} 
+                              onChange={e => updateDaMonth(r.id, m, 'ta', Number(e.target.value))} 
+                            />
                           </td>
                         </React.Fragment>
                       ))}
-                      <td style={{ fontWeight: 600, background: '#f8fafc' }}>{calc.cummDa}</td>
-                      <td style={{ fontWeight: 600, background: '#f8fafc' }}>{calc.cummTa}</td>
-                      <td style={{ fontWeight: 600, background: '#f8fafc' }}>{calc.npsEmployer}</td>
-                      <td style={{ fontWeight: 700, background: '#eef2ff' }}>{calc.gross}</td>
-                      <td style={{ fontWeight: 600, background: '#f8fafc' }}>{calc.npsEmp}</td>
-                      <td style={{ fontWeight: 600, background: '#f8fafc' }}>{calc.npsEmployer}</td>
+                      <td style={{ fontWeight: 600, background: '#f8fafc', textAlign: 'right' }}>{calc.cummDa}</td>
+                      <td style={{ fontWeight: 600, background: '#f8fafc', textAlign: 'right' }}>{calc.cummTa}</td>
+                      <td style={{ fontWeight: 600, background: '#f8fafc', textAlign: 'right' }}>{calc.npsEmployer}</td>
+                      <td style={{ fontWeight: 700, background: '#eef2ff', textAlign: 'right' }}>{calc.gross}</td>
+                      <td style={{ fontWeight: 600, background: '#f8fafc', textAlign: 'right', color: '#ef4444' }}>{calc.npsEmp}</td>
+                      <td style={{ fontWeight: 600, background: '#f8fafc', textAlign: 'right' }}>{calc.npsEmployer}</td>
                       <td>
-                        <input type="number" className="form-control-iipm" style={{ width: '70px', padding: '4px' }} 
-                          value={r.tds || ''} onChange={e => updateDaRow(r.id, 'tds', Number(e.target.value))} />
+                        <input 
+                          type="number" 
+                          className="form-control-iipm" 
+                          style={{ width: '70px', padding: '4px', textAlign: 'right' }} 
+                          value={r.tds || ''} 
+                          onChange={e => updateDaRow(r.id, 'tds', Number(e.target.value))} 
+                        />
                       </td>
-                      <td style={{ fontWeight: 700, background: '#eef2ff', color: '#4338ca' }}>{calc.net}</td>
+                      <td style={{ fontWeight: 700, background: '#eef2ff', color: '#4338ca', textAlign: 'right', fontSize: '0.9rem' }}>{calc.net}</td>
                       <td>
                         <button onClick={() => setDaRows(daRows.filter(x => x.id !== r.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1rem' }}>❌</button>
                       </td>
@@ -574,30 +729,37 @@ const ArrearsCalculator: React.FC = () => {
       {tab === 'promotion' && (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <button className="btn-primary-iipm" onClick={addRow}>+ Add Row</button>
-            <button className="btn-iipm" onClick={exportPromotionExcel} style={{ background: '#22c55e', color: 'white' }}>Export to Excel</button>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button className="btn-primary-iipm" onClick={addRow}>+ Add Empty Row</button>
+              <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Tip: Select an employee from the dropdown in any row to auto-populate basic pay and calculate!</span>
+            </div>
+            <button className="btn-iipm" onClick={exportPromotionExcel} style={{ background: '#22c55e', color: 'white', fontWeight: 700, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              📊 Export to Excel ({rows.length} Records)
+            </button>
           </div>
 
           <div className="table-card-iipm" style={{ overflowX: 'auto', paddingBottom: '200px' }}>
             <table className="table-iipm" style={{ minWidth: '1800px', fontSize: '0.8rem' }}>
               <thead>
                 <tr>
-                  <th>Name of the Faculty</th>
-                  <th>Date of promotion</th>
-                  <th>Basic Pay</th>
-                  <th>Upgraded Pay</th>
+                  <th>Sl.</th>
+                  <th>Select Employee</th>
+                  <th>Faculty / Staff Name</th>
+                  <th>Date of Promotion</th>
+                  <th>Old Basic (₹)</th>
+                  <th>Upgraded Pay (₹)</th>
                   <th>Difference in Pay</th>
                   <th title="Days in Month">Month Days</th>
-                  <th>No.of.Days</th>
+                  <th>No. of Days</th>
                   <th>Proportionate Basic</th>
-                  <th>DA</th>
-                  <th>HRA</th>
-                  <th>NPS Employer</th>
+                  <th>DA ({bulkNewDa}%)</th>
+                  <th>HRA (20%)</th>
+                  <th>NPS Employer (14%)</th>
                   <th>Gross Total</th>
                   <th>TDS</th>
-                  <th>Less: NPS Employee share</th>
-                  <th>Less: NPS Employer share</th>
-                  <th>Net amount payable</th>
+                  <th>Less: NPS Employee (10%)</th>
+                  <th>Less: NPS Employer (14%)</th>
+                  <th>Net Payable (₹)</th>
                   <th></th>
                 </tr>
               </thead>
@@ -606,6 +768,22 @@ const ArrearsCalculator: React.FC = () => {
                   const calc = calculateRow(r);
                   return (
                     <tr key={r.id}>
+                      <td>{idx + 1}</td>
+                      <td>
+                        <select 
+                          className="form-control-iipm" 
+                          style={{ width: '160px', padding: '4px', fontSize: '0.8rem' }}
+                          value={r.employeeNo || ''}
+                          onChange={e => handlePromoEmpSelect(r.id, e.target.value)}
+                        >
+                          <option value="">-- Choose Employee --</option>
+                          {users.map(u => (
+                            <option key={u.id || u.employeeId} value={u.employeeId}>
+                              {u.employeeId} - {u.firstName} {u.lastName}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
                       <td>
                         <input type="text" className="form-control-iipm" style={{ width: '140px', padding: '4px' }} 
                           value={r.name} onChange={e => updateRow(r.id, 'name', e.target.value)} placeholder="Type name..." />
@@ -615,20 +793,20 @@ const ArrearsCalculator: React.FC = () => {
                           value={r.dateOfPromotion} onChange={e => updateRow(r.id, 'dateOfPromotion', e.target.value)} placeholder="e.g. 13th Feb 2025" />
                       </td>
                       <td>
-                        <input type="number" className="form-control-iipm" style={{ width: '80px', padding: '4px' }} 
+                        <input type="number" className="form-control-iipm" style={{ width: '85px', padding: '4px', fontWeight: 600 }} 
                           value={r.basicPay || ''} onChange={e => updateRow(r.id, 'basicPay', Number(e.target.value))} />
                       </td>
                       <td>
-                        <input type="number" className="form-control-iipm" style={{ width: '80px', padding: '4px' }} 
+                        <input type="number" className="form-control-iipm" style={{ width: '85px', padding: '4px', fontWeight: 600, color: '#0a3161' }} 
                           value={r.upgradedPay || ''} onChange={e => updateRow(r.id, 'upgradedPay', Number(e.target.value))} />
                       </td>
-                      <td style={{ fontWeight: 600, background: '#f8fafc' }}>{calc.diff}</td>
+                      <td style={{ fontWeight: 600, background: '#f8fafc', textAlign: 'right' }}>{calc.diff}</td>
                       <td>
-                        <input type="number" className="form-control-iipm" style={{ width: '60px', padding: '4px' }} 
+                        <input type="number" className="form-control-iipm" style={{ width: '55px', padding: '4px' }} 
                           value={r.daysInMonth || ''} onChange={e => updateRow(r.id, 'daysInMonth', Number(e.target.value))} title="Days in month used for proportion" />
                       </td>
                       <td>
-                        <input type="number" className="form-control-iipm" style={{ width: '60px', padding: '4px' }} 
+                        <input type="number" className="form-control-iipm" style={{ width: '55px', padding: '4px' }} 
                           value={r.days || ''} onChange={e => updateRow(r.id, 'days', Number(e.target.value))} />
                       </td>
                       <td>
@@ -651,7 +829,7 @@ const ArrearsCalculator: React.FC = () => {
                           value={r.overrideNpsEmployer !== null ? r.overrideNpsEmployer : calc.npsEmployer} 
                           onChange={e => updateRow(r.id, 'overrideNpsEmployer', e.target.value === '' ? null : Number(e.target.value))} />
                       </td>
-                      <td style={{ fontWeight: 600, background: '#f8fafc' }}>{calc.gross}</td>
+                      <td style={{ fontWeight: 600, background: '#f8fafc', textAlign: 'right' }}>{calc.gross}</td>
                       <td>
                         <input type="number" className="form-control-iipm" style={{ width: '70px', padding: '4px' }} 
                           value={r.tds || ''} onChange={e => updateRow(r.id, 'tds', Number(e.target.value))} />
@@ -661,8 +839,8 @@ const ArrearsCalculator: React.FC = () => {
                           value={r.overrideNpsEmp !== null ? r.overrideNpsEmp : calc.npsEmp} 
                           onChange={e => updateRow(r.id, 'overrideNpsEmp', e.target.value === '' ? null : Number(e.target.value))} />
                       </td>
-                      <td style={{ fontWeight: 600, background: '#f8fafc' }}>{r.overrideNpsEmployer !== null ? r.overrideNpsEmployer : calc.npsEmployer}</td>
-                      <td style={{ fontWeight: 700, background: '#eef2ff', color: '#4338ca' }}>{calc.net}</td>
+                      <td style={{ fontWeight: 600, background: '#f8fafc', textAlign: 'right' }}>{r.overrideNpsEmployer !== null ? r.overrideNpsEmployer : calc.npsEmployer}</td>
+                      <td style={{ fontWeight: 700, background: '#eef2ff', color: '#4338ca', textAlign: 'right', fontSize: '0.9rem' }}>{calc.net}</td>
                       <td>
                         <button onClick={() => removeRow(r.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1rem' }}>❌</button>
                       </td>

@@ -263,24 +263,43 @@ const ArrearsPage: React.FC = () => {
         <div className="card-iipm" style={{ padding: '24px', maxWidth: '640px' }}>
           <h3 style={{ marginBottom: '20px' }}>Create DA Revision Arrear</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.87rem', marginBottom: '24px' }}>
-            Arrear = (New DA% − Old DA%) × Basic Pay × Number of months
+            Arrear = (New DA% − Old DA%) × Basic Pay × Number of months (Auto-calculated)
           </p>
           <form onSubmit={submitDA}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label-iipm">Employee *</label>
-                <select className="form-control-iipm" value={daForm.userId} onChange={e => setDaForm({ ...daForm, userId: e.target.value })} required>
+                <select 
+                  className="form-control-iipm" 
+                  value={daForm.userId} 
+                  onChange={e => {
+                    const uid = e.target.value;
+                    const u = users.find(usr => usr.id === uid || usr._id === uid);
+                    setDaForm({
+                      ...daForm,
+                      userId: uid,
+                      oldDAPercentage: daForm.oldDAPercentage || '50',
+                      newDAPercentage: daForm.newDAPercentage || '53',
+                      fromMonth: daForm.fromMonth || '1',
+                      fromYear: daForm.fromYear || '2026',
+                      toMonth: daForm.toMonth || '3',
+                      toYear: daForm.toYear || '2026',
+                      remarks: daForm.remarks || (u ? `DA revision from 50% to 53% for ${u.firstName} ${u.lastName}` : '')
+                    });
+                  }} 
+                  required
+                >
                   <option value="">Select Employee...</option>
-                  {users.map(u => <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.employeeId})</option>)}
+                  {users.map(u => <option key={u.id || u._id} value={u.id || u._id}>{u.firstName} {u.lastName} ({u.employeeId}) — Basic: ₹{u.basicPay || 0}</option>)}
                 </select>
               </div>
               <div>
                 <label className="form-label-iipm">Old DA % *</label>
-                <input type="number" className="form-control-iipm" step="0.01" value={daForm.oldDAPercentage} onChange={e => setDaForm({ ...daForm, oldDAPercentage: e.target.value })} placeholder="e.g., 46" required />
+                <input type="number" className="form-control-iipm" step="0.01" value={daForm.oldDAPercentage} onChange={e => setDaForm({ ...daForm, oldDAPercentage: e.target.value })} placeholder="e.g., 50" required />
               </div>
               <div>
                 <label className="form-label-iipm">New DA % *</label>
-                <input type="number" className="form-control-iipm" step="0.01" value={daForm.newDAPercentage} onChange={e => setDaForm({ ...daForm, newDAPercentage: e.target.value })} placeholder="e.g., 50" required />
+                <input type="number" className="form-control-iipm" step="0.01" value={daForm.newDAPercentage} onChange={e => setDaForm({ ...daForm, newDAPercentage: e.target.value })} placeholder="e.g., 53" required />
               </div>
               <div>
                 <label className="form-label-iipm">From Month *</label>
@@ -288,7 +307,7 @@ const ArrearsPage: React.FC = () => {
               </div>
               <div>
                 <label className="form-label-iipm">From Year *</label>
-                <input type="number" className="form-control-iipm" value={daForm.fromYear} onChange={e => setDaForm({ ...daForm, fromYear: e.target.value })} placeholder="e.g., 2025" required />
+                <input type="number" className="form-control-iipm" value={daForm.fromYear} onChange={e => setDaForm({ ...daForm, fromYear: e.target.value })} placeholder="e.g., 2026" required />
               </div>
               <div>
                 <label className="form-label-iipm">To Month *</label>
@@ -296,7 +315,7 @@ const ArrearsPage: React.FC = () => {
               </div>
               <div>
                 <label className="form-label-iipm">To Year *</label>
-                <input type="number" className="form-control-iipm" value={daForm.toYear} onChange={e => setDaForm({ ...daForm, toYear: e.target.value })} placeholder="e.g., 2025" required />
+                <input type="number" className="form-control-iipm" value={daForm.toYear} onChange={e => setDaForm({ ...daForm, toYear: e.target.value })} placeholder="e.g., 2026" required />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label-iipm">Remarks</label>
@@ -322,9 +341,30 @@ const ArrearsPage: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label-iipm">Employee *</label>
-                <select className="form-control-iipm" value={promoForm.userId} onChange={e => setPromoForm({ ...promoForm, userId: e.target.value })} required>
+                <select 
+                  className="form-control-iipm" 
+                  value={promoForm.userId} 
+                  onChange={e => {
+                    const uid = e.target.value;
+                    const u = users.find(usr => usr.id === uid || usr._id === uid);
+                    const oldBasic = u?.basicPay ? String(u.basicPay) : '';
+                    const suggestedNew = u?.basicPay ? String(Math.round((u.basicPay * 1.03) / 100) * 100) : '';
+                    setPromoForm({
+                      ...promoForm,
+                      userId: uid,
+                      oldBasicPay: oldBasic,
+                      newBasicPay: suggestedNew,
+                      effectiveMonth: promoForm.effectiveMonth || String(new Date().getMonth() + 1),
+                      effectiveYear: promoForm.effectiveYear || String(new Date().getFullYear()),
+                      daysWorked: promoForm.daysWorked || '30',
+                      totalDays: promoForm.totalDays || '30',
+                      remarks: promoForm.remarks || (u ? `Promotional arrear for ${u.firstName} ${u.lastName}` : '')
+                    });
+                  }} 
+                  required
+                >
                   <option value="">Select Employee...</option>
-                  {users.map(u => <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.employeeId})</option>)}
+                  {users.map(u => <option key={u.id || u._id} value={u.id || u._id}>{u.firstName} {u.lastName} ({u.employeeId}) — Basic: ₹{u.basicPay || 0}</option>)}
                 </select>
               </div>
               <div>
@@ -341,7 +381,7 @@ const ArrearsPage: React.FC = () => {
               </div>
               <div>
                 <label className="form-label-iipm">Effective Year *</label>
-                <input type="number" className="form-control-iipm" value={promoForm.effectiveYear} onChange={e => setPromoForm({ ...promoForm, effectiveYear: e.target.value })} placeholder="e.g., 2025" required />
+                <input type="number" className="form-control-iipm" value={promoForm.effectiveYear} onChange={e => setPromoForm({ ...promoForm, effectiveYear: e.target.value })} placeholder="e.g., 2026" required />
               </div>
               <div>
                 <label className="form-label-iipm">Days Worked *</label>
