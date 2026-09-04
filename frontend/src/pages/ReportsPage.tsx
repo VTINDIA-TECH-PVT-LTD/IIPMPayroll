@@ -9,7 +9,7 @@ const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 const ReportsPage: React.FC = () => {
   const userCtx = useContext(UserContext);
   const [tab, setTab] = useState<'register' | 'bank' | 'projection' | 'nps' | 'tds' | 'dept' | 'ytd' | 'comparison'>('register');
-  const [bankCategoryFilter, setBankCategoryFilter] = useState<'all' | 'faculty' | 'staff' | 'contract'>('all');
+  const [bankCategoryFilter, setBankCategoryFilter] = useState<'all' | 'teaching' | 'non_teaching' | 'contract'>('all');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [userId, setUserId] = useState<string>('');
@@ -17,6 +17,35 @@ const ReportsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
   const [msg, setMsg] = useState<string | null>(null);
+
+  const getEmployeeCategory = (p: any): 'teaching' | 'non_teaching' | 'contract' => {
+    const eid = (p.employeeId || '').toUpperCase();
+    const empType = (p.employeeType || p.staffFunction || '').toUpperCase();
+    const desig = (p.designation || '').toUpperCase();
+    const payLevel = (p.payLevel || '').toUpperCase();
+
+    if (
+      eid.startsWith('CNT') || 
+      eid.startsWith('CT') || 
+      eid.startsWith('CMED') || 
+      empType.includes('CONTRACT') || 
+      desig.includes('CONTRACT') || 
+      payLevel.includes('CONSOLIDATED')
+    ) {
+      return 'contract';
+    }
+    if (eid.startsWith('TS') || p.department === 'Faculty' || p.staffFunction === 'Faculty') {
+      return 'teaching';
+    }
+    return 'non_teaching';
+  };
+
+  const getCategoryLabel = (cat: 'teaching' | 'non_teaching' | 'contract' | 'all') => {
+    if (cat === 'teaching') return 'Regular Teaching Staff';
+    if (cat === 'non_teaching') return 'Regular Non-Teaching Staff';
+    if (cat === 'contract') return 'Contract Employees';
+    return 'All Categories (Consolidated)';
+  };
 
   const tabList = [
     { key: 'register', label: '📋 Salary Register' },
@@ -235,54 +264,83 @@ const ReportsPage: React.FC = () => {
     if (!data || !data.payrolls) return;
     const wb = XLSX.utils.book_new();
 
-    const filtered = data.payrolls.filter((p: any) => {
-      const isContract = (p.employeeType || p.staffFunction || '').toLowerCase().includes('contract') || (p.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
-      const isFaculty = (p.employeeId || '').startsWith('TS') && !isContract;
-      if (bankCategoryFilter === 'faculty') return isFaculty;
-      if (bankCategoryFilter === 'staff') return !isFaculty && !isContract;
-      if (bankCategoryFilter === 'contract') return isContract;
-      return true;
-    });
+    const createSheetData = (list: any[], title: string) => {
+      const exportRows = list.map((p: any, idx: number) => ({
+        'Sl. No.': idx + 1,
+        'Employee ID': p.employeeId,
+        'Employee Name': p.employeeName || `${p.firstName || ''} ${p.lastName || ''}`.trim(),
+        'Designation': p.designation || '-',
+        'Bank Name': p.bankName || 'State Bank of India',
+        'Bank Account Number': p.bankAccountNumber || '-',
+        'IFSC Code': p.ifscCode || 'SBIN0003170',
+        'Net Amount Payable (Rs.)': p.netSalary || 0,
+      }));
 
-    const exportRows = filtered.map((p: any, idx: number) => ({
-      'Sl. No.': idx + 1,
-      'Employee ID': p.employeeId,
-      'Employee Name': p.employeeName || `${p.firstName || ''} ${p.lastName || ''}`.trim(),
-      'Designation': p.designation || '-',
-      'Bank Name': p.bankName || 'State Bank of India',
-      'Bank Account Number': p.bankAccountNumber || '-',
-      'IFSC Code': p.ifscCode || 'SBIN0003170',
-      'Net Amount Payable (Rs.)': p.netSalary || 0,
-    }));
+      const totalNet = list.reduce((s: number, p: any) => s + (p.netSalary || 0), 0);
+      exportRows.push({
+        'Sl. No.': 'TOTAL',
+        'Employee ID': '',
+        'Employee Name': '',
+        'Designation': '',
+        'Bank Name': '',
+        'Bank Account Number': '',
+        'IFSC Code': '',
+        'Net Amount Payable (Rs.)': totalNet,
+      } as any);
 
-    const totalNet = filtered.reduce((s: number, p: any) => s + (p.netSalary || 0), 0);
-    exportRows.push({
-      'Sl. No.': 'TOTAL',
-      'Employee ID': '',
-      'Employee Name': '',
-      'Designation': '',
-      'Bank Name': '',
-      'Bank Account Number': '',
-      'IFSC Code': '',
-      'Net Amount Payable (Rs.)': totalNet,
-    } as any);
+      // Append Signatures
+      exportRows.push({} as any, {} as any);
+      exportRows.push({
+        'Sl. No.': 'PREPARED BY',
+        'Designation': 'VERIFIED BY',
+        'Bank Account Number': 'VERIFIED BY',
+        'Net Amount Payable (Rs.)': 'APPROVED BY'
+      } as any);
+      exportRows.push({
+        'Sl. No.': `(${signatures.preparedBy})`,
+        'Designation': `(${signatures.verifiedBy1})`,
+        'Bank Account Number': `(${signatures.verifiedBy2})`,
+        'Net Amount Payable (Rs.)': `(${signatures.approvedBy})`
+      } as any);
+      exportRows.push({
+        'Sl. No.': 'ACCOUNTS EXECUTIVE',
+        'Designation': 'Jr SUPTD(ACTING AR F&A)',
+        'Bank Account Number': 'JOINT REGISTRAR',
+        'Net Amount Payable (Rs.)': 'REGISTRAR'
+      } as any);
 
-    const ws = XLSX.utils.json_to_sheet(exportRows);
-    XLSX.utils.book_append_sheet(wb, ws, `Bank_Advice_${shortMonths[month - 1]}_${year}`);
+      return XLSX.utils.json_to_sheet(exportRows);
+    };
+
+    const teachingList = data.payrolls.filter((p: any) => getEmployeeCategory(p) === 'teaching');
+    const nonTeachingList = data.payrolls.filter((p: any) => getEmployeeCategory(p) === 'non_teaching');
+    const contractList = data.payrolls.filter((p: any) => getEmployeeCategory(p) === 'contract');
+
+    if (bankCategoryFilter === 'all') {
+      if (teachingList.length > 0) XLSX.utils.book_append_sheet(wb, createSheetData(teachingList, 'Regular Teaching Staff'), 'Regular Teaching Staff');
+      if (nonTeachingList.length > 0) XLSX.utils.book_append_sheet(wb, createSheetData(nonTeachingList, 'Regular Non-Teaching Staff'), 'Regular Non-Teaching Staff');
+      if (contractList.length > 0) XLSX.utils.book_append_sheet(wb, createSheetData(contractList, 'Contract Employees'), 'Contract Employees');
+      XLSX.utils.book_append_sheet(wb, createSheetData(data.payrolls, 'Consolidated Bank Advice'), 'Consolidated Summary');
+    } else if (bankCategoryFilter === 'teaching') {
+      XLSX.utils.book_append_sheet(wb, createSheetData(teachingList, 'Regular Teaching Staff'), 'Regular Teaching Staff');
+    } else if (bankCategoryFilter === 'non_teaching') {
+      XLSX.utils.book_append_sheet(wb, createSheetData(nonTeachingList, 'Regular Non-Teaching Staff'), 'Regular Non-Teaching Staff');
+    } else if (bankCategoryFilter === 'contract') {
+      XLSX.utils.book_append_sheet(wb, createSheetData(contractList, 'Contract Employees'), 'Contract Employees');
+    }
+
     XLSX.writeFile(wb, `IIPE_Bank_Payment_Advice_${months[month - 1]}_${year}.xlsx`);
   };
 
   const printBankAdviceLetter = () => {
     if (!data || !data.payrolls) return;
     const filtered = data.payrolls.filter((p: any) => {
-      const isContract = (p.employeeType || p.staffFunction || '').toLowerCase().includes('contract') || (p.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
-      const isFaculty = (p.employeeId || '').startsWith('TS') && !isContract;
-      if (bankCategoryFilter === 'faculty') return isFaculty;
-      if (bankCategoryFilter === 'staff') return !isFaculty && !isContract;
-      if (bankCategoryFilter === 'contract') return isContract;
-      return true;
+      if (bankCategoryFilter === 'all') return true;
+      return getEmployeeCategory(p) === bankCategoryFilter;
     });
     const totalAmount = filtered.reduce((s: number, p: any) => s + (p.netSalary || 0), 0);
+    const categoryTitle = getCategoryLabel(bankCategoryFilter);
+
     const getLastWorkingDay = (yr: number, m: number): string => {
       const d = new Date(yr, m, 0);
       if (d.getDay() === 6) d.setDate(d.getDate() - 1);
@@ -296,7 +354,7 @@ const ReportsPage: React.FC = () => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Bank Payment Advice - ${months[month - 1]} ${year}</title>
+        <title>Bank Payment Advice - ${months[month - 1]} ${year} (${categoryTitle})</title>
         <style>
           body { font-family: 'Times New Roman', serif; font-size: 11pt; margin: 20mm 15mm; color: #000; }
           .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
@@ -319,12 +377,13 @@ const ReportsPage: React.FC = () => {
         </div>
         <table class="ref-table">
           <tr>
-            <td>Ref No: IIPE/PAYROLL/${year}/${shortMonths[month - 1].toUpperCase()}</td>
+            <td>Ref No: IIPE/PAYROLL/${year}/${shortMonths[month - 1].toUpperCase()}/BANK</td>
             <td class="text-right">Date: ${getLastWorkingDay(year, month)}</td>
           </tr>
         </table>
-        <p>To,<br><b>The Branch Manager,</b><br>State Bank of India,<br>Visakhapatnam - 531035</p>
-        <p><b>Dear Sir,</b></p>
+        <p>To,<br><b>The Branch Manager,</b><br>State Bank of India, AU Campus Branch,<br>Visakhapatnam - 530003, Andhra Pradesh</p>
+        <p><b>Dear Sir / Madam,</b></p>
+        <p><b>Sub: Payment Advice towards ${months[month - 1]} ${year} Salaries — Category: <span style="text-decoration: underline;">${categoryTitle}</span></b></p>
         <p>We authorize you to debit IIPE Revenue Current Account No. <b>39877553958</b> and remit the following net salary amounts to the respective bank accounts of our employees towards <b>${months[month - 1]} ${year}</b> Salaries:</p>
         <table class="advice-table">
           <thead>
@@ -332,6 +391,7 @@ const ReportsPage: React.FC = () => {
               <th class="text-center" style="width:5%;">Sl.No</th>
               <th class="text-center" style="width:10%;">Emp ID</th>
               <th>Employee Name</th>
+              <th>Designation</th>
               <th>Bank Name</th>
               <th>Account Number</th>
               <th class="text-center">IFSC Code</th>
@@ -344,23 +404,24 @@ const ReportsPage: React.FC = () => {
                 <td class="text-center">${idx + 1}</td>
                 <td class="text-center">${p.employeeId}</td>
                 <td><b>${p.employeeName || (p.firstName + ' ' + p.lastName)}</b></td>
+                <td>${p.designation || '-'}</td>
                 <td>${p.bankName || 'State Bank of India'}</td>
                 <td>${p.bankAccountNumber || '-'}</td>
                 <td class="text-center">${p.ifscCode || 'SBIN0003170'}</td>
-                <td class="text-right bold">${Number(p.netSalary || 0).toLocaleString('en-IN')}</td>
+                <td class="text-right bold">${Number(p.netSalary || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               </tr>
             `).join('')}
             <tr style="background:#f9f9f9;">
-              <td colspan="6" class="bold text-center">TOTAL DISBURSEMENT AMOUNT</td>
-              <td class="text-right bold" style="font-size:11pt;">₹ ${Number(totalAmount).toLocaleString('en-IN')}</td>
+              <td colspan="7" class="bold text-center">TOTAL DISBURSEMENT AMOUNT (${categoryTitle.toUpperCase()})</td>
+              <td class="text-right bold" style="font-size:11pt;">₹ ${Number(totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
             </tr>
           </tbody>
         </table>
         <p style="margin-top:20px;">Yours Faithfully,<br><b>For Indian Institute of Petroleum and Energy</b></p>
         <div class="sig-container" style="margin-top:50px;">
-          <div>_______________________<br><b>Prepared / Verified By</b><br>F&A Section</div>
-          <div style="text-align:center;">_______________________<br><b>Finance & Accounts Officer</b></div>
-          <div style="text-align:right;">_______________________<br><b>Registrar / Authorized Signatory</b></div>
+          <div>_______________________<br><b>Prepared By</b><br>(${signatures.preparedBy})<br>Accounts Executive</div>
+          <div style="text-align:center;">_______________________<br><b>Verified By</b><br>(${signatures.verifiedBy1} / ${signatures.verifiedBy2})<br>F&A Section</div>
+          <div style="text-align:right;">_______________________<br><b>Approved By</b><br>(${signatures.approvedBy})<br>Registrar / Authorized Signatory</div>
         </div>
       </body>
       </html>
@@ -369,7 +430,8 @@ const ReportsPage: React.FC = () => {
     if (win) {
       win.document.write(html);
       win.document.close();
-      win.print();
+      win.focus();
+      setTimeout(() => win.print(), 250);
     }
   };
 
@@ -562,23 +624,24 @@ const ReportsPage: React.FC = () => {
         <div>
           {/* Header Action Bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {(['all', 'faculty', 'staff', 'contract'] as const).map(cat => (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {(['teaching', 'non_teaching', 'contract', 'all'] as const).map(cat => (
                 <button
                   key={cat}
                   onClick={() => setBankCategoryFilter(cat)}
                   style={{
-                    padding: '6px 14px',
+                    padding: '7px 16px',
                     borderRadius: '20px',
-                    border: `1.5px solid ${bankCategoryFilter === cat ? '#0a3161' : '#e2e8f0'}`,
+                    border: `1.5px solid ${bankCategoryFilter === cat ? '#0a3161' : '#cbd5e1'}`,
                     background: bankCategoryFilter === cat ? '#0a3161' : '#ffffff',
-                    color: bankCategoryFilter === cat ? '#ffffff' : '#475569',
-                    fontWeight: 600,
+                    color: bankCategoryFilter === cat ? '#ffffff' : '#334155',
+                    fontWeight: bankCategoryFilter === cat ? 700 : 600,
                     fontSize: '0.85rem',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    boxShadow: bankCategoryFilter === cat ? '0 2px 4px rgba(10,49,97,0.2)' : 'none'
                   }}
                 >
-                  {cat === 'all' ? 'All Employees' : cat === 'faculty' ? 'Teaching Faculty' : cat === 'staff' ? 'Non-Teaching Staff' : 'Contract Staff'}
+                  {cat === 'teaching' ? '1️⃣ Regular Teaching Staff' : cat === 'non_teaching' ? '2️⃣ Regular Non-Teaching Staff' : cat === 'contract' ? '3️⃣ Contract Employees' : '🌐 All Categories (Consolidated)'}
                 </button>
               ))}
             </div>
@@ -596,22 +659,19 @@ const ReportsPage: React.FC = () => {
           {/* Bank Summary Cards */}
           {(() => {
             const filteredPayrolls = (data.payrolls || []).filter((p: any) => {
-              const isContract = (p.employeeType || p.staffFunction || '').toLowerCase().includes('contract') || (p.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
-              const isFaculty = (p.employeeId || '').startsWith('TS') && !isContract;
-              if (bankCategoryFilter === 'faculty') return isFaculty;
-              if (bankCategoryFilter === 'staff') return !isFaculty && !isContract;
-              if (bankCategoryFilter === 'contract') return isContract;
-              return true;
+              if (bankCategoryFilter === 'all') return true;
+              return getEmployeeCategory(p) === bankCategoryFilter;
             });
             const totalDisbursement = filteredPayrolls.reduce((sum: number, p: any) => sum + (p.netSalary || 0), 0);
             const sbiCount = filteredPayrolls.filter((p: any) => (p.bankName || '').toLowerCase().includes('state bank') || (p.ifscCode || '').startsWith('SBIN')).length;
             const otherBankCount = filteredPayrolls.length - sbiCount;
+            const currentCatTitle = getCategoryLabel(bankCategoryFilter);
 
             return (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px' }}>
                   <div className="stat-card">
-                    <div className="stat-label">Total Beneficiaries</div>
+                    <div className="stat-label">Total Beneficiaries ({currentCatTitle})</div>
                     <div className="stat-value" style={{ fontSize: '1.5rem', color: '#0a3161' }}>{filteredPayrolls.length} Employees</div>
                   </div>
                   <div className="stat-card">
@@ -631,10 +691,10 @@ const ReportsPage: React.FC = () => {
                 <div className="card-iipm" style={{ padding: '0', overflow: 'hidden' }}>
                   <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: '#f8fafc' }}>
                     <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a' }}>
-                      Bank Remittance Schedule — {months[month - 1]} {year}
+                      Bank Remittance Schedule — {months[month - 1]} {year} ({currentCatTitle})
                     </h3>
                     <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      Debit Account: IIPE Revenue Current Account (No. 39877553958) | State Bank of India
+                      Debit Account: IIPE Revenue Current Account (No. 39877553958) | State Bank of India, AU Campus Branch
                     </p>
                   </div>
 
@@ -645,6 +705,7 @@ const ReportsPage: React.FC = () => {
                           <th>Sl. No.</th>
                           <th>Emp ID</th>
                           <th>Employee Name</th>
+                          <th>Category</th>
                           <th>Designation</th>
                           <th>Bank Name</th>
                           <th>Bank Account Number</th>
@@ -654,25 +715,37 @@ const ReportsPage: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredPayrolls.map((p: any, i: number) => (
-                          <tr key={p.employeeId || i}>
-                            <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                            <td style={{ fontWeight: 600 }}>{p.employeeId}</td>
-                            <td style={{ fontWeight: 600 }}>{p.employeeName || `${p.firstName || ''} ${p.lastName || ''}`.trim()}</td>
-                            <td>{p.designation || '-'}</td>
-                            <td>{p.bankName || 'State Bank of India'}</td>
-                            <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0f172a' }}>
-                              {p.bankAccountNumber || <span style={{ color: '#ef4444' }}>Not Configured</span>}
-                            </td>
-                            <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{p.ifscCode || 'SBIN0003170'}</td>
-                            <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>{fmt(p.netSalary)}</td>
-                            <td style={{ textAlign: 'center' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: p.status === 'APPROVED' ? '#dcfce7' : '#fef3c7', color: p.status === 'APPROVED' ? '#166534' : '#92400e' }}>
-                                {p.status || 'PROCESSED'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {filteredPayrolls.map((p: any, i: number) => {
+                          const cat = getEmployeeCategory(p);
+                          const badgeColor = cat === 'teaching' ? '#3b82f6' : cat === 'non_teaching' ? '#10b981' : '#f59e0b';
+                          const badgeBg = cat === 'teaching' ? '#eff6ff' : cat === 'non_teaching' ? '#ecfdf5' : '#fffbeb';
+                          const catText = cat === 'teaching' ? 'Teaching' : cat === 'non_teaching' ? 'Non-Teaching' : 'Contract';
+                          
+                          return (
+                            <tr key={p.employeeId || i}>
+                              <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                              <td style={{ fontWeight: 600 }}>{p.employeeId}</td>
+                              <td style={{ fontWeight: 600 }}>{p.employeeName || `${p.firstName || ''} ${p.lastName || ''}`.trim()}</td>
+                              <td>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: '10px', background: badgeBg, color: badgeColor, border: `1px solid ${badgeColor}30` }}>
+                                  {catText}
+                                </span>
+                              </td>
+                              <td>{p.designation || '-'}</td>
+                              <td>{p.bankName || 'State Bank of India'}</td>
+                              <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0f172a' }}>
+                                {p.bankAccountNumber || <span style={{ color: '#ef4444' }}>Not Configured</span>}
+                              </td>
+                              <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{p.ifscCode || 'SBIN0003170'}</td>
+                              <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>{fmt(p.netSalary)}</td>
+                              <td style={{ textAlign: 'center' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: p.status === 'APPROVED' ? '#dcfce7' : '#fef3c7', color: p.status === 'APPROVED' ? '#166534' : '#92400e' }}>
+                                  {p.status || 'PROCESSED'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
                         {!filteredPayrolls.length && (
                           <tr>
                             <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
