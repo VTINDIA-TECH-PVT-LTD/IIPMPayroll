@@ -40,8 +40,8 @@ fi
 
 echo "Using Java: $JAVA_BIN"
 
-# Start backend
-nohup $JAVA_BIN -jar target/iipm-payroll-system-0.0.1-SNAPSHOT.jar > backend.log 2>&1 &
+# Start backend with explicit external config file to ensure MongoDB Atlas connection is used
+nohup $JAVA_BIN -jar target/iipm-payroll-system-0.0.1-SNAPSHOT.jar --spring.config.additional-location=file:/var/www/html/iipm-repo/src/main/resources/application.yml > backend.log 2>&1 &
 BACKEND_PID=$!
 echo "Backend started with PID: $BACKEND_PID"
 sleep 5
