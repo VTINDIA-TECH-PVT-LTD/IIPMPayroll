@@ -84,4 +84,9 @@ public class User {
     private Set<String> roles;
 
     private String profilePhotoUrl;
+
+    public String getName() {
+        if (firstName == null && lastName == null) return username;
+        return ((firstName != null ? firstName : "") + (lastName != null ? " " + lastName : "")).trim();
+    }
 }
