@@ -1,6 +1,7 @@
 package com.iipm.payroll.service;
 
 import com.iipm.payroll.model.Payroll;
+import com.iipm.payroll.model.User;
 import com.iipm.payroll.repository.PayrollRepository;
 import com.iipm.payroll.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -129,8 +130,9 @@ public class ReportService {
         } else {
             payrolls = payrollRepository.findByUserIdOrEmployeeIdAndYear(userId, userId, year);
             if (payrolls.isEmpty()) {
-                User u = userRepository.findById(userId)
-                        .or(() -> userRepository.findByEmployeeId(userId))
+                final String searchId = userId;
+                User u = userRepository.findById(searchId)
+                        .or(() -> userRepository.findByEmployeeId(searchId))
                         .orElse(null);
                 if (u != null) {
                     payrolls = payrollRepository.findByUserIdOrEmployeeIdAndYear(u.getId(), u.getEmployeeId(), year);
@@ -138,8 +140,10 @@ public class ReportService {
                     employeeId = u.getEmployeeId();
                 }
             } else {
-                User u = userRepository.findById(payrolls.get(0).getUserId())
-                        .or(() -> userRepository.findByEmployeeId(payrolls.get(0).getEmployeeId()))
+                final String pUserId = payrolls.get(0).getUserId();
+                final String pEmpId = payrolls.get(0).getEmployeeId();
+                User u = (pUserId != null ? userRepository.findById(pUserId) : Optional.<User>empty())
+                        .or(() -> pEmpId != null ? userRepository.findByEmployeeId(pEmpId) : Optional.<User>empty())
                         .orElse(null);
                 if (u != null) {
                     employeeName = u.getName();

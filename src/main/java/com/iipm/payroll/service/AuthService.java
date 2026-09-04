@@ -77,7 +77,8 @@ public class AuthService {
         }
 
         // Generate tokens
-        String token = jwtUtil.generateToken(user.getUsername(), user.getId(), user.getRole().toString());
+        String userRole = user.getRole() != null ? user.getRole().toString() : "EMPLOYEE";
+        String token = jwtUtil.generateToken(user.getUsername(), user.getId(), userRole);
         String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getId());
 
         // Update last login
@@ -91,7 +92,7 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .userId(user.getId())
                 .username(user.getUsername())
-                .role(user.getRole().toString())
+                .role(userRole)
                 .expiresIn(86400000L) // 24 hours
                 .message("Login successful")
                 .build();
@@ -110,8 +111,9 @@ public class AuthService {
         }
 
         User user = userOpt.get();
+        String userRole = user.getRole() != null ? user.getRole().toString() : "EMPLOYEE";
 
-        String newToken = jwtUtil.generateToken(user.getUsername(), user.getId(), user.getRole().toString());
+        String newToken = jwtUtil.generateToken(user.getUsername(), user.getId(), userRole);
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getId());
 
         return LoginResponse.builder()
@@ -119,7 +121,7 @@ public class AuthService {
                 .refreshToken(newRefreshToken)
                 .userId(user.getId())
                 .username(user.getUsername())
-                .role(user.getRole().toString())
+                .role(userRole)
                 .expiresIn(86400000L)
                 .message("Token refreshed successfully")
                 .build();

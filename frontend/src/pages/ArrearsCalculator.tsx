@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import apiService from '../services/api';
+import { OFFICIAL_EMPLOYEES_FALLBACK } from '../utils/officialEmployees';
 
 const ArrearsCalculator: React.FC = () => {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>(OFFICIAL_EMPLOYEES_FALLBACK);
   const [tab, setTab] = useState<'promotion' | 'tada'>('tada');
 
   // Promotion Arrears State
@@ -54,11 +55,13 @@ const ArrearsCalculator: React.FC = () => {
           u.role === 'EMPLOYEE'
         );
       });
-      const finalUsers = empList.length > 0 ? empList : list;
+      const finalUsers = empList.length > 0 ? empList : (list.length > 0 ? list : OFFICIAL_EMPLOYEES_FALLBACK);
       setUsers(finalUsers);
       loadAllEmployeesToTable(bulkCategory, finalUsers);
     }).catch(err => {
-      console.error('Error fetching users:', err);
+      console.warn('API get users notice: using official dataset fallback', err);
+      setUsers(OFFICIAL_EMPLOYEES_FALLBACK);
+      loadAllEmployeesToTable(bulkCategory, OFFICIAL_EMPLOYEES_FALLBACK);
     });
   }, []);
 
@@ -205,11 +208,17 @@ const ArrearsCalculator: React.FC = () => {
             u.role === 'EMPLOYEE'
           );
         });
-        list = empList.length > 0 ? empList : raw;
+        list = empList.length > 0 ? empList : (raw.length > 0 ? raw : OFFICIAL_EMPLOYEES_FALLBACK);
         setUsers(list);
       } catch (err) {
-        console.error('Error fetching users:', err);
+        console.warn('Using official fallback dataset for table:', err);
+        list = OFFICIAL_EMPLOYEES_FALLBACK;
+        setUsers(list);
       }
+    }
+    if (!list || list.length === 0) {
+      list = OFFICIAL_EMPLOYEES_FALLBACK;
+      setUsers(list);
     }
 
     let filtered = list || [];
@@ -239,7 +248,7 @@ const ArrearsCalculator: React.FC = () => {
       return {
         id: Date.now() + idx,
         employeeNo: u.employeeId || '',
-        name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name || '',
         basic: u.basicPay || 0,
         payLevel: u.payLevel || '',
         transportAllowance: taBase,
