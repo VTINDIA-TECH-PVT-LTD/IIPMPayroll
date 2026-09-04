@@ -65,6 +65,11 @@ const ReportsPage: React.FC = () => {
     approvedBy: 'SHRI.RAM PHAL DWIVEDI'
   });
 
+  const normalizeBankName = (bank?: string) => {
+    if (!bank) return 'State Bank of India';
+    return bank.replace(/\s*\(India\)/gi, '').trim();
+  };
+
   useEffect(() => {
     apiService.getAllUsers().then(res => setEmployees(res)).catch(console.error);
   }, []);
@@ -72,6 +77,19 @@ const ReportsPage: React.FC = () => {
   const loadReport = async () => {
     setLoading(true); setData(null); setMsg(null);
     try {
+      let userList = employees;
+      if (!userList || userList.length === 0) {
+        try {
+          const res = await apiService.getAllUsers();
+          if (Array.isArray(res) && res.length > 0) {
+            userList = res;
+            setEmployees(res);
+          }
+        } catch (err) {
+          console.error('Error fetching users in loadReport:', err);
+        }
+      }
+
       let result: any;
       if (tab === 'register' || tab === 'bank') result = await apiService.getSalaryRegister(month, year);
       else if (tab === 'projection') result = await apiService.getAllTdsProjections(year);
@@ -87,15 +105,18 @@ const ReportsPage: React.FC = () => {
       if ((tab === 'register' || tab === 'bank') && (result?.data || result)) {
         const payload = result.data || result;
         payload.payrolls = payload.payrolls?.map((p: any) => {
-          const emp = employees.find(e => e.employeeId === p.employeeId || e.id === p.userId);
+          const emp = userList?.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
+          const fullName = (emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : '') || `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.employeeName || p.employeeId;
+          const rawBank = p.bankName || emp?.bankName || 'State Bank of India';
           return { 
             ...p, 
-            designation: emp?.designation || '', 
-            payLevel: emp?.payLevel || '', 
-            staffFunction: emp?.function || emp?.employeeType || '',
-            bankName: emp?.bankName || 'State Bank of India',
-            bankAccountNumber: emp?.bankAccountNumber || '',
-            ifscCode: emp?.ifscCode || 'SBIN0003170'
+            employeeName: p.employeeName || fullName,
+            designation: p.designation || emp?.designation || '-', 
+            payLevel: p.payLevel || emp?.payLevel || '10', 
+            staffFunction: p.staffFunction || emp?.function || emp?.employeeType || '',
+            bankName: normalizeBankName(rawBank),
+            bankAccountNumber: p.bankAccountNumber || emp?.bankAccountNumber || '-',
+            ifscCode: p.ifscCode || emp?.ifscCode || 'SBIN0003170'
           };
         });
         setData(payload);
@@ -265,16 +286,26 @@ const ReportsPage: React.FC = () => {
     const wb = XLSX.utils.book_new();
 
     const createSheetData = (list: any[], title: string) => {
-      const exportRows = list.map((p: any, idx: number) => ({
-        'Sl. No.': idx + 1,
-        'Employee ID': p.employeeId,
-        'Employee Name': p.employeeName || `${p.firstName || ''} ${p.lastName || ''}`.trim(),
-        'Designation': p.designation || '-',
-        'Bank Name': p.bankName || 'State Bank of India',
-        'Bank Account Number': p.bankAccountNumber || '-',
-        'IFSC Code': p.ifscCode || 'SBIN0003170',
-        'Net Amount Payable (Rs.)': p.netSalary || 0,
-      }));
+      const exportRows = list.map((p: any, idx: number) => {
+        const emp = employees.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
+        const name = p.employeeName || (emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : '') || `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.employeeId;
+        const rawBank = p.bankName || emp?.bankName || 'State Bank of India';
+        const bank = normalizeBankName(rawBank);
+        const acc = p.bankAccountNumber || emp?.bankAccountNumber || '-';
+        const ifsc = p.ifscCode || emp?.ifscCode || 'SBIN0003170';
+        const desig = p.designation || emp?.designation || '-';
+
+        return {
+          'Sl. No.': idx + 1,
+          'Employee ID': p.employeeId,
+          'Employee Name': name,
+          'Designation': desig,
+          'Bank Name': bank,
+          'Bank Account Number': acc,
+          'IFSC Code': ifsc,
+          'Net Amount Payable (Rs.)': p.netSalary || 0,
+        };
+      });
 
       const totalNet = list.reduce((s: number, p: any) => s + (p.netSalary || 0), 0);
       exportRows.push({
@@ -399,18 +430,27 @@ const ReportsPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            ${filtered.map((p: any, idx: number) => `
+            ${filtered.map((p: any, idx: number) => {
+              const emp = employees.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
+              const name = p.employeeName || (emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : '') || `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.employeeId;
+              const rawBank = p.bankName || emp?.bankName || 'State Bank of India';
+              const bank = normalizeBankName(rawBank);
+              const acc = p.bankAccountNumber || emp?.bankAccountNumber || '-';
+              const ifsc = p.ifscCode || emp?.ifscCode || 'SBIN0003170';
+              const desig = p.designation || emp?.designation || '-';
+
+              return `
               <tr>
                 <td class="text-center">${idx + 1}</td>
                 <td class="text-center">${p.employeeId}</td>
-                <td><b>${p.employeeName || (p.firstName + ' ' + p.lastName)}</b></td>
-                <td>${p.designation || '-'}</td>
-                <td>${p.bankName || 'State Bank of India'}</td>
-                <td>${p.bankAccountNumber || '-'}</td>
-                <td class="text-center">${p.ifscCode || 'SBIN0003170'}</td>
+                <td><b>${name}</b></td>
+                <td>${desig}</td>
+                <td>${bank}</td>
+                <td>${acc}</td>
+                <td class="text-center">${ifsc}</td>
                 <td class="text-right bold">${Number(p.netSalary || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               </tr>
-            `).join('')}
+            `;}).join('')}
             <tr style="background:#f9f9f9;">
               <td colspan="7" class="bold text-center">TOTAL DISBURSEMENT AMOUNT (${categoryTitle.toUpperCase()})</td>
               <td class="text-right bold" style="font-size:11pt;">₹ ${Number(totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
@@ -720,23 +760,40 @@ const ReportsPage: React.FC = () => {
                           const badgeColor = cat === 'teaching' ? '#3b82f6' : cat === 'non_teaching' ? '#10b981' : '#f59e0b';
                           const badgeBg = cat === 'teaching' ? '#eff6ff' : cat === 'non_teaching' ? '#ecfdf5' : '#fffbeb';
                           const catText = cat === 'teaching' ? 'Teaching' : cat === 'non_teaching' ? 'Non-Teaching' : 'Contract';
+                          const emp = employees.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
+                          const name = p.employeeName || (emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : '') || `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.employeeId;
+                          const rawBank = p.bankName || emp?.bankName || 'State Bank of India';
+                          const bank = normalizeBankName(rawBank);
+                          const isSbi = bank.toLowerCase().includes('state bank') || (p.ifscCode || '').startsWith('SBIN');
                           
                           return (
                             <tr key={p.employeeId || i}>
                               <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
                               <td style={{ fontWeight: 600 }}>{p.employeeId}</td>
-                              <td style={{ fontWeight: 600 }}>{p.employeeName || `${p.firstName || ''} ${p.lastName || ''}`.trim()}</td>
+                              <td style={{ fontWeight: 600, color: '#0f172a' }}>{name}</td>
                               <td>
                                 <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: '10px', background: badgeBg, color: badgeColor, border: `1px solid ${badgeColor}30` }}>
                                   {catText}
                                 </span>
                               </td>
-                              <td>{p.designation || '-'}</td>
-                              <td>{p.bankName || 'State Bank of India'}</td>
-                              <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0f172a' }}>
-                                {p.bankAccountNumber || <span style={{ color: '#ef4444' }}>Not Configured</span>}
+                              <td>{p.designation || emp?.designation || '-'}</td>
+                              <td>
+                                <span style={{ 
+                                  fontSize: '0.78rem', 
+                                  fontWeight: 600, 
+                                  padding: '2px 8px', 
+                                  borderRadius: '6px', 
+                                  background: isSbi ? '#f0fdf4' : '#fff7ed', 
+                                  color: isSbi ? '#166534' : '#c2410c',
+                                  border: `1px solid ${isSbi ? '#bbf7d0' : '#fed7aa'}`
+                                }}>
+                                  🏦 {bank}
+                                </span>
                               </td>
-                              <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{p.ifscCode || 'SBIN0003170'}</td>
+                              <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0f172a' }}>
+                                {p.bankAccountNumber || emp?.bankAccountNumber || <span style={{ color: '#ef4444' }}>Not Configured</span>}
+                              </td>
+                              <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{p.ifscCode || emp?.ifscCode || 'SBIN0003170'}</td>
                               <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>{fmt(p.netSalary)}</td>
                               <td style={{ textAlign: 'center' }}>
                                 <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: p.status === 'APPROVED' ? '#dcfce7' : '#fef3c7', color: p.status === 'APPROVED' ? '#166534' : '#92400e' }}>

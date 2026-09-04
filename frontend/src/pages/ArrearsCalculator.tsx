@@ -12,9 +12,11 @@ const ArrearsCalculator: React.FC = () => {
   // TA/DA Arrears State
   const [daRows, setDaRows] = useState<any[]>([]);
   const [daMonths, setDaMonths] = useState<string[]>(['January \'26', 'February \'26', 'March \'26']);
+  const [selectedMonthName, setSelectedMonthName] = useState<string>('April');
+  const [selectedYearVal, setSelectedYearVal] = useState<string>('26');
   const [bulkOldDa, setBulkOldDa] = useState<number>(50);
   const [bulkNewDa, setBulkNewDa] = useState<number>(53);
-  const [bulkCategory, setBulkCategory] = useState<'all' | 'staff' | 'faculty'>('all');
+  const [bulkCategory, setBulkCategory] = useState<'all' | 'staff' | 'faculty' | 'contract'>('all');
 
   const [signatures, setSignatures] = useState({
     preparedBy: 'Y RAMA RAO',
@@ -149,12 +151,23 @@ const ArrearsCalculator: React.FC = () => {
     setDaRows([...daRows, { id: Date.now(), employeeNo: '', name: '', basic: 0, months: monthsObj, tds: 0 }]);
   };
 
-  const loadAllEmployeesToTable = (category: 'all' | 'staff' | 'faculty') => {
+  const loadAllEmployeesToTable = (category: 'all' | 'staff' | 'faculty' | 'contract') => {
     let filtered = users;
     if (category === 'staff') {
-      filtered = users.filter(u => (u.employeeId || '').toUpperCase().startsWith('NT') || (u.employeeId || '').toUpperCase().startsWith('CNT'));
+      filtered = users.filter(u => {
+        const eid = (u.employeeId || '').toUpperCase();
+        return (eid.startsWith('NT') || eid.startsWith('NTS')) && !eid.startsWith('CNT');
+      });
     } else if (category === 'faculty') {
-      filtered = users.filter(u => (u.employeeId || '').toUpperCase().startsWith('TS') || (u.employeeId || '').toUpperCase().startsWith('CT') || u.department === 'Faculty');
+      filtered = users.filter(u => {
+        const eid = (u.employeeId || '').toUpperCase();
+        return (eid.startsWith('TS') || u.department === 'Faculty') && !eid.startsWith('CT');
+      });
+    } else if (category === 'contract') {
+      filtered = users.filter(u => {
+        const eid = (u.employeeId || '').toUpperCase();
+        return eid.startsWith('CNT') || eid.startsWith('CT') || eid.startsWith('CMED');
+      });
     }
 
     const newRows = filtered.map((u, idx) => {
@@ -213,14 +226,33 @@ const ArrearsCalculator: React.FC = () => {
     }));
   };
   
-  const addDaMonth = () => {
-    const mName = prompt("Enter Month Name (e.g. April '26)");
-    if (!mName || daMonths.includes(mName)) return;
-    setDaMonths([...daMonths, mName]);
+  const addSelectedMonth = (mNameCustom?: string) => {
+    const mName = mNameCustom || `${selectedMonthName} '${selectedYearVal}`;
+    if (daMonths.includes(mName)) {
+      alert(`Month "${mName}" is already added.`);
+      return;
+    }
+    const newMonths = [...daMonths, mName];
+    setDaMonths(newMonths);
     setDaRows(daRows.map(r => ({ ...r, months: { ...r.months, [mName]: { da: 0, ta: 0 } } })));
   };
 
+  const applyMonthPreset = (presetMonths: string[]) => {
+    setDaMonths(presetMonths);
+    setDaRows(daRows.map(r => {
+      const updatedMonths: any = {};
+      presetMonths.forEach(m => {
+        updatedMonths[m] = r.months?.[m] || { da: 0, ta: 0 };
+      });
+      return { ...r, months: updatedMonths };
+    }));
+  };
+
   const removeDaMonth = (mName: string) => {
+    if (daMonths.length <= 1) {
+      alert('At least one month column is required.');
+      return;
+    }
     setDaMonths(daMonths.filter(m => m !== mName));
   };
 
@@ -306,22 +338,69 @@ const ArrearsCalculator: React.FC = () => {
 
       {tab === 'tada' && (
         <>
-          {/* Bulk Action and Auto-Calculation Toolbar */}
-          <div className="card-iipm" style={{ padding: '16px 20px', marginBottom: '20px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-              
-              {/* Left: Load Employees */}
+          {/* 3-Step Arrears Workflow Toolbar */}
+          <div className="card-iipm" style={{ padding: '18px 20px', marginBottom: '20px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            
+            {/* Step 1: Month Selection Bar */}
+            <div style={{ paddingBottom: '14px', borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>📅 Step 1: Arrears Months Selection:</span>
+                  <span style={{ fontSize: '0.78rem', color: '#64748b' }}>({daMonths.length} active columns)</span>
+                </div>
+
+                {/* Quick Presets */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b' }}>Presets:</span>
+                  <button className="btn-iipm" onClick={() => applyMonthPreset(["January '26", "February '26", "March '26"])} style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe' }}>Jan - Mar '26 (Q4)</button>
+                  <button className="btn-iipm" onClick={() => applyMonthPreset(["April '26", "May '26", "June '26"])} style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe' }}>Apr - Jun '26 (Q1)</button>
+                  <button className="btn-iipm" onClick={() => applyMonthPreset(["July '25", "August '25", "September '25", "October '25", "November '25", "December '25"])} style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe' }}>Jul - Dec '25 (6M)</button>
+                  <button className="btn-iipm" onClick={() => applyMonthPreset(["January '26", "February '26", "March '26", "April '26", "May '26", "June '26"])} style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe' }}>Jan - Jun '26 (6M)</button>
+                </div>
+              </div>
+
+              {/* Month Dropdown & Add */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>1. Load Employees:</span>
+                <select className="form-control-iipm" value={selectedMonthName} onChange={e => setSelectedMonthName(e.target.value)} style={{ width: '130px', padding: '5px 8px', fontSize: '0.85rem' }}>
+                  {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <select className="form-control-iipm" value={selectedYearVal} onChange={e => setSelectedYearVal(e.target.value)} style={{ width: '85px', padding: '5px 8px', fontSize: '0.85rem' }}>
+                  <option value="25">2025</option>
+                  <option value="26">2026</option>
+                  <option value="27">2027</option>
+                </select>
+                <button className="btn-iipm" onClick={() => addSelectedMonth()} style={{ background: '#4f46e5', color: 'white', fontWeight: 600, padding: '5px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  ➕ Add Month Column
+                </button>
+
+                {/* Active Month Badges */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginLeft: '6px' }}>
+                  {daMonths.map(m => (
+                    <span key={m} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#e0f2fe', color: '#0369a1', padding: '3px 10px', borderRadius: '14px', fontSize: '0.8rem', fontWeight: 600, border: '1px solid #bae6fd' }}>
+                      {m}
+                      <button onClick={() => removeDaMonth(m)} title="Remove Month" style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Step 2: Load Employees Toolbar */}
+            <div style={{ padding: '14px 0', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>👥 Step 2: Load Employees:</span>
                 <select 
                   className="form-control-iipm" 
                   value={bulkCategory} 
                   onChange={e => setBulkCategory(e.target.value as any)}
-                  style={{ width: '190px', padding: '6px 10px', fontSize: '0.85rem' }}
+                  style={{ width: '220px', padding: '6px 10px', fontSize: '0.85rem' }}
                 >
-                  <option value="all">👥 All Employees ({users.length})</option>
-                  <option value="staff">👔 Non-Teaching Staff</option>
-                  <option value="faculty">🎓 Teaching Faculty</option>
+                  <option value="all">🌐 All Staff & Faculty ({users.length})</option>
+                  <option value="faculty">🎓 Regular Teaching Faculty (34)</option>
+                  <option value="staff">👔 Regular Non-Teaching (20)</option>
+                  <option value="contract">📋 Contract Employees (14)</option>
                 </select>
                 <button 
                   className="btn-primary-iipm" 
@@ -330,8 +409,7 @@ const ArrearsCalculator: React.FC = () => {
                 >
                   ⚡ Populate Employees ({daRows.length > 0 ? `${daRows.length} Loaded` : 'Click to Load'})
                 </button>
-                <button className="btn-iipm" onClick={addDaRow} style={{ background: '#fff', border: '1px solid #cbd5e1', padding: '6px 12px', fontSize: '0.85rem' }}>+ Add Single</button>
-                <button className="btn-iipm" onClick={addDaMonth} style={{ background: '#6366f1', color: 'white', padding: '6px 12px', fontSize: '0.85rem' }}>+ Add Month</button>
+                <button className="btn-iipm" onClick={addDaRow} style={{ background: '#fff', border: '1px solid #cbd5e1', padding: '6px 12px', fontSize: '0.85rem' }}>+ Add Single Row</button>
                 {daRows.length > 0 && (
                   <button className="btn-iipm" onClick={() => setDaRows([])} style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', padding: '6px 12px', fontSize: '0.85rem' }}>Clear All</button>
                 )}
@@ -339,15 +417,15 @@ const ArrearsCalculator: React.FC = () => {
 
               {/* Right: Export Button */}
               <div>
-                <button className="btn-iipm" onClick={exportDaExcel} style={{ background: '#22c55e', color: 'white', fontWeight: 600, padding: '8px 18px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 2px 4px rgba(34,197,94,0.2)' }}>
+                <button className="btn-iipm" onClick={exportDaExcel} style={{ background: '#22c55e', color: 'white', fontWeight: 700, padding: '8px 18px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 2px 4px rgba(34,197,94,0.2)' }}>
                   📊 Export to Excel ({daRows.length} Records)
                 </button>
               </div>
             </div>
 
-            {/* Sub-bar: 1-Click DA Rate Calculator */}
-            <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>2. DA Revision Rate:</span>
+            {/* Step 3: 1-Click DA Rate Calculator */}
+            <div style={{ paddingTop: '14px', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>🚀 Step 3: DA Revision Rate:</span>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Old DA%:</span>
@@ -356,7 +434,7 @@ const ArrearsCalculator: React.FC = () => {
                   className="form-control-iipm" 
                   value={bulkOldDa} 
                   onChange={e => setBulkOldDa(Number(e.target.value))} 
-                  style={{ width: '70px', padding: '4px 8px', fontSize: '0.85rem' }} 
+                  style={{ width: '65px', padding: '4px 8px', fontSize: '0.85rem' }} 
                 />
               </div>
 
@@ -367,11 +445,11 @@ const ArrearsCalculator: React.FC = () => {
                   className="form-control-iipm" 
                   value={bulkNewDa} 
                   onChange={e => setBulkNewDa(Number(e.target.value))} 
-                  style={{ width: '70px', padding: '4px 8px', fontSize: '0.85rem' }} 
+                  style={{ width: '65px', padding: '4px 8px', fontSize: '0.85rem' }} 
                 />
               </div>
 
-              <span style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
+              <span style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 700 }}>
                 Hike: {(bulkNewDa - bulkOldDa).toFixed(1)}%
               </span>
 
@@ -382,20 +460,21 @@ const ArrearsCalculator: React.FC = () => {
                 style={{ 
                   background: daRows.length > 0 ? '#0284c7' : '#94a3b8', 
                   color: 'white', 
-                  fontWeight: 600, 
-                  padding: '6px 16px', 
-                  fontSize: '0.85rem', 
+                  fontWeight: 700, 
+                  padding: '6px 18px', 
+                  fontSize: '0.88rem', 
                   cursor: daRows.length > 0 ? 'pointer' : 'not-allowed',
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: '6px' 
+                  gap: '6px',
+                  boxShadow: daRows.length > 0 ? '0 2px 4px rgba(2,132,199,0.25)' : 'none'
                 }}
               >
-                🚀 Auto-Calculate All Employees (1-Click)
+                ⚡ 1-Click Auto Calculate All ({daRows.length} Staff × {daMonths.length} Months)
               </button>
 
               <span style={{ fontSize: '0.78rem', color: '#64748b', marginLeft: 'auto' }}>
-                * Computes Basic × Diff% + TA × Diff% + NPS 14% across all {daMonths.length} months
+                * Auto-computes: Basic × Hike% + TA × Hike% + NPS 14% across all {daMonths.length} months
               </span>
             </div>
           </div>
