@@ -218,12 +218,12 @@ const EmployeePortal: React.FC = () => {
 
   .watermark {
     position: absolute;
-    top: 50%;
+    top: 53%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 480px;
-    max-width: 80%;
-    opacity: 0.16;
+    width: 500px;
+    max-width: 85%;
+    opacity: 0.34;
     pointer-events: none;
     z-index: 0;
   }
@@ -244,7 +244,7 @@ const EmployeePortal: React.FC = () => {
   .ps-badge .title { font-size: 13px; font-weight: 800; letter-spacing: 0.5px; }
   .ps-badge .subtitle { font-size: 8.5px; font-weight: 500; margin-top: 1px; }
   
-  .pay-dates { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 8px; }
+  .pay-dates { background: rgba(248, 250, 252, 0.85); border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 8px; }
   .date-row { display: flex; align-items: center; margin-bottom: 3px; font-size: 8.5px; }
   .date-row:last-child { margin-bottom: 0; }
   .date-row .icon { width: 11px; height: 11px; margin-right: 5px; color: #0a3161; flex-shrink: 0; }
@@ -252,7 +252,7 @@ const EmployeePortal: React.FC = () => {
   .date-row .val { font-weight: 700; color: #0f172a; white-space: nowrap; }
 
   /* --- DETAILS BOX --- */
-  .details-box { border: 1px solid #cbd5e1; border-radius: 6px; position: relative; padding: 14px 12px 8px 12px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.7); z-index: 1; }
+  .details-box { border: 1px solid #cbd5e1; border-radius: 6px; position: relative; padding: 14px 12px 8px 12px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.4); z-index: 1; }
   .emp-name-badge { position: absolute; top: -9px; left: 16px; background: #0a3161; color: #fff; padding: 2px 10px; font-size: 10px; font-weight: 700; border-radius: 4px; letter-spacing: 0.3px; }
   
   .details-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 12px; }
@@ -266,35 +266,35 @@ const EmployeePortal: React.FC = () => {
   .salary-container { position: relative; margin-bottom: 8px; z-index: 1; }
   .tables-wrapper { display: flex; gap: 10px; position: relative; }
   
-  .sal-table { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.7); }
+  .sal-table { flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.35); }
   .sal-table .header-row { display: flex; align-items: center; padding: 5px 8px; font-size: 10px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
-  .sal-table.earn { border-color: #bbf7d0; }
-  .sal-table.earn .header-row { color: #166534; background: rgba(240, 253, 244, 0.9); border-bottom-color: #bbf7d0; }
-  .sal-table.ded { border-color: #fecaca; }
-  .sal-table.ded .header-row { color: #991b1b; background: rgba(254, 242, 242, 0.9); border-bottom-color: #fecaca; }
+  .sal-table.earn { border-color: #86efac; }
+  .sal-table.earn .header-row { color: #166534; background: rgba(240, 253, 244, 0.85); border-bottom-color: #86efac; }
+  .sal-table.ded { border-color: #fca5a5; }
+  .sal-table.ded .header-row { color: #991b1b; background: rgba(254, 242, 242, 0.85); border-bottom-color: #fca5a5; }
   
   .sal-table table { width: 100%; border-collapse: collapse; background: transparent; }
-  .sal-table th { background: rgba(248, 250, 252, 0.8); font-size: 8.5px; font-weight: 700; padding: 4px 8px; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; }
+  .sal-table th { background: rgba(248, 250, 252, 0.75); font-size: 8.5px; font-weight: 700; padding: 4px 8px; text-align: left; border-bottom: 1px solid #cbd5e1; color: #475569; }
   .sal-table th.amt-col { text-align: right; }
   .sal-table.earn th { color: #166534; }
   .sal-table.ded th { color: #991b1b; }
 
-  .sal-table td { padding: 4.5px 8px; font-size: 9px; border-bottom: 1px dashed rgba(226, 232, 240, 0.9); color: #334155; font-weight: 500; background: transparent; }
+  .sal-table td { padding: 4.5px 8px; font-size: 9px; border-bottom: 1px dashed rgba(203, 213, 225, 0.7); color: #1e293b; font-weight: 600; background: transparent; }
   .sal-table td.amt-col { text-align: right; color: #0f172a; font-weight: 700; font-family: monospace; font-size: 9.5px; }
   
-  .total-row td { font-weight: 800 !important; font-size: 9.5px !important; border-top: 1px solid #cbd5e1; border-bottom: none !important; background: rgba(248, 250, 252, 0.9) !important; }
+  .total-row td { font-weight: 800 !important; font-size: 9.5px !important; border-top: 1px solid #cbd5e1; border-bottom: none !important; background: rgba(248, 250, 252, 0.85) !important; }
   .sal-table.earn .total-row td { color: #166534 !important; }
   .sal-table.ded .total-row td { color: #991b1b !important; }
 
   /* --- NET PAY --- */
-  .net-pay-box { margin: 8px auto; width: 330px; text-align: center; border: 1.5px solid #0a3161; border-radius: 6px; overflow: hidden; position: relative; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.04); background: #fff; }
+  .net-pay-box { margin: 8px auto; width: 330px; text-align: center; border: 1.5px solid #0a3161; border-radius: 6px; overflow: hidden; position: relative; z-index: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.04); background: rgba(255, 255, 255, 0.88); }
   .net-pay-header { background: #0a3161; color: white; padding: 4px; font-weight: 800; font-size: 10px; letter-spacing: 1px; }
   .net-pay-body { padding: 6px 10px; }
   .net-pay-amount { font-size: 20px; font-weight: 800; color: #0a3161; margin-bottom: 2px; font-family: monospace; }
   .net-pay-words { font-size: 8px; color: #475569; font-weight: 600; font-style: italic; }
 
   /* --- SUMMARY CARDS --- */
-  .summary-cards { display: flex; justify-content: space-between; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 14px; margin-bottom: 8px; position: relative; z-index: 1; background: #f8fafc; }
+  .summary-cards { display: flex; justify-content: space-between; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 14px; margin-bottom: 8px; position: relative; z-index: 1; background: rgba(248, 250, 252, 0.75); }
   .card { display: flex; align-items: center; gap: 8px; background: transparent; }
   .card-icon { width: 26px; height: 26px; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
   .card-icon svg { width: 14px; height: 14px; }
@@ -315,7 +315,7 @@ const EmployeePortal: React.FC = () => {
   .footer-words { font-size: 8.5px; font-weight: 700; color: #0f172a; max-width: 450px; }
   .footer-words span { font-weight: 500; color: #475569; display: block; margin-top: 2px; }
   
-  .auth-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 10px; display: flex; align-items: center; gap: 6px; background: #f8fafc; }
+  .auth-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 10px; display: flex; align-items: center; gap: 6px; background: rgba(248, 250, 252, 0.85); }
   .auth-box svg { width: 18px; height: 18px; color: #0284c7; flex-shrink: 0; }
   .auth-box div { font-size: 7.5px; color: #334155; font-weight: 600; line-height: 1.2; }
   
