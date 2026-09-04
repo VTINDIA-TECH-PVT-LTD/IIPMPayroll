@@ -6,6 +6,48 @@ import { UserContext } from '../App';
 const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+const numberToWordsINR = (num: number): string => {
+  if (!num || num === 0) return 'Rupees Zero Only';
+  const a = [
+    '', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ',
+    'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '
+  ];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  const inWords = (n: number): string => {
+    let str = '';
+    if (n > 19) {
+      str += b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : ' ');
+    } else {
+      str += a[n];
+    }
+    return str;
+  };
+
+  let n = Math.floor(Math.abs(num));
+  let output = '';
+
+  const crore = Math.floor(n / 10000000);
+  n %= 10000000;
+  const lakh = Math.floor(n / 100000);
+  n %= 100000;
+  const thousand = Math.floor(n / 1000);
+  n %= 1000;
+  const hundred = Math.floor(n / 100);
+  n %= 100;
+
+  if (crore > 0) output += (crore > 99 ? inWords(crore) : inWords(crore)) + 'Crore ';
+  if (lakh > 0) output += inWords(lakh) + 'Lakh ';
+  if (thousand > 0) output += inWords(thousand) + 'Thousand ';
+  if (hundred > 0) output += inWords(hundred) + 'Hundred ';
+  if (n > 0) {
+    if (output !== '') output += 'and ';
+    output += inWords(n);
+  }
+
+  return `Rupees ${output.trim()} Only`;
+};
+
 const ReportsPage: React.FC = () => {
   const userCtx = useContext(UserContext);
   const [tab, setTab] = useState<'register' | 'bank' | 'projection' | 'nps' | 'tds' | 'dept' | 'ytd' | 'comparison'>('register');
@@ -325,7 +367,7 @@ const ReportsPage: React.FC = () => {
         'Sl. No.': 'PREPARED BY',
         'Designation': 'VERIFIED BY',
         'Bank Account Number': 'VERIFIED BY',
-        'Net Amount Payable (Rs.)': 'APPROVED BY'
+        'Net Amount Payable (Rs.)': 'AUTHORISED SIGNATORY'
       } as any);
       exportRows.push({
         'Sl. No.': `(${signatures.preparedBy})`,
@@ -334,10 +376,10 @@ const ReportsPage: React.FC = () => {
         'Net Amount Payable (Rs.)': `(${signatures.approvedBy})`
       } as any);
       exportRows.push({
-        'Sl. No.': 'ACCOUNTS EXECUTIVE',
-        'Designation': 'Jr SUPTD(ACTING AR F&A)',
-        'Bank Account Number': 'JOINT REGISTRAR',
-        'Net Amount Payable (Rs.)': 'REGISTRAR'
+        'Sl. No.': 'Junior Superintendent (F&A)',
+        'Designation': 'AR (F&A)',
+        'Bank Account Number': 'Deputy Registrar (F&A)',
+        'Net Amount Payable (Rs.)': 'Authorised Signatory'
       } as any);
 
       return XLSX.utils.json_to_sheet(exportRows);
@@ -371,6 +413,7 @@ const ReportsPage: React.FC = () => {
     });
     const totalAmount = filtered.reduce((s: number, p: any) => s + (p.netSalary || 0), 0);
     const categoryTitle = getCategoryLabel(bankCategoryFilter);
+    const amountInWords = numberToWordsINR(Math.round(totalAmount));
 
     const getLastWorkingDay = (yr: number, m: number): string => {
       const d = new Date(yr, m, 0);
@@ -387,7 +430,7 @@ const ReportsPage: React.FC = () => {
       <head>
         <title>Bank Payment Advice - ${months[month - 1]} ${year} (${categoryTitle})</title>
         <style>
-          body { font-family: 'Times New Roman', serif; font-size: 11pt; margin: 20mm 15mm; color: #000; }
+          body { font-family: 'Times New Roman', serif; font-size: 11pt; margin: 20mm 15mm; color: #000; line-height: 1.35; }
           .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
           .title { font-size: 15pt; font-weight: bold; margin-bottom: 4px; }
           .subtitle { font-size: 10pt; }
@@ -397,7 +440,7 @@ const ReportsPage: React.FC = () => {
           .text-right { text-align: right; }
           .text-center { text-align: center; }
           .bold { font-weight: bold; }
-          .sig-container { display: flex; justify-content: space-between; margin-top: 50px; }
+          .sig-container { display: flex; justify-content: space-between; margin-top: 55px; font-size: 10pt; }
         </style>
       </head>
       <body>
@@ -415,7 +458,7 @@ const ReportsPage: React.FC = () => {
         <p>To,<br><b>The Branch Manager,</b><br>State Bank of India, AU Campus Branch,<br>Visakhapatnam - 530003, Andhra Pradesh</p>
         <p><b>Dear Sir / Madam,</b></p>
         <p><b>Sub: Payment Advice towards ${months[month - 1]} ${year} Salaries — Category: <span style="text-decoration: underline;">${categoryTitle}</span></b></p>
-        <p>We authorize you to debit IIPE Revenue Current Account No. <b>39877553958</b> and remit the following net salary amounts to the respective bank accounts of our employees towards <b>${months[month - 1]} ${year}</b> Salaries:</p>
+        <p>We authorize you to debit IIPE Revenue Current Account No. <b>39877553958</b> and remit the total net salary amount of <b>₹ ${Number(totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</b> (<b>${amountInWords}</b>) to the respective bank accounts of our employees towards <b>${months[month - 1]} ${year}</b> Salaries as detailed below:</p>
         <table class="advice-table">
           <thead>
             <tr style="background:#f2f2f2;">
@@ -455,13 +498,18 @@ const ReportsPage: React.FC = () => {
               <td colspan="7" class="bold text-center">TOTAL DISBURSEMENT AMOUNT (${categoryTitle.toUpperCase()})</td>
               <td class="text-right bold" style="font-size:11pt;">₹ ${Number(totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
             </tr>
+            <tr style="background:#fdfdfd;">
+              <td colspan="8" class="bold" style="padding: 8px 10px; font-size: 10pt; background:#f8fafc; border-top: 1px solid #000;">
+                Amount in Words: <span style="font-style: italic; color: #0f172a;">${amountInWords}</span>
+              </td>
+            </tr>
           </tbody>
         </table>
         <p style="margin-top:20px;">Yours Faithfully,<br><b>For Indian Institute of Petroleum and Energy</b></p>
-        <div class="sig-container" style="margin-top:50px;">
-          <div>_______________________<br><b>Prepared By</b><br>(${signatures.preparedBy})<br>Accounts Executive</div>
-          <div style="text-align:center;">_______________________<br><b>Verified By</b><br>(${signatures.verifiedBy1} / ${signatures.verifiedBy2})<br>F&A Section</div>
-          <div style="text-align:right;">_______________________<br><b>Approved By</b><br>(${signatures.approvedBy})<br>Registrar / Authorized Signatory</div>
+        <div class="sig-container" style="margin-top:55px;">
+          <div>_______________________<br><b>Prepared By</b><br>(${signatures.preparedBy})<br>Junior Superintendent (F&A)</div>
+          <div style="text-align:center;">_______________________<br><b>Verified By</b><br>(${signatures.verifiedBy1} / ${signatures.verifiedBy2})<br>Deputy Registrar (F&A)</div>
+          <div style="text-align:right;">_______________________<br><b>Authorised Signatory</b><br>(${signatures.approvedBy})<br>Registrar / Authorised Signatory</div>
         </div>
       </body>
       </html>
