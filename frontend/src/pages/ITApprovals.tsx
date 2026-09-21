@@ -195,11 +195,11 @@ const ITApprovals = () => {
         <DetailModal declaration={detailTarget} onClose={() => setDetailTarget(null)} />
       )}
 
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800 }}>IT Declaration Approvals</h2>
-        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          Review and approve or reject employee IT Declaration submissions
-        </p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#ffffff', padding: '24px 28px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)', border: '1px solid var(--border)', marginBottom: '24px' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>IT Declaration Approvals</h2>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Review and approve or reject employee IT Declaration submissions</p>
+        </div>
       </div>
 
       <div className="card-iipm" style={{ padding: 0, overflow: 'hidden' }}>
@@ -247,19 +247,19 @@ const ITApprovals = () => {
             <p style={{ fontWeight: 600 }}>No {activeTab === 'ALL' ? '' : activeTab.toLowerCase()} declarations found.</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="table-iipm" style={{ whiteSpace: 'nowrap', margin: 0 }}>
+          <div style={{ maxHeight: '600px', overflowY: 'auto', overflowX: 'auto', background: '#fff' }}>
+            <table className="table-iipm" style={{ borderCollapse: 'collapse', width: '100%', minWidth: '1000px', margin: 0 }}>
               <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>FY</th>
-                  <th>Regime</th>
-                  <th>80C</th>
-                  <th>80D</th>
-                  <th>HRA</th>
-                  <th>Home Loan</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                <tr style={{ position: 'sticky', top: 0, zIndex: 10, background: '#f8fafc', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Employee</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>FY</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Regime</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>80C</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>80D</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>HRA</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Home Loan</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Status</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -267,14 +267,14 @@ const ITApprovals = () => {
                   const id = d.id || d._id;
                   const sc = statusStyle[d.status] || { bg: '#f3f4f6', color: '#6b7280', border: '#d1d5db' };
                   return (
-                    <tr key={id}>
-                      <td>
+                    <tr key={id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '12px 16px' }}>
                         <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{d.employeeName || d.userId}</div>
                         {d.employeeId && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{d.employeeId}</div>}
                         {d.department && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{d.department}</div>}
                       </td>
-                      <td style={{ fontWeight: 600 }}>{d.financialYear}</td>
-                      <td>
+                      <td style={{ padding: '12px 16px', fontWeight: 600 }}>{d.financialYear}</td>
+                      <td style={{ padding: '12px 16px' }}>
                         <span style={{
                           display: 'inline-block', padding: '3px 10px', borderRadius: '20px',
                           fontSize: '0.75rem', fontWeight: 700,
@@ -284,11 +284,11 @@ const ITApprovals = () => {
                           {d.taxRegime || 'N/A'}
                         </span>
                       </td>
-                      <td>{fmt(d.section80C)}</td>
-                      <td>{fmt(d.section80D)}</td>
-                      <td>{fmt(d.hraExemption)}</td>
-                      <td>{fmt(d.homeLoanInterest)}</td>
-                      <td>
+                      <td style={{ padding: '12px 16px' }}>{fmt(d.section80C)}</td>
+                      <td style={{ padding: '12px 16px' }}>{fmt(d.section80D)}</td>
+                      <td style={{ padding: '12px 16px' }}>{fmt(d.hraExemption)}</td>
+                      <td style={{ padding: '12px 16px' }}>{fmt(d.homeLoanInterest)}</td>
+                      <td style={{ padding: '12px 16px' }}>
                         <span style={{
                           display: 'inline-block', padding: '4px 12px', borderRadius: '20px',
                           fontSize: '0.75rem', fontWeight: 700,
@@ -305,43 +305,28 @@ const ITApprovals = () => {
                           </div>
                         )}
                       </td>
-                      <td>
+                      <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                           <button
                             onClick={() => setDetailTarget(d)}
                             title="View Details"
-                            style={{
-                              background: '#f1f5f9', border: '1px solid var(--border)',
-                              borderRadius: '6px', padding: '5px 8px', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', gap: '4px',
-                              fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600,
-                            }}
+                            style={{ padding: '5px 12px', borderRadius: '4px', border: '1px solid var(--border)', background: '#f8fafc', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
                           >
-                            <Eye size={13} /> View
+                            <Eye size={14} /> View
                           </button>
                           {d.status === 'PENDING' && (
                             <>
                               <button
                                 onClick={() => handleApprove(id)}
-                                style={{
-                                  background: '#10b981', color: '#fff', border: 'none',
-                                  padding: '6px 12px', borderRadius: '6px',
-                                  fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
-                                  display: 'flex', alignItems: 'center', gap: '4px',
-                                }}
+                                style={{ padding: '5px 12px', borderRadius: '4px', border: '1px solid #198754', background: '#198754', color: '#ffffff', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                               >
-                                <CheckCircle size={13} /> Approve
+                                <CheckCircle size={14} /> Approve
                               </button>
                               <button
                                 onClick={() => setRejectTarget(d)}
-                                style={{
-                                  background: '#ef4444', color: '#fff', border: 'none',
-                                  padding: '6px 12px', borderRadius: '6px',
-                                  fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
-                                  display: 'flex', alignItems: 'center', gap: '4px',
-                                }}
+                                style={{ padding: '5px 12px', borderRadius: '4px', border: '1px solid #dc3545', background: '#ffffff', color: '#dc3545', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                               >
-                                <XCircle size={13} /> Reject
+                                <XCircle size={14} /> Reject
                               </button>
                             </>
                           )}

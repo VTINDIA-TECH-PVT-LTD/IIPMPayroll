@@ -445,10 +445,10 @@ const ArrearsCalculator: React.FC = () => {
         ))}
       </datalist>
 
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#ffffff', padding: '24px 28px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)', border: '1px solid var(--border)', marginBottom: '24px' }}>
         <div>
-          <h1>Arrears Calculators</h1>
-          <p>Automated calculators with instant auto-population for retrospective payouts</p>
+          <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>Arrears Calculators</h2>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Automated calculators with instant auto-population for retrospective payouts</p>
         </div>
       </div>
 
@@ -470,58 +470,72 @@ const ArrearsCalculator: React.FC = () => {
       {tab === 'tada' && (
         <>
           {/* 3-Step Arrears Workflow Toolbar */}
-          <div className="card-iipm" style={{ padding: '18px 20px', marginBottom: '20px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
             
             {/* Step 1: Month Selection Bar */}
-            <div style={{ paddingBottom: '14px', borderBottom: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>📅 Step 1: Arrears Months Selection:</span>
-                  <span style={{ fontSize: '0.78rem', color: '#64748b' }}>({daMonths.length} active month columns — auto-populating amounts)</span>
+            <div className="card-iipm" style={{ padding: '20px', background: '#ffffff', borderLeft: '4px solid #6366f1', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: '#e0e7ff', color: '#4338ca', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>1</div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>Arrears Months Selection</h3>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>({daMonths.length} active columns)</span>
                 </div>
-
                 {/* Quick Presets */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b' }}>Presets:</span>
-                  <button className="btn-iipm" onClick={() => applyMonthPreset(["January '26", "February '26", "March '26"])} style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe' }}>Jan - Mar '26 (Q4)</button>
-                  <button className="btn-iipm" onClick={() => applyMonthPreset(["April '26", "May '26", "June '26"])} style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe' }}>Apr - Jun '26 (Q1)</button>
-                  <button className="btn-iipm" onClick={() => applyMonthPreset(["July '25", "August '25", "September '25", "October '25", "November '25", "December '25"])} style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe' }}>Jul - Dec '25 (6M)</button>
-                  <button className="btn-iipm" onClick={() => applyMonthPreset(["January '26", "February '26", "March '26", "April '26", "May '26", "June '26"])} style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe' }}>Jan - Jun '26 (6M)</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>Presets:</span>
+                  <button className="btn-iipm" onClick={() => applyMonthPreset(["January '26", "February '26", "March '26"])} style={{ fontSize: '0.8rem', padding: '4px 10px', background: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px' }}>Q4 (Jan-Mar '26)</button>
+                  <button className="btn-iipm" onClick={() => applyMonthPreset(["April '26", "May '26", "June '26"])} style={{ fontSize: '0.8rem', padding: '4px 10px', background: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px' }}>Q1 (Apr-Jun '26)</button>
+                  <button className="btn-iipm" onClick={() => applyMonthPreset(["July '25", "August '25", "September '25", "October '25", "November '25", "December '25"])} style={{ fontSize: '0.8rem', padding: '4px 10px', background: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px' }}>Jul-Dec '25</button>
+                  <button className="btn-iipm" onClick={() => applyMonthPreset(["January '26", "February '26", "March '26", "April '26", "May '26", "June '26"])} style={{ fontSize: '0.8rem', padding: '4px 10px', background: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px' }}>Jan-Jun '26</button>
                 </div>
               </div>
 
-              {/* Month Dropdown & Add */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <select className="form-control-iipm" value={selectedMonthName} onChange={e => setSelectedMonthName(e.target.value)} style={{ width: '130px', padding: '5px 8px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <select className="form-control-iipm" value={selectedMonthName} onChange={e => setSelectedMonthName(e.target.value)} style={{ width: '130px', padding: '8px 12px' }}>
                   {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
-                <select className="form-control-iipm" value={selectedYearVal} onChange={e => setSelectedYearVal(e.target.value)} style={{ width: '85px', padding: '5px 8px', fontSize: '0.85rem' }}>
+                <select className="form-control-iipm" value={selectedYearVal} onChange={e => setSelectedYearVal(e.target.value)} style={{ width: '100px', padding: '8px 12px' }}>
                   <option value="25">2025</option>
                   <option value="26">2026</option>
                   <option value="27">2027</option>
                 </select>
-                <button className="btn-iipm" onClick={() => addSelectedMonth()} style={{ background: '#4f46e5', color: 'white', fontWeight: 600, padding: '5px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  ➕ Add Month Column (Auto-populates)
+                <button className="btn-iipm" onClick={() => addSelectedMonth()} style={{ background: '#4f46e5', color: 'white', fontWeight: 600, padding: '9px 16px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', cursor: 'pointer' }}>
+                  ➕ Add Month
                 </button>
-
-                {/* Active Month Badges */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginLeft: '6px' }}>
+                
+                <div style={{ width: '1px', height: '24px', background: '#cbd5e1', margin: '0 8px' }}></div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   {daMonths.map(m => (
-                    <span key={m} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#e0f2fe', color: '#0369a1', padding: '3px 10px', borderRadius: '14px', fontSize: '0.8rem', fontWeight: 600, border: '1px solid #bae6fd' }}>
+                    <span key={m} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#ffffff', color: '#334155', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #cbd5e1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                       {m}
-                      <button onClick={() => removeDaMonth(m)} title="Remove Month" style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', padding: 0, lineHeight: 1 }}>×</button>
+                      <button onClick={() => removeDaMonth(m)} title="Remove Month" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      </button>
                     </span>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Step 2: Load Employees Toolbar */}
-            <div style={{ padding: '14px 0', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>👥 Step 2: Filter / Load Employees:</span>
+            {/* Step 2: Load Employees */}
+            <div className="card-iipm" style={{ padding: '20px', background: '#ffffff', borderLeft: '4px solid #f59e0b', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: '#fef3c7', color: '#b45309', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>2</div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>Filter & Load Employees</h3>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <button className="btn-iipm" onClick={exportDaExcel} style={{ background: '#10b981', color: 'white', fontWeight: 600, padding: '8px 16px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px', border: 'none', cursor: 'pointer' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Export to Excel ({daRows.length})
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <select 
                   className="form-control-iipm" 
                   value={bulkCategory} 
@@ -530,118 +544,110 @@ const ArrearsCalculator: React.FC = () => {
                     setBulkCategory(cat);
                     loadAllEmployeesToTable(cat);
                   }}
-                  style={{ width: '220px', padding: '6px 10px', fontSize: '0.85rem' }}
+                  style={{ width: '260px', padding: '9px 12px' }}
                 >
-                  <option value="all">🌐 All Staff & Faculty ({users.length > 0 ? users.length : 'All (68)'})</option>
-                  <option value="faculty">🎓 Regular Teaching Faculty ({users.filter(u => ((u.employeeId || '').toUpperCase().startsWith('TS') || u.department === 'Faculty') && !(u.employeeId || '').toUpperCase().startsWith('CT')).length || 34})</option>
-                  <option value="staff">👔 Regular Non-Teaching ({users.filter(u => ((u.employeeId || '').toUpperCase().startsWith('NT') || (u.employeeId || '').toUpperCase().startsWith('NTS')) && !(u.employeeId || '').toUpperCase().startsWith('CNT')).length || 20})</option>
-                  <option value="contract">📋 Contract Employees ({users.filter(u => (u.employeeId || '').toUpperCase().startsWith('CNT') || (u.employeeId || '').toUpperCase().startsWith('CT') || (u.employeeId || '').toUpperCase().startsWith('CMED')).length || 14})</option>
+                  <option value="all">🌐 All Staff & Faculty ({users.length > 0 ? users.length : 'All'})</option>
+                  <option value="faculty">🎓 Regular Teaching Faculty</option>
+                  <option value="staff">👔 Regular Non-Teaching</option>
+                  <option value="contract">📋 Contract Employees</option>
                 </select>
-                <button 
-                  className="btn-primary-iipm" 
-                  onClick={() => loadAllEmployeesToTable(bulkCategory)}
-                  style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
+                <button className="btn-iipm" onClick={() => loadAllEmployeesToTable(bulkCategory)} style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '9px 16px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
                   ⚡ Populate Employees ({daRows.length > 0 ? `${daRows.length} Loaded` : 'Click to Load'})
                 </button>
-                <button className="btn-iipm" onClick={addDaRow} style={{ background: '#fff', border: '1px solid #cbd5e1', padding: '6px 12px', fontSize: '0.85rem' }}>+ Add Single Row</button>
-                {daRows.length > 0 && (
-                  <button className="btn-iipm" onClick={() => setDaRows([])} style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', padding: '6px 12px', fontSize: '0.85rem' }}>Clear All</button>
-                )}
-              </div>
-
-              {/* Right: Export Button */}
-              <div>
-                <button className="btn-iipm" onClick={exportDaExcel} style={{ background: '#22c55e', color: 'white', fontWeight: 700, padding: '8px 18px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 2px 4px rgba(34,197,94,0.2)' }}>
-                  📊 Export to Excel ({daRows.length} Records)
+                <div style={{ width: '1px', height: '24px', background: '#cbd5e1', margin: '0 4px' }}></div>
+                <button className="btn-iipm" onClick={addDaRow} style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                  + Add Single Row
                 </button>
+                {daRows.length > 0 && (
+                  <button className="btn-iipm" onClick={() => setDaRows([])} style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', padding: '8px 16px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
+                    Clear All
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Step 3: 1-Click DA Rate Calculator */}
-            <div style={{ paddingTop: '14px', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>🚀 Step 3: DA Revision Rate:</span>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Old DA%:</span>
-                <input 
-                  type="number" 
-                  className="form-control-iipm" 
-                  value={bulkOldDa} 
-                  onChange={e => handleOldDaChange(Number(e.target.value))} 
-                  style={{ width: '65px', padding: '4px 8px', fontSize: '0.85rem' }} 
-                />
+            {/* Step 3: DA Revision Rate */}
+            <div className="card-iipm" style={{ padding: '20px', background: '#ffffff', borderLeft: '4px solid #10b981', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: '#d1fae5', color: '#047857', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>3</div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>DA Revision Rate</h3>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                  Auto-computed across {daMonths.length} active months
+                </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>New DA%:</span>
-                <input 
-                  type="number" 
-                  className="form-control-iipm" 
-                  value={bulkNewDa} 
-                  onChange={e => handleNewDaChange(Number(e.target.value))} 
-                  style={{ width: '65px', padding: '4px 8px', fontSize: '0.85rem' }} 
-                />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap', padding: '16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>Old DA %</span>
+                  <input type="number" className="form-control-iipm" value={bulkOldDa} onChange={e => handleOldDaChange(Number(e.target.value))} style={{ width: '80px', padding: '8px', textAlign: 'center', fontWeight: 'bold' }} />
+                </div>
+                
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>New DA %</span>
+                  <input type="number" className="form-control-iipm" value={bulkNewDa} onChange={e => handleNewDaChange(Number(e.target.value))} style={{ width: '80px', padding: '8px', textAlign: 'center', fontWeight: 'bold' }} />
+                </div>
+
+                <div style={{ background: '#dbeafe', color: '#1d4ed8', padding: '8px 16px', borderRadius: '6px', fontWeight: 700, fontSize: '0.95rem', border: '1px solid #bfdbfe' }}>
+                  Hike: {(bulkNewDa - bulkOldDa).toFixed(1)}%
+                </div>
+
+                <div style={{ flex: 1 }}></div>
+
+                <button 
+                  className="btn-iipm" 
+                  onClick={autoCalculateBulkDA} 
+                  disabled={daRows.length === 0}
+                  style={{ 
+                    background: daRows.length > 0 ? '#10b981' : '#94a3b8', 
+                    color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 600,
+                    cursor: daRows.length > 0 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '8px'
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.6 5.6"></path></svg>
+                  Recalculate {daRows.length} Staff
+                </button>
               </div>
-
-              <span style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 700 }}>
-                Hike: {(bulkNewDa - bulkOldDa).toFixed(1)}% (Live Auto-Calculating)
-              </span>
-
-              <button 
-                className="btn-iipm" 
-                onClick={autoCalculateBulkDA} 
-                disabled={daRows.length === 0}
-                style={{ 
-                  background: daRows.length > 0 ? '#0284c7' : '#94a3b8', 
-                  color: 'white', 
-                  fontWeight: 700, 
-                  padding: '6px 18px', 
-                  fontSize: '0.88rem', 
-                  cursor: daRows.length > 0 ? 'pointer' : 'not-allowed',
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px',
-                  boxShadow: daRows.length > 0 ? '0 2px 4px rgba(2,132,199,0.25)' : 'none'
-                }}
-              >
-                ⚡ Recalculate All ({daRows.length} Staff × {daMonths.length} Months)
-              </button>
-
-              <span style={{ fontSize: '0.78rem', color: '#16a34a', marginLeft: 'auto', fontWeight: 600 }}>
-                ✓ Auto-computed: Basic × Hike% + TA × Hike% across all {daMonths.length} active months
-              </span>
             </div>
           </div>
 
-          <div className="table-card-iipm" style={{ overflowX: 'auto', paddingBottom: '200px' }}>
-            <table className="table-iipm" style={{ minWidth: `${1000 + (daMonths.length * 150)}px`, fontSize: '0.8rem' }}>
+          <div className="table-card-iipm" style={{ maxHeight: '600px', overflowY: 'auto', overflowX: 'auto', background: '#fff', border: '1px solid var(--border)', borderRadius: '12px' }}>
+            <table className="table-iipm" style={{ minWidth: `${1000 + (daMonths.length * 150)}px`, fontSize: '0.8rem', borderCollapse: 'collapse' }}>
               <thead>
-                <tr>
-                  <th rowSpan={2}>Sl.No</th>
-                  <th rowSpan={2}>Employee No</th>
-                  <th rowSpan={2}>Name of the Employee</th>
-                  <th rowSpan={2}>Basic (₹)</th>
+                <tr style={{ position: 'sticky', top: 0, zIndex: 10, background: '#f8fafc', boxShadow: 'inset 0 -1px 0 #e2e8f0' }}>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sl.No</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Employee No</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name of the Employee</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Basic (₹)</th>
                   {daMonths.map(m => (
-                    <th colSpan={2} key={m} style={{ textAlign: 'center', background: '#e0e7ff', borderLeft: '1px solid #c7d2fe' }}>
-                      {m} <button onClick={() => removeDaMonth(m)} style={{ background:'none', border:'none', color:'red', cursor:'pointer' }}>x</button>
+                    <th colSpan={2} key={m} style={{ padding: '10px 12px', textAlign: 'center', background: '#e0e7ff', borderLeft: '1px solid #c7d2fe', borderBottom: '1px solid #c7d2fe' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#3730a3', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {m} 
+                        <button onClick={() => removeDaMonth(m)} title="Remove Month" style={{ background:'rgba(239,68,68,0.1)', border:'none', color:'#ef4444', borderRadius:'50%', width:'20px', height:'20px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', padding: 0 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </div>
                     </th>
                   ))}
-                  <th rowSpan={2}>Cummulative DA</th>
-                  <th rowSpan={2}>Cummulative TA</th>
-                  <th rowSpan={2}>NPS Employer Share</th>
-                  <th rowSpan={2}>Gross Arrears</th>
-                  <th rowSpan={2}>Less: NPS Employee Share</th>
-                  <th rowSpan={2}>NPS Employer Share</th>
-                  <th rowSpan={2}>Less: TDS</th>
-                  <th rowSpan={2}>Net Amount Payable</th>
-                  <th rowSpan={2}></th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Cummulative DA</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Cummulative TA</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>NPS Employer Share</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Gross Arrears</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Less: NPS Emp. Share</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>NPS Employer Share</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Less: TDS</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px', color: '#475569', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Net Amount Payable</th>
+                  <th rowSpan={2} style={{ padding: '14px 16px' }}></th>
                 </tr>
-                <tr>
+                <tr style={{ position: 'sticky', top: '48px', zIndex: 10, background: '#eef2ff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                   {daMonths.map(m => (
                     <React.Fragment key={m + "_sub"}>
-                      <th style={{ background: '#eef2ff', borderLeft: '1px solid #c7d2fe' }}>DA Diff ({(bulkNewDa - bulkOldDa) > 0 ? `+${(bulkNewDa - bulkOldDa).toFixed(1)}%` : 'DA'})</th>
-                      <th style={{ background: '#eef2ff' }}>TA Diff</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'center', background: '#eef2ff', borderLeft: '1px solid #c7d2fe', color: '#4338ca', fontSize: '0.75rem', fontWeight: 700 }}>DA Diff ({(bulkNewDa - bulkOldDa) > 0 ? `+${(bulkNewDa - bulkOldDa).toFixed(1)}%` : 'DA'})</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'center', background: '#eef2ff', color: '#4338ca', fontSize: '0.75rem', fontWeight: 700 }}>TA Diff</th>
                     </React.Fragment>
                   ))}
                 </tr>
@@ -650,7 +656,7 @@ const ArrearsCalculator: React.FC = () => {
                 {daRows.map((r, idx) => {
                   const calc = calculateDaRow(r);
                   return (
-                    <tr key={r.id}>
+                    <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td>{idx + 1}</td>
                       <td>
                         <input 
@@ -738,15 +744,16 @@ const ArrearsCalculator: React.FC = () => {
               <button className="btn-primary-iipm" onClick={addRow}>+ Add Empty Row</button>
               <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Tip: Select an employee from the dropdown in any row to auto-populate basic pay and calculate!</span>
             </div>
-            <button className="btn-iipm" onClick={exportPromotionExcel} style={{ background: '#22c55e', color: 'white', fontWeight: 700, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              📊 Export to Excel ({rows.length} Records)
+            <button className="btn-iipm" onClick={exportPromotionExcel} style={{ background: '#10b981', color: 'white', fontWeight: 600, padding: '8px 16px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px', border: 'none', cursor: 'pointer', boxShadow: '0 1px 2px rgba(16,185,129,0.2)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Export to Excel ({rows.length} Records)
             </button>
           </div>
 
-          <div className="table-card-iipm" style={{ overflowX: 'auto', paddingBottom: '200px' }}>
-            <table className="table-iipm" style={{ minWidth: '1800px', fontSize: '0.8rem' }}>
+          <div className="table-card-iipm" style={{ maxHeight: '600px', overflowY: 'auto', overflowX: 'auto', background: '#fff', border: '1px solid var(--border)', borderRadius: '12px' }}>
+            <table className="table-iipm" style={{ minWidth: '1800px', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
               <thead>
-                <tr>
+                <tr style={{ position: 'sticky', top: 0, zIndex: 10, background: '#f8fafc', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                   <th>Sl.</th>
                   <th>Select Employee</th>
                   <th>Faculty / Staff Name</th>
@@ -772,7 +779,7 @@ const ArrearsCalculator: React.FC = () => {
                 {rows.map((r, idx) => {
                   const calc = calculateRow(r);
                   return (
-                    <tr key={r.id}>
+                    <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td>{idx + 1}</td>
                       <td>
                         <select 
