@@ -9,7 +9,8 @@ git pull origin main
 
 # 1. Update frontend
 if [ -d "frontend/build" ]; then
-  \cp -r frontend/build/* /var/www/html/VTPMS/public/IIPMPayroll/
+  \cp -rf frontend/build/* /var/www/html/IIPMPayroll/ 2>/dev/null || true
+  \cp -rf frontend/build/* /var/www/html/VTPMS/public/IIPMPayroll/ 2>/dev/null || true
   echo "Frontend files copied successfully."
 else
   echo "Warning: frontend/build directory not found."
