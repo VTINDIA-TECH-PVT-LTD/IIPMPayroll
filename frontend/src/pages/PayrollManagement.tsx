@@ -877,38 +877,38 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                 No pending salary records found for {months[month - 1]} {year}
               </div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table className="table-iipm">
+              <div style={{ maxHeight: '600px', overflowY: 'auto', overflowX: 'auto', background: '#fff' }}>
+                <table className="table-iipm" style={{ borderCollapse: 'collapse', width: '100%', minWidth: '1000px' }}>
                   <thead>
-                    <tr>
-                      <th>Emp ID</th>
-                      <th>Employee Name</th>
-                      <th>Level</th>
-                      <th>Gross</th>
-                      <th>Net Salary</th>
-                      <th>Status</th>
-                      <th>Remark</th>
-                      <th>Attachments</th>
-                      <th>Actions</th>
+                    <tr style={{ position: 'sticky', top: 0, zIndex: 10, background: '#f8fafc', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Emp ID</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Employee Name</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Level</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Gross</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Net Salary</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Status</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Remark</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Attachments</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {currentPayrolls.map((p: any) => (
-                      <tr key={p.id}>
-                        <td style={{ fontWeight: 600 }}>{p.employeeId}</td>
-                        <td>{userMap[p.employeeId] || p.employeeName || '-'}</td>
-                        <td>{p.payLevel ? `Level-${p.payLevel}` : '-'}</td>
-                        <td>{fmt(p.grossSalary)}</td>
-                        <td style={{ color: 'var(--success)', fontWeight: 700 }}>{fmt(p.netSalary)}</td>
-                        <td>
+                      <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '12px 16px', fontWeight: 600 }}>{p.employeeId}</td>
+                        <td style={{ padding: '12px 16px' }}>{userMap[p.employeeId] || p.employeeName || '-'}</td>
+                        <td style={{ padding: '12px 16px' }}>{p.payLevel ? `Level-${p.payLevel}` : '-'}</td>
+                        <td style={{ padding: '12px 16px', fontWeight: 600, background: '#f8fafc' }}>{fmt(p.grossSalary)}</td>
+                        <td style={{ padding: '12px 16px', color: 'var(--success)', fontWeight: 700, background: '#f0fdf4', fontSize: '0.9rem' }}>{fmt(p.netSalary)}</td>
+                        <td style={{ padding: '12px 16px' }}>
                           <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, background: `${statusBadge[p.status] || '#94a3b8'}20`, color: statusBadge[p.status] || '#94a3b8' }}>
                             {p.status}
                           </span>
                         </td>
-                        <td style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {p.remark || '-'}
                         </td>
-                        <td>
+                        <td style={{ padding: '12px 16px' }}>
                           {p.attachments && p.attachments.length > 0 ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               {p.attachments.map((att: string, idx: number) => {
@@ -966,7 +966,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                             </div>
                           ) : '-'}
                         </td>
-                        <td style={{ whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                           {(p.status === 'PENDING' || p.status === 'DRAFT') && isAdmin && (
                             <div style={{ display: 'flex', gap: '6px' }}>
                               <button onClick={() => handleApprove(p.id)} style={{ padding: '5px 12px', borderRadius: '4px', border: '1px solid #198754', background: '#198754', color: '#ffffff', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
