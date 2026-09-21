@@ -506,10 +506,10 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
 
   return (
     <div className="page-container" style={{ padding: '24px 32px', width: '100%', overflowX: 'hidden' }}>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#ffffff', padding: '24px 28px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)', border: '1px solid var(--border)', marginBottom: '24px' }}>
         <div>
-          <h1>Salary Processing</h1>
-          <p>Process and verify payroll — {months[month - 1]} {year}</p>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>Salary Processing</h1>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Process and verify payroll — {months[month - 1]} {year}</p>
         </div>
       </div>
 
@@ -616,31 +616,31 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                   </button>
                 </div>
               </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table className="table-iipm" style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
-                <thead>
+              <div style={{ overflowX: 'auto', maxHeight: '600px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <table className="table-iipm" style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                   <tr style={{ background: '#f8fafc' }}>
-                    <th>Sl.no</th>
-                    <th>Emp ID</th>
-                    <th>Employee Name</th>
-                    <th>Designation</th>
-                    <th>Pay Scale</th>
-                    <th>Basic</th>
-                    <th>DA {settings.DA_PERCENTAGE || 62}%</th>
-                    <th>TA</th>
-                    <th>HRA {settings.HRA_PERCENTAGE || 20}%</th>
-                    <th>Dean / Warden Allowance</th>
-                    <th>NPS Employer Share</th>
-                    <th style={{ background: '#e2e8f0' }}>Gross Salary</th>
-                    <th>PT</th>
-                    <th style={{ color: 'var(--warning)' }}>TDS</th>
-                    <th>NPS Employee share</th>
-                    <th>NPS Employer share</th>
-                    <th>CGHS Contribution</th>
-                    <th>Other Recovery</th>
-                    <th style={{ background: '#fee2e2' }}>Total Deductions</th>
-                    <th style={{ background: '#dcfce7', color: 'var(--success)' }}>Net Salary</th>
-                    <th>Remark</th>
+                    <th style={{ padding: '12px 16px' }}>Sl.no</th>
+                    <th style={{ padding: '12px 16px' }}>Emp ID</th>
+                    <th style={{ padding: '12px 16px' }}>Employee Name</th>
+                    <th style={{ padding: '12px 16px' }}>Designation</th>
+                    <th style={{ padding: '12px 16px' }}>Pay Scale</th>
+                    <th style={{ padding: '12px 16px' }}>Basic</th>
+                    <th style={{ padding: '12px 16px' }}>DA {settings.DA_PERCENTAGE || 62}%</th>
+                    <th style={{ padding: '12px 16px' }}>TA</th>
+                    <th style={{ padding: '12px 16px' }}>HRA {settings.HRA_PERCENTAGE || 20}%</th>
+                    <th style={{ padding: '12px 16px' }}>Dean / Warden</th>
+                    <th style={{ padding: '12px 16px' }}>NPS (Employer)</th>
+                    <th style={{ padding: '12px 16px', background: '#e2e8f0' }}>Gross Salary</th>
+                    <th style={{ padding: '12px 16px' }}>PT</th>
+                    <th style={{ padding: '12px 16px', color: 'var(--warning)' }}>TDS</th>
+                    <th style={{ padding: '12px 16px' }}>NPS (Employee)</th>
+                    <th style={{ padding: '12px 16px' }}>NPS (Employer)</th>
+                    <th style={{ padding: '12px 16px' }}>CGHS</th>
+                    <th style={{ padding: '12px 16px' }}>Other Recovery</th>
+                    <th style={{ padding: '12px 16px', background: '#fee2e2' }}>Total Deductions</th>
+                    <th style={{ padding: '12px 16px', background: '#dcfce7', color: 'var(--success)' }}>Net Salary</th>
+                    <th style={{ padding: '12px 16px' }}>Remark</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -689,59 +689,59 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                     
                     return (
                       <tr key={u.id}>
-                        <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                        <td>{u.employeeId || '-'}</td>
-                        <td style={{ fontWeight: 600 }}>{u.firstName} {u.lastName}</td>
-                        <td>{u.designation || '-'}</td>
-                        <td>Level-{u.payLevel}</td>
-                        <td>{fmt(bp)}</td>
-                        <td>{fmt(da)}</td>
-                        <td>{fmt(ta)}</td>
-                        <td>{fmt(hra)}</td>
-                        <td style={{ color: deanAllowance > 0 ? 'var(--primary)' : 'inherit', fontWeight: deanAllowance > 0 ? 600 : 400 }}>
+                        <td style={{ padding: '10px 16px', color: 'var(--text-muted)' }}>{i + 1}</td>
+                        <td style={{ padding: '10px 16px' }}>{u.employeeId || '-'}</td>
+                        <td style={{ padding: '10px 16px', fontWeight: 600 }}>{u.firstName} {u.lastName}</td>
+                        <td style={{ padding: '10px 16px' }}>{u.designation || '-'}</td>
+                        <td style={{ padding: '10px 16px' }}>Level-{u.payLevel}</td>
+                        <td style={{ padding: '10px 16px' }}>{fmt(bp)}</td>
+                        <td style={{ padding: '10px 16px' }}>{fmt(da)}</td>
+                        <td style={{ padding: '10px 16px' }}>{fmt(ta)}</td>
+                        <td style={{ padding: '10px 16px' }}>{fmt(hra)}</td>
+                        <td style={{ padding: '10px 16px', color: deanAllowance > 0 ? 'var(--primary)' : 'inherit', fontWeight: deanAllowance > 0 ? 600 : 400 }}>
                           {fmt(deanAllowance)}
                         </td>
-                        <td>{fmt(npsEmployer)}</td>
-                        <td style={{ fontWeight: 600, background: '#f8fafc' }}>{fmt(gross)}</td>
-                        <td>{fmt(pt)}</td>
-                        <td>
+                        <td style={{ padding: '10px 16px' }}>{fmt(npsEmployer)}</td>
+                        <td style={{ padding: '10px 16px', fontWeight: 600, background: '#f8fafc' }}>{fmt(gross)}</td>
+                        <td style={{ padding: '10px 16px' }}>{fmt(pt)}</td>
+                        <td style={{ padding: '10px 16px' }}>
                           <input type={row.tds === '' ? 'text' : 'number'} value={row.tds} placeholder="Auto"
                             onChange={e => updateRow(u.id, 'tds', e.target.value)}
-                            style={{ width: '70px', padding: '4px', fontSize: '0.8rem' }} />
+                            style={{ width: '80px', padding: '6px 8px', fontSize: '0.85rem', borderRadius: '4px', border: '1px solid var(--border)' }} />
                         </td>
-                        <td>{fmt(npsEmp)}</td>
-                        <td>{fmt(npsEmployer)}</td>
-                        <td>{fmt(cghs)}</td>
-                        <td>
+                        <td style={{ padding: '10px 16px' }}>{fmt(npsEmp)}</td>
+                        <td style={{ padding: '10px 16px' }}>{fmt(npsEmployer)}</td>
+                        <td style={{ padding: '10px 16px' }}>{fmt(cghs)}</td>
+                        <td style={{ padding: '10px 16px' }}>
                           <input type="number" value={row.otherDeductions}
                             onChange={e => updateRow(u.id, 'otherDeductions', +e.target.value)}
-                            style={{ width: '70px', padding: '4px', fontSize: '0.8rem' }} />
+                            style={{ width: '90px', padding: '6px 8px', fontSize: '0.85rem', borderRadius: '4px', border: '1px solid var(--border)' }} />
                         </td>
-                        <td style={{ color: '#ef4444', background: '#fef2f2' }}>{fmt(totalDed)}</td>
-                        <td style={{ color: 'var(--success)', fontWeight: 700, background: '#f0fdf4' }}>{fmt(net)}</td>
-                        <td>
+                        <td style={{ padding: '10px 16px', color: '#ef4444', background: '#fef2f2', fontWeight: 600 }}>{fmt(totalDed)}</td>
+                        <td style={{ padding: '10px 16px', color: 'var(--success)', fontWeight: 700, background: '#f0fdf4', fontSize: '0.9rem' }}>{fmt(net)}</td>
+                        <td style={{ padding: '10px 16px' }}>
                           <input type="text" value={row.remark} placeholder="Enter remark..."
                             onChange={e => updateRow(u.id, 'remark', e.target.value)}
-                            style={{ width: '120px', padding: '4px', fontSize: '0.8rem' }} />
+                            style={{ width: '140px', padding: '6px 8px', fontSize: '0.85rem', borderRadius: '4px', border: '1px solid var(--border)' }} />
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
                 <tfoot>
-                  <tr style={{ fontWeight: 'bold', background: '#e2e8f0' }}>
-                    <td colSpan={5} style={{ textAlign: 'right', paddingRight: '20px' }}>Total ({filteredRows.length})</td>
-                    <td>{fmt(filteredRows.reduce((sum, row) => sum + (row.user.basicPay || 0), 0))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => sum + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100)), 0))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => {
+                  <tr style={{ fontWeight: '700', background: '#e2e8f0', position: 'sticky', bottom: 0, zIndex: 10, boxShadow: '0 -2px 10px rgba(0,0,0,0.05)', fontSize: '0.9rem' }}>
+                    <td colSpan={5} style={{ textAlign: 'right', padding: '14px 20px 14px 16px', borderTop: '2px solid #cbd5e1' }}>Total ({filteredRows.length})</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(filteredRows.reduce((sum, row) => sum + (row.user.basicPay || 0), 0))}</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(rows.reduce((sum, row) => sum + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100)), 0))}</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(rows.reduce((sum, row) => {
                       const level = parseInt(row.user.payLevel || '10');
                       const taBase = level >= 10 ? (settings.TA_FIXED_AMOUNT || 3600) : (settings.TA_FIXED_AMOUNT ? settings.TA_FIXED_AMOUNT / 2 : 1800);
                       return sum + Math.round(taBase * (1 + ((settings.TA_DA_PERCENTAGE || 62) / 100)));
                     }, 0))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => sum + Math.round((row.user.basicPay || 0) * ((settings.HRA_PERCENTAGE || 20) / 100)), 0))}</td>
-                    <td>{fmt(0)}</td>
-                    <td>{fmt(rows.reduce((sum, row) => sum + Math.round(((row.user.basicPay || 0) + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100))) * ((settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100)), 0))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => {
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(rows.reduce((sum, row) => sum + Math.round((row.user.basicPay || 0) * ((settings.HRA_PERCENTAGE || 20) / 100)), 0))}</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(0)}</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(rows.reduce((sum, row) => sum + Math.round(((row.user.basicPay || 0) + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100))) * ((settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100)), 0))}</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1', background: '#d8e1eb' }}>{fmt(rows.reduce((sum, row) => {
                       const bp = row.user.basicPay || 0;
                       const da = Math.round(bp * ((settings.DA_PERCENTAGE || 62) / 100));
                       const hra = Math.round(bp * ((settings.HRA_PERCENTAGE || 20) / 100));
@@ -751,18 +751,18 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                       const npsEmp = Math.round((bp + da) * ((settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100));
                       return sum + bp + da + hra + ta + npsEmp;
                     }, 0))}</td>
-                    <td>{fmt(rows.length * (settings.PT_AMOUNT || 200))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => sum + (row.tds === '' ? 0 : Number(row.tds)), 0))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => sum + Math.round(((row.user.basicPay || 0) + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100))) * ((settings.NPS_EMPLOYEE_PERCENTAGE || 10) / 100)), 0))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => sum + Math.round(((row.user.basicPay || 0) + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100))) * ((settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100)), 0))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => {
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(rows.length * (settings.PT_AMOUNT || 200))}</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1', color: '#b45309' }}>{fmt(rows.reduce((sum, row) => sum + (row.tds === '' ? 0 : Number(row.tds)), 0))}</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(rows.reduce((sum, row) => sum + Math.round(((row.user.basicPay || 0) + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100))) * ((settings.NPS_EMPLOYEE_PERCENTAGE || 10) / 100)), 0))}</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(rows.reduce((sum, row) => sum + Math.round(((row.user.basicPay || 0) + Math.round((row.user.basicPay || 0) * ((settings.DA_PERCENTAGE || 62) / 100))) * ((settings.NPS_EMPLOYER_PERCENTAGE || 10) / 100)), 0))}</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(rows.reduce((sum, row) => {
                       const level = parseInt(row.user.payLevel || '10');
                       const baseCghs = settings.CGHS_AMOUNT || 1000;
                       const cghs = level >= 12 ? baseCghs : (level >= 7 ? baseCghs * 0.65 : (level === 6 ? baseCghs * 0.45 : baseCghs * 0.25));
                       return sum + cghs;
                     }, 0))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => sum + row.otherDeductions, 0))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => {
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(rows.reduce((sum, row) => sum + row.otherDeductions, 0))}</td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1', color: '#b91c1c', background: '#f8c2c2' }}>{fmt(rows.reduce((sum, row) => {
                       const bp = row.user.basicPay || 0;
                       const da = Math.round(bp * ((settings.DA_PERCENTAGE || 62) / 100));
                       const pt = settings.PT_AMOUNT || 200;
@@ -774,7 +774,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                       const cghs = level >= 12 ? baseCghs : (level >= 7 ? baseCghs * 0.65 : (level === 6 ? baseCghs * 0.45 : baseCghs * 0.25));
                       return sum + tds + pt + npsEmp + npsEmployer + cghs + row.otherDeductions;
                     }, 0))}</td>
-                    <td>{fmt(rows.reduce((sum, row) => {
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1', color: '#15803d', background: '#bbf7d0', fontSize: '1rem', fontWeight: 800 }}>{fmt(rows.reduce((sum, row) => {
                       const bp = row.user.basicPay || 0;
                       const da = Math.round(bp * ((settings.DA_PERCENTAGE || 62) / 100));
                       const hra = Math.round(bp * ((settings.HRA_PERCENTAGE || 20) / 100));
@@ -791,7 +791,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                       const ded = tds + pt + npsEmployee + npsEmp + cghs + row.otherDeductions;
                       return sum + (gross - ded);
                     }, 0))}</td>
-                    <td></td>
+                    <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}></td>
                   </tr>
                 </tfoot>
               </table>
@@ -858,14 +858,14 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{payrolls.length} records</span>
                 {isAdmin && selectedPayrolls.length > 0 && (
-                  <>
-                    <button className="btn-accent-iipm" onClick={handleBulkApprove} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-                      Approve Selected ({selectedPayrolls.length})
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={handleBulkApprove} style={{ padding: '6px 14px', borderRadius: '4px', border: '1px solid #198754', background: '#198754', color: '#ffffff', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <i className="fas fa-check-double"></i> Approve Selected ({selectedPayrolls.length})
                     </button>
-                    <button className="btn-iipm" onClick={handleBulkReject} style={{ background: '#ef4444', color: 'white', padding: '6px 12px', fontSize: '0.8rem', border: 'none' }}>
-                      Reject Selected
+                    <button onClick={handleBulkReject} style={{ padding: '6px 14px', borderRadius: '4px', border: '1px solid #dc3545', background: '#ffffff', color: '#dc3545', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <i className="fas fa-ban"></i> Reject Selected
                     </button>
-                  </>
+                  </div>
                 )}
                 <button className="btn-accent-iipm" onClick={exportPayrolls} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 16px', fontSize: '0.85rem', fontWeight: 600 }}>
                   📊 Export to Excel
@@ -968,19 +968,19 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                         </td>
                         <td style={{ whiteSpace: 'nowrap' }}>
                           {(p.status === 'PENDING' || p.status === 'DRAFT') && isAdmin && (
-                            <>
-                              <button onClick={() => handleApprove(p.id)} style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', background: 'rgba(34,197,94,0.15)', color: '#22c55e', cursor: 'pointer', marginRight: '4px', fontSize: '0.78rem', fontWeight: 600, fontFamily: 'var(--font)' }}>
-                                ✓ Approve
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button onClick={() => handleApprove(p.id)} style={{ padding: '5px 12px', borderRadius: '4px', border: '1px solid #198754', background: '#198754', color: '#ffffff', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <i className="fas fa-check"></i> Approve
                               </button>
-                              <button onClick={() => { setRejectModal({ id: p.id }); }} style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', background: 'rgba(239,68,68,0.15)', color: '#ef4444', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, fontFamily: 'var(--font)' }}>
-                                ✗ Reject
+                              <button onClick={() => { setRejectModal({ id: p.id }); }} style={{ padding: '5px 12px', borderRadius: '4px', border: '1px solid #dc3545', background: '#ffffff', color: '#dc3545', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <i className="fas fa-times"></i> Reject
                               </button>
-                            </>
+                            </div>
                           )}
-                          {p.status === 'APPROVED' && <span style={{ color: '#22c55e', fontSize: '0.8rem', fontWeight: 600 }}>✓ Released</span>}
+                          {p.status === 'APPROVED' && <span style={{ color: '#198754', fontSize: '0.85rem', fontWeight: 600 }}><i className="fas fa-check-circle"></i> Released</span>}
                           {p.status === 'REJECTED' && isAdmin && (
-                            <button onClick={() => handleApprove(p.id)} style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', background: 'rgba(34,197,94,0.15)', color: '#22c55e', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, fontFamily: 'var(--font)' }}>
-                              ✓ Re-Approve
+                            <button onClick={() => handleApprove(p.id)} style={{ padding: '5px 12px', borderRadius: '4px', border: '1px solid #198754', background: '#198754', color: '#ffffff', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <i className="fas fa-redo"></i> Re-Approve
                             </button>
                           )}
                         </td>
