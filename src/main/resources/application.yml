@@ -4,7 +4,7 @@ spring:
 
   data:
     mongodb:
-      uri: mongodb+srv://seed_vtindia:Vtindia%40Ocac@seed-cluster.czqvi1e.mongodb.net/IIPM
+      uri: mongodb://seed_vtindia:Vtindia%40Ocac@ac-nx6iox9-shard-00-00.czqvi1e.mongodb.net:27017,ac-nx6iox9-shard-00-01.czqvi1e.mongodb.net:27017,ac-nx6iox9-shard-00-02.czqvi1e.mongodb.net:27017/IIPM?ssl=true&replicaSet=atlas-qym3de-shard-0&authSource=admin&retryWrites=true&w=majority
       database: IIPM
       auto-index-creation: true
 
