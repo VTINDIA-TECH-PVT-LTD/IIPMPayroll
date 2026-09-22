@@ -140,6 +140,14 @@ const AdminDashboard: React.FC = () => {
     return `badge-iipm ${map[status] || 'badge-info'}`;
   };
 
+  const currentHour = new Date().getHours();
+  let greeting = 'Good Evening';
+  if (currentHour < 12) {
+    greeting = 'Good Morning';
+  } else if (currentHour < 18) {
+    greeting = 'Good Afternoon';
+  }
+
   return (
     <div className="page-container">
       
@@ -147,7 +155,7 @@ const AdminDashboard: React.FC = () => {
       <div className="welcome-banner">
         <div className="welcome-banner-left">
           <div className="welcome-title">
-            <h1>Good Morning, {userCtx?.username || 'IIPMAdmin'}!</h1>
+            <h1>{greeting}, {userCtx?.username || 'IIPMAdmin'}!</h1>
           </div>
           <div className="welcome-subtitle">
             Today is {now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. You have {stats.pendingApprovals} pending tasks.
