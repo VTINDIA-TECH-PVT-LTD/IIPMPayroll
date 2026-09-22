@@ -4,7 +4,9 @@ import apiService from '../services/api';
 import { UserContext } from '../App';
 import { 
   Users, Banknote, FileCheck, CheckSquare, 
-  Settings, FileText, IndianRupee, Ban, HandCoins
+  Settings, FileText, IndianRupee, Ban, HandCoins,
+  Sun, Calendar, ChevronRight, CreditCard, MoreVertical,
+  TrendingUp, TrendingDown, AlertCircle, ChevronDown, Activity
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import '../styles/Dashboard.css';
@@ -38,7 +40,7 @@ const AdminDashboard: React.FC = () => {
   const [pieData, setPieData] = useState<any[]>([]);
 
   // Predefined colors for departments
-  const pieColors = ['#153C7D', '#F47C20', '#388E3C', '#eab308', '#6366f1', '#ec4899', '#cbd5e1'];
+  const pieColors = ['#4f46e5', '#ec4899', '#06b6d4', '#f59e0b', '#8b5cf6', '#10b981', '#f43f5e'];
 
   const loadDashboard = async () => {
     try {
@@ -118,14 +120,10 @@ const AdminDashboard: React.FC = () => {
   const isAdminAdmin = userCtx?.role === 'ADMIN_ADMIN';
   const isAdminOp = userCtx?.role === 'ADMIN_OPERATOR';
 
-  const statCards = (isFaAdmin || isFaOp) ? [
-    { title: 'Total Monthly Net', amount: fmt(stats.totalNetThisMonth), icon: <Banknote size={24} />, color: '#153C7D', trend: '', up: true, link: '/reports' },
-    { title: 'Pending Salary Approvals', amount: stats.pendingApprovals.toString(), icon: <FileCheck size={24} />, color: '#f59e0b', trend: '', up: true, link: isFaAdmin ? '/approvals' : '/payroll' },
-    { title: 'Approved Payrolls', amount: stats.approvedPayrolls.toString(), icon: <CheckSquare size={24} />, color: '#22c55e', trend: '', up: true, link: '/reports' },
-  ] : [
-    { title: 'Total Payrolls', amount: fmt(stats.totalNetThisMonth), icon: <Banknote size={24} />, color: '#153C7D', trend: '', up: true, link: '/reports' },
-    { title: 'Pending Payments', amount: stats.pendingApprovals.toString(), icon: <FileCheck size={24} />, color: '#F47C20', trend: '', up: false, link: '/payroll' },
-    { title: 'Total Employees', amount: stats.totalEmployees.toString(), icon: <Users size={24} />, color: '#388E3C', trend: '', up: true, link: '/users' },
+  const statCards = [
+    { title: 'TOTAL PAYROLLS', amount: fmt(stats.totalNetThisMonth), icon: <CreditCard size={20} />, color: '#8b5cf6', trend: '+12% vs. last month', up: true, link: '/reports', bg: '#f5f3ff', sparkColor: '#a78bfa' },
+    { title: 'PENDING PAYMENTS', amount: stats.pendingApprovals.toString(), icon: <FileText size={20} />, color: '#f97316', trend: 'Requires attention', up: null, link: '/payroll', bg: '#fff7ed', sparkColor: '#fb923c' },
+    { title: 'TOTAL EMPLOYEES', amount: stats.totalEmployees.toString(), icon: <Users size={20} />, color: '#10b981', trend: '+8% vs. last month', up: true, link: '/users', bg: '#f0fdf4', sparkColor: '#34d399' },
   ];
 
   const quickActions = [
@@ -143,260 +141,243 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="page-container" style={{ paddingTop: '24px' }}>
+    <div className="page-container">
       
-      {/* Welcome Banner */}
+      {/* 1. Welcome Banner */}
       <div className="welcome-banner">
-        <div>
-          <h1>Good Morning, {userCtx?.username || 'Admin'}!</h1>
-          <p>Today is {now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. You have {stats.pendingApprovals} pending tasks.</p>
+        <div className="welcome-banner-left">
+          <div className="welcome-title">
+            <h1>Good Morning, {userCtx?.username || 'IIPMAdmin'}!</h1>
+          </div>
+          <div className="welcome-subtitle">
+            Today is {now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. You have {stats.pendingApprovals} pending tasks.
+          </div>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '16px 24px', borderRadius: '16px', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)' }}>
-          <div style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>Next Payroll</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>28 {monthName}</div>
+        <div className="next-payroll-card">
+          <div className="next-payroll-label">NEXT PAYROLL</div>
+          <div className="next-payroll-date">28 {monthName}</div>
         </div>
       </div>
 
-      {/* Top Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+      {/* 2. KPI Cards */}
+      <div className="kpi-grid">
         {statCards.map((s, i) => (
           <Link to={s.link} key={i} style={{ textDecoration: 'none' }}>
-            <div className="stat-card-dribbble">
-              <div className="stat-header">
-                <div className="stat-icon-wrap" style={{ background: `${s.color}15`, color: s.color }}>
+            <div className="kpi-card">
+              <div className="kpi-header">
+                <div className="kpi-icon-box" style={{ background: s.bg, color: s.color }}>
                   {s.icon}
                 </div>
-                {s.trend && (
-                  <div className={`stat-trend ${s.up ? 'up' : 'down'}`}>
-                    {s.up ? '↗' : '↘'} {s.trend}
-                  </div>
-                )}
+                <div className="kpi-title">{s.title}</div>
               </div>
-              <div>
-                <div className="stat-title">{s.title}</div>
-                <div className="stat-amount">{loading ? '...' : s.amount}</div>
+              <div className="kpi-value">{loading ? '...' : s.amount}</div>
+              <div className="kpi-footer">
+                <div className="kpi-trend">
+                  {s.up === true && <TrendingUp size={16} color={s.color} />}
+                  {s.up === false && <TrendingDown size={16} color={s.color} />}
+                  {s.up === null && <AlertCircle size={16} color={s.color} />}
+                  <span className="kpi-trend-text" style={{ color: s.up === null ? '#f97316' : s.color }}>{s.trend}</span>
+                </div>
+                <svg className="kpi-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                  <path d={i === 0 ? "M0,25 C20,25 30,10 50,15 C70,20 80,5 100,5" : i === 1 ? "M0,20 L20,25 L40,15 L60,20 L80,5 L100,0" : "M0,30 Q25,25 50,20 T100,5"} fill="none" stroke={s.sparkColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </div>
             </div>
           </Link>
         ))}
       </div>
 
-      {/* Main Grid: Charts */}
+      {/* 3. Charts Grid */}
       {(isSuperAdmin || isFaAdmin || isFaOp) && (
-        <div className="dashboard-grid">
+        <div className="charts-grid">
           <div className="chart-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0 }}>Payroll Cost Overview</h3>
-              <div style={{ background: 'var(--bg-hover)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>2026</div>
+            <div className="chart-header">
+              <div className="chart-title-wrap">
+                <div className="chart-icon"><Activity size={18} /></div>
+                <h3 className="chart-title">Payroll Cost Overview</h3>
+              </div>
+              <div className="chart-dropdown">
+                <Calendar size={14} /> This Year <ChevronDown size={14} />
+              </div>
             </div>
             <div style={{ height: '300px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} tickFormatter={(value) => `₹${value >= 1000 ? value / 1000 + 'k' : value}`} />
-                  <Tooltip cursor={{ fill: 'var(--bg-hover)' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                  <Bar dataKey="cost" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                    {barData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === barData.length - 1 ? 'var(--primary)' : '#94a3b8'} />
-                    ))}
-                  </Bar>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} tickFormatter={(val) => `₹${val >= 1000 ? val / 1000 + 'k' : val}`} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+                  <Bar dataKey="cost" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="chart-card" style={{ display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ marginBottom: '16px' }}>Department Distribution</h3>
-            <div style={{ height: '180px', width: '100%', marginBottom: '16px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
-                    {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                </PieChart>
-              </ResponsiveContainer>
+          <div className="chart-card">
+            <div className="chart-header" style={{ marginBottom: '0px' }}>
+              <div className="chart-title-wrap">
+                <div className="chart-icon"><Activity size={18} /></div>
+                <h3 className="chart-title">Department Distribution</h3>
+              </div>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
-              {pieData.map((entry, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: entry.color }}></div>
-                  {entry.name}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <div style={{ height: '200px', width: '100%', position: 'relative' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={2} dataKey="value" stroke="none">
+                      {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Custom Center Label */}
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>{stats.totalEmployees}</div>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Employees</div>
                 </div>
-              ))}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', marginTop: '20px' }}>
+                {pieData.map((entry, index) => (
+                  <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: entry.color }}></div>
+                      {entry.name}
+                    </div>
+                    <div>{entry.value} ({stats.totalEmployees ? Math.round((entry.value / stats.totalEmployees) * 100) : 0}%)</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Bottom Grid: Recent Payrolls + Quick Actions */}
-      <div className="dashboard-grid">
+      {/* 4. Bottom Grid */}
+      <div className="bottom-grid">
         {(isSuperAdmin || isFaAdmin || isFaOp) && (
-          <div className="card-iipm" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0 }}>Recent Payroll List</h3>
-              <Link to="/payroll"><button className="btn-outline-iipm" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>View All</button></Link>
+          <div className="recent-table-wrap">
+            <div className="recent-header">
+              <div className="chart-title-wrap">
+                <div className="chart-icon"><FileText size={18} color="#4f46e5" /></div>
+                <h3 className="chart-title">Recent Payroll List</h3>
+              </div>
+              <Link to="/payroll" className="view-all-link">View All <ChevronRight size={14} /></Link>
             </div>
             {loading ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
+              <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Loading...</div>
             ) : recentPayrolls.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                <p>No payrolls processed this month.</p>
-              </div>
+              <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No payrolls processed this month.</div>
             ) : (
-              <table className="table-iipm" style={{ border: 'none' }}>
-                <thead>
-                  <tr>
-                    <th style={{ background: 'var(--bg-hover)' }}>Employee ID</th>
-                    <th style={{ background: 'var(--bg-hover)' }}>Gross</th>
-                    <th style={{ background: 'var(--bg-hover)' }}>Net Salary</th>
-                    <th style={{ background: 'var(--bg-hover)' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentPayrolls.map((p) => (
-                    <tr key={p.id}>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 600 }}>{p.employeeId}</td>
-                      <td>{fmt(p.grossSalary || 0)}</td>
-                      <td style={{ color: 'var(--success)', fontWeight: 700 }}>{fmt(p.netSalary || 0)}</td>
-                      <td><span className={getStatusBadge(p.status)}>{p.status}</span></td>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="mockup-table">
+                  <thead>
+                    <tr>
+                      <th>Employee ID</th>
+                      <th>Gross</th>
+                      <th>Net Salary</th>
+                      <th>Status</th>
+                      <th></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {recentPayrolls.map((p) => (
+                      <tr key={p.id}>
+                        <td>{p.employeeId}</td>
+                        <td style={{ color: '#64748b', fontWeight: 500 }}>{fmt(p.grossSalary || 0)}</td>
+                        <td style={{ color: '#10b981' }}>{fmt(p.netSalary || 0)}</td>
+                        <td>
+                          <span className={`status-pill ${p.status.toLowerCase()}`}>{p.status}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <MoreVertical size={16} color="#cbd5e1" style={{ cursor: 'pointer' }} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
 
-        <div className="card-iipm" style={{ padding: '24px' }}>
-          <h3 style={{ marginBottom: '20px' }}>Quick Actions</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {quickActions.map((a, i) => (
-              <Link to={a.link} key={i} style={{ textDecoration: 'none' }}>
-                <div className="action-card-premium" style={{ '--color': a.color } as React.CSSProperties}>
-                  <div className="action-icon">{a.icon}</div>
-                  <div>
-                    <div className="action-title">{a.title}</div>
-                    <div className="action-desc">{a.desc}</div>
+        <div className="quick-actions-wrap">
+          <div className="recent-table-wrap" style={{ padding: '24px' }}>
+            <div className="chart-title-wrap" style={{ marginBottom: '20px' }}>
+              <div className="chart-icon"><Activity size={18} color="#8b5cf6" /></div>
+              <h3 className="chart-title">Quick Actions</h3>
+            </div>
+            <div className="quick-actions-wrap">
+              {quickActions.map((a, i) => (
+                <Link to={a.link} key={i} className="quick-action-item">
+                  <div className="qa-icon" style={{ background: `${a.color}15`, color: a.color }}>
+                    {a.icon}
                   </div>
-                </div>
-              </Link>
-            ))}
+                  <div className="qa-text">
+                    <div className="qa-title">{a.title}</div>
+                    <div className="qa-desc">{a.desc}</div>
+                  </div>
+                  <ChevronRight size={18} className="qa-arrow" />
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Role-based Bottom Table: Recent Payroll Register for Finance Roles vs Employee List for Admin Roles */}
-      <div className="dashboard-grid" style={{ marginTop: '24px' }}>
-        <div className="card-iipm" style={{ padding: '24px', gridColumn: '1 / -1' }}>
-          {(isFaOp || isFaAdmin) ? (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <div>
-                  <h3 style={{ margin: 0 }}>Recent Payroll Processing — {monthName} {currentYear}</h3>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Monthly salary overview and disbursal status
-                  </div>
-                </div>
-                <Link to="/payroll">
-                  <button className="btn-accent-iipm" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
-                    Go to Salary Processing →
-                  </button>
-                </Link>
-              </div>
-
-              {loading ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading payroll data...</div>
-              ) : recentPayrolls.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                  <p style={{ marginBottom: '12px' }}>No payroll records created yet for {monthName} {currentYear}.</p>
-                  <Link to="/payroll">
-                    <button className="btn-accent-iipm" style={{ padding: '8px 18px' }}>Start Salary Processing</button>
-                  </Link>
-                </div>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table className="table-iipm" style={{ border: 'none' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ background: 'var(--bg-hover)' }}>Employee ID</th>
-                        <th style={{ background: 'var(--bg-hover)' }}>Employee Name</th>
-                        <th style={{ background: 'var(--bg-hover)' }}>Gross Salary</th>
-                        <th style={{ background: 'var(--bg-hover)' }}>Net Salary</th>
-                        <th style={{ background: 'var(--bg-hover)' }}>Status</th>
-                        <th style={{ background: 'var(--bg-hover)' }}>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentPayrolls.map((p) => (
-                        <tr key={p.id}>
-                          <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 600 }}>{p.employeeId}</td>
-                          <td style={{ fontWeight: 600 }}>{userMap[p.employeeId] || p.employeeName || '—'}</td>
-                          <td>{fmt(p.grossSalary || 0)}</td>
-                          <td style={{ color: 'var(--success)', fontWeight: 700 }}>{fmt(p.netSalary || 0)}</td>
-                          <td><span className={getStatusBadge(p.status)}>{p.status}</span></td>
-                          <td>
-                            <Link to="/payroll">
-                              <button className="btn-outline-iipm" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>
-                                View Details
-                              </button>
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
+      {/* 5. Employee List */}
+      <div className="bottom-grid" style={{ marginTop: '24px', gridTemplateColumns: '1fr' }}>
+        <div className="recent-table-wrap">
+          <div className="recent-header">
+            <div className="chart-title-wrap">
+              <div className="chart-icon"><Users size={18} color="#10b981" /></div>
+              <h3 className="chart-title">Employee List</h3>
+            </div>
+            <Link to="/users" className="view-all-link">View All <ChevronRight size={14} /></Link>
+          </div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Loading...</div>
+          ) : recentEmployees.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No employees found.</div>
           ) : (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0 }}>Employee List</h3>
-                <Link to="/users"><button className="btn-outline-iipm" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>View All</button></Link>
-              </div>
-              {loading ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
-              ) : recentEmployees.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                  <p>No employees found.</p>
-                </div>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table className="table-iipm" style={{ border: 'none' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ background: 'var(--bg-hover)' }}>Employee ID</th>
-                        <th style={{ background: 'var(--bg-hover)' }}>Name</th>
-                        <th style={{ background: 'var(--bg-hover)' }}>Department</th>
-                        <th style={{ background: 'var(--bg-hover)' }}>Designation</th>
-                        <th style={{ background: 'var(--bg-hover)' }}>Role</th>
-                        <th style={{ background: 'var(--bg-hover)' }}>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentEmployees.map((u) => (
-                        <tr key={u.id}>
-                          <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 600 }}>{u.employeeId}</td>
-                          <td>
-                            <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{u.firstName} {u.lastName}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
-                          </td>
-                          <td>{u.department || '—'}</td>
-                          <td>{u.designation || '—'}</td>
-                          <td><span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', background: 'var(--bg-body)', borderRadius: '4px' }}>{u.role ? u.role.replace('_', ' ') : '—'}</span></td>
-                          <td><span className={u.isActive ? 'badge-iipm badge-success' : 'badge-iipm badge-danger'}>{u.isActive ? 'ACTIVE' : 'INACTIVE'}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="mockup-table">
+                <thead>
+                  <tr>
+                    <th>Employee ID</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentEmployees.map((u) => (
+                    <tr key={u.id}>
+                      <td>{u.employeeId}</td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: '#334155' }}>{u.firstName} {u.lastName}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{u.email}</div>
+                      </td>
+                      <td>{u.department || '—'}</td>
+                      <td>{u.designation || '—'}</td>
+                      <td>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', background: '#f1f5f9', color: '#475569', borderRadius: '6px', whiteSpace: 'nowrap' }}>
+                          {u.role ? u.role.replace('_', ' ') : '—'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`status-pill ${u.isActive ? 'approved' : 'rejected'}`}>{u.isActive ? 'ACTIVE' : 'INACTIVE'}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
+
     </div>
   );
 };
