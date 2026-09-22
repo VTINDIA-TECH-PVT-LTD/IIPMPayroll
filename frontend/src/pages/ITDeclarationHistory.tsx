@@ -99,80 +99,95 @@ const ITDeclarationHistory = () => {
   const currentData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div className="page-container" style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '28px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)' }}>IT Declaration History</h2>
-        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          View all your past IT declarations
-        </p>
+    <div className="page-container" style={{ paddingBottom: '60px', animation: 'fadeIn 0.5s ease' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#ffffff', padding: '24px 28px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)', border: '1px solid var(--border)', marginBottom: '24px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>IT Declaration History</h1>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>View and download all your past IT declarations and Form 16s.</p>
+        </div>
       </div>
 
-      <div className="card-iipm" style={{ padding: '0' }}>
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 20px', gap: '24px' }}>
+      <div className="card-iipm" style={{ padding: '0', borderRadius: '16px', overflow: 'hidden', border: 'none', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.08)' }}>
+        <div style={{ display: 'flex', background: '#f8fafc', borderBottom: '1px solid var(--border)', padding: '0 24px', gap: '32px' }}>
           {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               style={{
-                background: 'none', border: 'none', padding: '16px 0',
+                background: 'none', border: 'none', padding: '20px 0',
                 color: activeTab === tab ? 'var(--primary)' : 'var(--text-secondary)',
-                fontWeight: activeTab === tab ? 700 : 500,
-                borderBottom: activeTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
-                cursor: 'pointer', fontSize: '0.9rem',
-                textTransform: 'capitalize'
+                fontWeight: activeTab === tab ? 800 : 600,
+                borderBottom: activeTab === tab ? '3px solid var(--primary)' : '3px solid transparent',
+                cursor: 'pointer', fontSize: '0.95rem',
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+                transition: 'all 0.2s'
               }}
             >
-              {tab.toLowerCase()}
+              {tab}
             </button>
           ))}
         </div>
 
-        <div style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', alignItems: 'center' }}>
-            <input 
-              className="form-control-iipm" 
-              placeholder="🔍  Search by financial year, regime..." 
-              value={search}
-              onChange={e => setSearch(e.target.value)} 
-              style={{ maxWidth: '400px' }} 
-            />
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginLeft: 'auto' }}>
-              {filtered.length} of {declarations.length} declarations
+        <div style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+              <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', opacity: 0.5 }}>🔍</span>
+              <input 
+                className="form-control-iipm" 
+                placeholder="Search by financial year, regime..." 
+                value={search}
+                onChange={e => setSearch(e.target.value)} 
+                style={{ width: '100%', padding: '12px 16px 12px 48px', borderRadius: '12px', border: '2px solid #e2e8f0', fontSize: '0.95rem', background: '#f8fafc', transition: 'all 0.2s', outline: 'none' }} 
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = '#fff'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+              />
+            </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600, marginLeft: 'auto', background: '#f1f5f9', padding: '6px 12px', borderRadius: '20px' }}>
+              {filtered.length} of {declarations.length} records
             </span>
           </div>
 
-          <div style={{ overflowX: 'auto', margin: '0 -20px' }}>
-            <table className="table-iipm">
+          <div style={{ overflowX: 'auto', margin: '0 -24px' }}>
+            <table className="table-iipm" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
-                  <th>Financial Year</th>
-                  <th>Tax Regime</th>
-                  <th>Status</th>
-                  <th>Submitted On</th>
-                  <th style={{ textAlign: 'center' }}>Action</th>
+                <tr style={{ background: '#f1f5f9', color: 'var(--text-secondary)' }}>
+                  <th style={{ padding: '16px 24px', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Financial Year</th>
+                  <th style={{ padding: '16px 24px', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tax Regime</th>
+                  <th style={{ padding: '16px 24px', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</th>
+                  <th style={{ padding: '16px 24px', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Submitted On</th>
+                  <th style={{ padding: '16px 24px', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {currentData.map((d: any) => (
-                  <tr key={d.id}>
-                    <td style={{ fontWeight: 600 }}>{d.financialYear}</td>
-                    <td>{d.taxRegime === 'OLD' ? 'Old Regime' : 'New Regime'}</td>
-                    <td>
-                      <span className={`status-badge ${d.status.toLowerCase()}`}>
+                  <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                    <td style={{ padding: '16px 24px', fontWeight: 700, color: 'var(--text-main)', fontSize: '1rem' }}>{d.financialYear}</td>
+                    <td style={{ padding: '16px 24px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: d.taxRegime === 'OLD' ? '#eef2ff' : '#eff6ff', color: d.taxRegime === 'OLD' ? '#4f46e5' : '#2563eb', padding: '4px 10px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700 }}>
+                        {d.taxRegime === 'OLD' ? '🏛️ Old Regime' : '🆕 New Regime'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '16px 24px' }}>
+                      <span className={`status-badge ${d.status.toLowerCase()}`} style={{ fontWeight: 700, padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem' }}>
                         {d.status}
                       </span>
                     </td>
-                    <td>{fmtDate(d.createdAt)}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button className="btn-secondary-iipm" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleViewClick(d)}>
-                        <Eye size={14} style={{ marginRight: '6px' }}/> View
+                    <td style={{ padding: '16px 24px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{fmtDate(d.createdAt)}</td>
+                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                      <button 
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '0.85rem', fontWeight: 700, background: '#fff', color: 'var(--primary)', border: '1.5px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }} 
+                        onClick={() => handleViewClick(d)}
+                        onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = '#eff6ff'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#fff'; }}
+                      >
+                        <Eye size={16} /> View
                       </button>
                     </td>
                   </tr>
                 ))}
                 {currentData.length === 0 && (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 600 }}>
                       No {activeTab !== 'ALL' ? activeTab.toLowerCase() : ''} declarations found.
                     </td>
                   </tr>
@@ -182,24 +197,42 @@ const ITDeclarationHistory = () => {
           </div>
 
           {/* Pagination Controls */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Showing {filtered.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length} entries
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+              Showing <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{filtered.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> to <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{Math.min(currentPage * itemsPerPage, filtered.length)}</span> of <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{filtered.length}</span> entries
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button 
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                style={{ padding: '6px 12px', border: '1px solid var(--border)', background: currentPage === 1 ? 'var(--bg-hover)' : '#fff', borderRadius: '6px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>
+                style={{ 
+                  padding: '8px 16px', border: '1.5px solid #e2e8f0', 
+                  background: currentPage === 1 ? '#f8fafc' : '#fff', 
+                  color: currentPage === 1 ? '#94a3b8' : 'var(--text-main)',
+                  borderRadius: '8px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', 
+                  fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.2s' 
+                }}
+                onMouseOver={(e) => { if(currentPage !== 1) { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; } }}
+                onMouseOut={(e) => { if(currentPage !== 1) { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = 'var(--text-main)'; } }}
+              >
                 Previous
               </button>
-              <span style={{ display: 'flex', alignItems: 'center', padding: '0 8px', fontSize: '0.85rem', fontWeight: 600 }}>
-                Page {currentPage} of {totalPages}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', background: '#f1f5f9', height: '36px', borderRadius: '8px' }}>
+                {currentPage} / {totalPages}
+              </div>
               <button 
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                style={{ padding: '6px 12px', border: '1px solid var(--border)', background: currentPage === totalPages ? 'var(--bg-hover)' : '#fff', borderRadius: '6px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>
+                style={{ 
+                  padding: '8px 16px', border: '1.5px solid #e2e8f0', 
+                  background: currentPage === totalPages ? '#f8fafc' : '#fff', 
+                  color: currentPage === totalPages ? '#94a3b8' : 'var(--text-main)',
+                  borderRadius: '8px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', 
+                  fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.2s' 
+                }}
+                onMouseOver={(e) => { if(currentPage !== totalPages) { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; } }}
+                onMouseOut={(e) => { if(currentPage !== totalPages) { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = 'var(--text-main)'; } }}
+              >
                 Next
               </button>
             </div>
@@ -213,20 +246,31 @@ const ITDeclarationHistory = () => {
           background: 'rgba(0,0,0,0.5)', zIndex: 1000,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="card-iipm printable-modal" style={{ width: '95%', maxWidth: '1000px', height: '95vh', overflowY: 'auto', padding: '0', background: '#e5e7eb' }}>
-            <div className="no-print" style={{ padding: '15px 20px', background: '#fff', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div className="card-iipm printable-modal" style={{ width: '95%', maxWidth: '1000px', height: '95vh', overflowY: 'auto', padding: '0', background: '#e5e7eb', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div className="no-print" style={{ padding: '20px 24px', background: '#ffffff', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Form 16 / IT Declaration: {viewModal.financialYear}</h3>
-                <span className={`status-badge ${viewModal.status.toLowerCase()}`} style={{ marginTop: '8px', display: 'inline-block' }}>{viewModal.status}</span>
+                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  Form 16 / IT Declaration
+                  <span style={{ color: 'var(--primary)', background: '#eff6ff', padding: '4px 10px', borderRadius: '8px', fontSize: '1.1rem' }}>{viewModal.financialYear}</span>
+                </h3>
+                <div style={{ marginTop: '6px' }}>
+                  <span className={`status-badge ${viewModal.status.toLowerCase()}`} style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px' }}>{viewModal.status}</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 {form16Data && (
-                  <button onClick={() => window.print()} className="btn-secondary-iipm" style={{ padding: '8px 16px', background: '#153C7D', color: 'white', border: 'none' }}>
-                    <Printer size={16} style={{ marginRight: '6px' }} /> Print / Download Form 16
+                  <button onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: '#153C7D', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 4px 6px rgba(21, 60, 125, 0.2)', transition: 'all 0.2s' }}
+                    onMouseOver={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                    onMouseOut={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                  >
+                    <Printer size={18} /> Print / Download Form 16
                   </button>
                 )}
-                <button onClick={() => { setViewModal(null); setForm16Data(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>
-                  <XCircle size={28} color="var(--text-muted)" />
+                <button onClick={() => { setViewModal(null); setForm16Data(null); }} style={{ background: '#f1f5f9', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#e2e8f0'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                >
+                  <XCircle size={24} color="#64748b" />
                 </button>
               </div>
             </div>
