@@ -3,6 +3,7 @@ import apiService from '../services/api';
 import { UserContext } from '../App';
 import { Link } from 'react-router-dom';
 import { IIPE_LOGO_BASE64 } from '../assets/logoBase64';
+import { FileText, Download, CheckCircle, Clock, CreditCard, DollarSign, Calendar, Shield, PiggyBank, Receipt, Eye, Printer, X, FileCheck, Landmark, User, Hash, Info, Briefcase, Building, ChevronRight, AlertCircle } from 'lucide-react';
 
 const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -816,161 +817,214 @@ const EmployeePortal: React.FC = () => {
   );
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1>My Payslips</h1>
-        <p>View and download your salary slips and Form 16</p>
+    <div className="page-container" style={{ paddingBottom: '60px', animation: 'fadeIn 0.5s ease' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#ffffff', padding: '24px 28px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)', border: '1px solid var(--border)', marginBottom: '24px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>My Payslips</h1>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Securely view, download, and print your official salary slips and tax documents.</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-hover)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Current Year:</span>
+          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)' }}>{currentYear}</span>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selectedPayroll ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: selectedPayroll ? '360px 1fr' : '1fr', gap: '28px', alignItems: 'start', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
         {/* Payslip List */}
-        <div>
-          <div className="card-iipm" style={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Payslips — {currentYear}</span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{payrolls.length} Months</span>
+        <div style={{ background: 'var(--bg-card)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.06)', border: '1px solid var(--border)' }}>
+          <div style={{ padding: '20px 24px', background: 'linear-gradient(to right, rgba(10,49,97,0.05), transparent)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem' }}>
+              <Calendar size={20} /> Monthly Statements
+            </span>
+            <span style={{ fontSize: '0.8rem', color: '#fff', background: 'var(--accent)', padding: '4px 10px', borderRadius: '20px', fontWeight: 700 }}>
+              {payrolls.length} Total
+            </span>
+          </div>
+          {payrolls.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+              <Receipt size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
+              <p style={{ margin: 0, fontSize: '1.1rem' }}>No payslips generated yet.</p>
             </div>
-            {payrolls.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📄</div>
-                <p>No payslips available yet.</p>
-              </div>
-            ) : (
-              <div>
-                {payrolls.map(p => (
+          ) : (
+            <div style={{ maxHeight: selectedPayroll ? '700px' : 'auto', overflowY: selectedPayroll ? 'auto' : 'visible' }}>
+              {payrolls.map(p => {
+                const isSelected = selectedPayroll?.id === p.id;
+                return (
                   <div key={p.id}
                     style={{
-                      padding: '14px 20px', borderBottom: '1px solid var(--border)',
-                      cursor: 'pointer', transition: 'all 0.15s ease',
-                      background: selectedPayroll?.id === p.id ? 'rgba(201,168,76,0.08)' : 'transparent',
-                      borderLeft: selectedPayroll?.id === p.id ? '3px solid var(--accent)' : '3px solid transparent',
+                      padding: '20px 24px', borderBottom: '1px solid var(--border)',
+                      cursor: 'pointer', transition: 'all 0.25s ease',
+                      background: isSelected ? 'rgba(201,168,76,0.06)' : 'transparent',
+                      borderLeft: isSelected ? '5px solid var(--accent)' : '5px solid transparent',
+                      position: 'relative'
                     }}
                     onClick={() => { setSelectedPayroll(p); }}
-                    onMouseEnter={e => { if (selectedPayroll?.id !== p.id) e.currentTarget.style.background = 'var(--bg-hover)'; }}
-                    onMouseLeave={e => { if (selectedPayroll?.id !== p.id) e.currentTarget.style.background = 'transparent'; }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.paddingLeft = '30px'; } }}
+                    onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.paddingLeft = '24px'; } }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ background: isSelected ? 'var(--accent)' : 'var(--bg-card)', color: isSelected ? '#fff' : 'var(--primary)', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', boxShadow: isSelected ? '0 4px 10px rgba(201,168,76,0.3)' : 'none', transition: '0.3s' }}>
+                          {months[p.month - 1].substring(0,3)}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1.1rem' }}>{months[p.month - 1]} {p.year}</div>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, background: p.status === 'APPROVED' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)', color: p.status === 'APPROVED' ? '#16a34a' : '#d97706', marginTop: '4px' }}>
+                            {p.status === 'APPROVED' ? <CheckCircle size={10} /> : <Clock size={10} />} {p.status}
+                          </span>
+                        </div>
+                      </div>
+                      {isSelected && <ChevronRight size={20} color="var(--accent)" style={{ position: 'absolute', right: '16px', top: '30px' }} />}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '50px' }}>
                       <div>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>{months[p.month - 1]} {p.year}</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--success)', fontWeight: 600 }}>{fmt(p.netSalary)}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Net Salary</div>
+                        <div style={{ fontSize: '1.1rem', color: '#16a34a', fontWeight: 800 }}>{fmt(p.netSalary)}</div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ padding: '3px 8px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700, background: `${statusColor[p.status]}20`, color: statusColor[p.status] }}>
-                          {p.status}
-                        </span>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleOpenPayslip(p); }}
-                          style={{
-                            background: '#0a3161', color: '#fff', border: 'none',
-                            padding: '6px 12px', borderRadius: '6px', fontSize: '0.78rem',
-                            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
-                          }}>
-                          📄 View / Print
-                        </button>
-                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleOpenPayslip(p); }}
+                        style={{
+                          background: 'var(--primary)', color: '#fff', border: 'none',
+                          padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem',
+                          fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s',
+                          boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)'; }}>
+                        <Eye size={14} /> View
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Payslip Detail */}
         {selectedPayroll && (
-          <div className="card-iipm" style={{ padding: '0' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <h3 style={{ margin: 0 }}>Payslip — {months[selectedPayroll.month - 1]} {selectedPayroll.year}</h3>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button onClick={() => selectedPayroll && handleOpenPayslip(selectedPayroll)} className="btn-primary-iipm" style={{ fontSize: '0.82rem', padding: '6px 14px' }}>
-                  📄 View Full Slip
+          <div style={{ background: 'var(--bg-card)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.06)', border: '1px solid var(--border)', animation: 'slideInRight 0.4s ease' }}>
+            <div style={{ padding: '24px 32px', background: 'linear-gradient(to right, rgba(201,168,76,0.1), transparent)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0, color: 'var(--primary)', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <FileText size={24} color="var(--accent)" /> Salary Details
+                </h3>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px', fontWeight: 500 }}>
+                  For the month of {months[selectedPayroll.month - 1]} {selectedPayroll.year}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button onClick={() => selectedPayroll && handleOpenPayslip(selectedPayroll)} 
+                  style={{ background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: '0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                  <Eye size={16} /> Full Preview
                 </button>
-                <button onClick={printPayslip} className="btn-primary-iipm" style={{ fontSize: '0.82rem', padding: '6px 14px', background: '#c9a84c', color: '#0a3161' }}>
-                  🖨 Print / PDF
+                <button onClick={printPayslip} 
+                  style={{ background: 'var(--accent)', color: '#0a3161', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: '0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                  <Printer size={16} /> Print / PDF
                 </button>
-                <button onClick={() => setSelectedPayroll(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem', padding: '0 4px' }}>
-                  ✕
+                <button onClick={() => setSelectedPayroll(null)} 
+                  style={{ background: 'rgba(0,0,0,0.05)', border: 'none', color: 'var(--text-primary)', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }} 
+                  onMouseEnter={e => e.currentTarget.style.background='rgba(0,0,0,0.1)'} onMouseLeave={e => e.currentTarget.style.background='rgba(0,0,0,0.05)'}>
+                  <X size={20} />
                 </button>
               </div>
             </div>
-            <div style={{ padding: '18px 20px' }}>
+            
+            <div style={{ padding: '32px' }}>
               {/* Header info */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '20px', padding: '14px', background: 'var(--bg-hover)', borderRadius: '10px' }}>
-                <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Employee ID</div><div style={{ fontWeight: 600 }}>{selectedPayroll.employeeId}</div></div>
-                <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pay Period</div><div style={{ fontWeight: 600 }}>{months[selectedPayroll.month - 1]} {selectedPayroll.year}</div></div>
-                <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</div>
-                  <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, background: `${statusColor[selectedPayroll.status]}20`, color: statusColor[selectedPayroll.status] }}>{selectedPayroll.status}</span>
-                </div>
-                {userProfile?.pan && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PAN Number</div><div style={{ fontWeight: 600 }}>{userProfile.pan}</div></div>}
-                {userProfile?.pranAccountNumber && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PRAN Number</div><div style={{ fontWeight: 600 }}>{userProfile.pranAccountNumber}</div></div>}
-                {(userProfile?.dateOfJoining || userProfile?.joiningDate) && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date of Joining</div><div style={{ fontWeight: 600 }}>{userProfile.dateOfJoining || userProfile.joiningDate}</div></div>}
-                {userProfile?.designation && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Designation</div><div style={{ fontWeight: 600 }}>{userProfile.designation}</div></div>}
-                {userProfile?.bankAccountNumber && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Bank A/C</div><div style={{ fontWeight: 600 }}>{userProfile.bankName || 'SBI'} (****{String(userProfile.bankAccountNumber).slice(-4)})</div></div>}
-                {selectedPayroll.approvedBy && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Approved By</div><div style={{ fontWeight: 600 }}>{selectedPayroll.approvedBy}</div></div>}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px', marginBottom: '40px', padding: '24px', background: 'var(--bg-hover)', borderRadius: '14px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                {[
+                  { icon: <User size={16}/>, label: 'Employee ID', value: selectedPayroll.employeeId },
+                  { icon: <Briefcase size={16}/>, label: 'Designation', value: userProfile?.designation },
+                  { icon: <Building size={16}/>, label: 'Department', value: userProfile?.department || 'Finance & Accounts' },
+                  { icon: <CreditCard size={16}/>, label: 'PAN Number', value: userProfile?.pan },
+                  { icon: <Shield size={16}/>, label: 'PRAN Number', value: userProfile?.pranAccountNumber },
+                  { icon: <Landmark size={16}/>, label: 'Bank A/C', value: userProfile?.bankAccountNumber ? `****${String(userProfile.bankAccountNumber).slice(-4)}` : null },
+                  { icon: <Calendar size={16}/>, label: 'Date of Joining', value: userProfile?.dateOfJoining || userProfile?.joiningDate },
+                  { icon: <CheckCircle size={16}/>, label: 'Approved By', value: selectedPayroll.approvedBy },
+                ].filter(i => i.value).map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                    <div style={{ color: 'var(--accent)', marginTop: '2px' }}>{item.icon}</div>
+                    <div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', fontWeight: 600 }}>{item.label}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>{item.value}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Earnings vs Deductions */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px' }}>
                 {/* Earnings */}
                 <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Earnings</div>
-                  <table className="table-iipm">
-                    <tbody>
-                      {[
-                        ['Basic Pay', selectedPayroll.basicPay],
-                        ['DA (53%)', selectedPayroll.da],
-                        ['HRA (20%)', selectedPayroll.hra],
-                        ['Transport Allowance', selectedPayroll.ta],
-                        selectedPayroll.daArrears ? ['DA Arrears', selectedPayroll.daArrears] : null,
-                        selectedPayroll.promotionArrears ? ['Promotional Arrears', selectedPayroll.promotionArrears] : null,
-                        selectedPayroll.arrears ? ['Arrears', selectedPayroll.arrears] : null,
-                        ['Other Allowances', selectedPayroll.otherAllowances || 0],
-                        ['NPS Employer (14%)', selectedPayroll.npsEmployerShare || 0],
-                      ].filter(Boolean).map(([label, val]: any) => (
-                        <tr key={String(label)}>
-                          <td>{label}</td>
-                          <td style={{ textAlign: 'right', fontWeight: 500 }}>{fmt(Number(val))}</td>
-                        </tr>
-                      ))}
-                      <tr style={{ background: 'rgba(34,197,94,0.1)' }}>
-                        <td style={{ fontWeight: 700, color: '#22c55e' }}>Gross Salary</td>
-                        <td style={{ textAlign: 'right', fontWeight: 700, color: '#22c55e' }}>{fmt(selectedPayroll.grossSalary)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid rgba(34,197,94,0.4)' }}>
+                    <div style={{ background: 'rgba(34,197,94,0.15)', color: '#15803d', padding: '6px', borderRadius: '8px' }}><DollarSign size={20} /></div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '1px' }}>Earnings</div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    {[
+                      ['Basic Pay', selectedPayroll.basicPay],
+                      ['DA (53%)', selectedPayroll.da],
+                      ['HRA (20%)', selectedPayroll.hra],
+                      ['Transport Allowance', selectedPayroll.ta],
+                      selectedPayroll.daArrears ? ['DA Arrears', selectedPayroll.daArrears] : null,
+                      selectedPayroll.promotionArrears ? ['Promotional Arrears', selectedPayroll.promotionArrears] : null,
+                      selectedPayroll.arrears ? ['Arrears', selectedPayroll.arrears] : null,
+                      ['Other Allowances', selectedPayroll.otherAllowances || 0],
+                      ['NPS Employer (14%)', selectedPayroll.npsEmployerShare || 0],
+                    ].filter(Boolean).map(([label, val]: any, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', paddingBottom: '8px', borderBottom: '1px dashed rgba(0,0,0,0.05)' }}>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{label}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fmt(Number(val))}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(34,197,94,0.05)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(34,197,94,0.2)' }}>
+                    <span style={{ fontWeight: 800, color: '#15803d', fontSize: '1.1rem' }}>Gross Salary</span>
+                    <span style={{ fontWeight: 800, color: '#16a34a', fontSize: '1.25rem' }}>{fmt(selectedPayroll.grossSalary)}</span>
+                  </div>
                 </div>
 
                 {/* Deductions */}
                 <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Deductions</div>
-                  <table className="table-iipm">
-                    <tbody>
-                      {[
-                        ['NPS (Employee 10%)', selectedPayroll.npsEmployeeShare],
-                        ['NPS (Employer 14%)', selectedPayroll.npsEmployerShare],
-                        ['Professional Tax', selectedPayroll.professionalTax || 200],
-                        ['CGHS / Medical', selectedPayroll.cghs || 450],
-                        ['TDS / Income Tax', selectedPayroll.tds || 0],
-                        ['Other Deductions', selectedPayroll.otherDeductions || 0],
-                      ].map(([label, val]) => (
-                        <tr key={String(label)}>
-                          <td>{label}</td>
-                          <td style={{ textAlign: 'right', fontWeight: 500, color: '#ef4444' }}>{fmt(Number(val))}</td>
-                        </tr>
-                      ))}
-                      <tr style={{ background: 'rgba(239,68,68,0.1)' }}>
-                        <td style={{ fontWeight: 700, color: '#ef4444' }}>Total Deductions</td>
-                        <td style={{ textAlign: 'right', fontWeight: 700, color: '#ef4444' }}>{fmt(selectedPayroll.totalDeductions)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid rgba(239,68,68,0.4)' }}>
+                    <div style={{ background: 'rgba(239,68,68,0.15)', color: '#b91c1c', padding: '6px', borderRadius: '8px' }}><Hash size={20} /></div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '1px' }}>Deductions</div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    {[
+                      ['NPS (Employee 10%)', selectedPayroll.npsEmployeeShare],
+                      ['NPS (Employer 14%)', selectedPayroll.npsEmployerShare],
+                      ['Professional Tax', selectedPayroll.professionalTax || 200],
+                      ['CGHS / Medical', selectedPayroll.cghs || 450],
+                      ['TDS / Income Tax', selectedPayroll.tds || 0],
+                      ['Other Deductions', selectedPayroll.otherDeductions || 0],
+                    ].map(([label, val], idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', paddingBottom: '8px', borderBottom: '1px dashed rgba(0,0,0,0.05)' }}>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{label}</span>
+                        <span style={{ fontWeight: 600, color: '#dc2626' }}>{fmt(Number(val))}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(239,68,68,0.05)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <span style={{ fontWeight: 800, color: '#b91c1c', fontSize: '1.1rem' }}>Total Deductions</span>
+                    <span style={{ fontWeight: 800, color: '#dc2626', fontSize: '1.25rem' }}>{fmt(selectedPayroll.totalDeductions)}</span>
+                  </div>
                 </div>
               </div>
 
               {/* Net Salary */}
-              <div style={{ marginTop: '20px', padding: '16px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(26,58,110,0.2))', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.3)' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Net Salary Payable</div>
-                <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#22c55e', marginTop: '2px' }}>{fmt(selectedPayroll.netSalary)}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>For {months[selectedPayroll.month - 1]} {selectedPayroll.year}</div>
+              <div style={{ marginTop: '40px', padding: '32px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(26,58,110,0.05))', borderRadius: '16px', border: '1px solid rgba(34,197,94,0.3)', boxShadow: '0 10px 30px -10px rgba(34,197,94,0.2)' }}>
+                <div style={{ fontSize: '0.9rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle size={18} /> Net Salary Payable
+                </div>
+                <div style={{ fontSize: '3rem', fontWeight: 900, color: '#16a34a', margin: '12px 0', textShadow: '0 2px 10px rgba(22,163,74,0.2)' }}>
+                  {fmt(selectedPayroll.netSalary)}
+                </div>
+                <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  Transferred to your bank account for the month of {months[selectedPayroll.month - 1]} {selectedPayroll.year}.
+                </div>
               </div>
             </div>
           </div>
@@ -979,100 +1033,114 @@ const EmployeePortal: React.FC = () => {
 
       {/* TDS & Income Tax Projection Section */}
       {tdsProjection && (
-        <div className="card-iipm" style={{ marginTop: '24px', padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
+        <div style={{ marginTop: '40px', background: 'var(--bg-card)', padding: '40px', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0,0,0,0.06)', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', marginBottom: '32px' }}>
             <div>
-              <h3 style={{ margin: 0, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                📊 Annual TDS & Income Tax Projection (FY {tdsProjection.financialYear})
+              <h3 style={{ margin: 0, color: 'var(--primary)', fontSize: '1.6rem', display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 800 }}>
+                <Landmark size={28} color="var(--accent)" /> Annual TDS & Income Tax Projection
               </h3>
-              <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                Calculated under <strong>{tdsProjection.taxRegime} Tax Regime</strong> (Standard Deduction: ₹{tdsProjection.standardDeduction?.toLocaleString('en-IN')} | Sec 80CCD(2) NPS: ₹{Math.round(tdsProjection.deduction80CCD2 || 0).toLocaleString('en-IN')})
+              <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)', fontSize: '1.05rem' }}>
+                Financial Year {tdsProjection.financialYear} • <strong style={{ color: 'var(--primary)' }}>{tdsProjection.taxRegime} Tax Regime</strong>
               </p>
             </div>
-            <span style={{ padding: '6px 14px', borderRadius: '20px', background: 'rgba(201,168,76,0.15)', color: 'var(--accent)', fontWeight: 700, fontSize: '0.85rem', border: '1px solid rgba(201,168,76,0.3)' }}>
-              PAN: {tdsProjection.pan}
-            </span>
+            <div style={{ padding: '10px 20px', borderRadius: '12px', background: 'rgba(201,168,76,0.1)', color: 'var(--primary)', fontWeight: 700, fontSize: '1rem', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CreditCard size={18} /> PAN: {tdsProjection.pan}
+            </div>
           </div>
 
           {/* 4 Key Metric Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ padding: '16px', background: 'var(--bg-hover)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Estimated Total Annual Tax</div>
-              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--primary)', marginTop: '4px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+            <div style={{ padding: '24px', background: '#fff', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', transition: '0.3s', position: 'relative', overflow: 'hidden' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <div style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.05 }}><Landmark size={100} /></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '12px' }}>
+                <Info size={16} color="var(--primary)" /> Total Annual Tax
+              </div>
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--primary)' }}>
                 {fmt(tdsProjection.estimatedAnnualTax)}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '12px', fontWeight: 500 }}>
                 Net Taxable: {fmt(tdsProjection.netTaxableIncome)}
               </div>
             </div>
 
-            <div style={{ padding: '16px', background: 'rgba(34,197,94,0.08)', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.25)' }}>
-              <div style={{ fontSize: '0.78rem', color: '#15803d', textTransform: 'uppercase', fontWeight: 700 }}>💰 TDS Deducted So Far</div>
-              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#16a34a', marginTop: '4px' }}>
+            <div style={{ padding: '24px', background: 'rgba(34,197,94,0.03)', borderRadius: '16px', border: '1px solid rgba(34,197,94,0.2)', boxShadow: '0 4px 15px rgba(34,197,94,0.05)', transition: '0.3s', position: 'relative', overflow: 'hidden' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <div style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.05 }}><CheckCircle size={100} color="#16a34a" /></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#15803d', textTransform: 'uppercase', fontWeight: 700, marginBottom: '12px' }}>
+                <CheckCircle size={16} /> TDS Deducted
+              </div>
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: '#16a34a' }}>
                 {fmt(tdsProjection.tdsDeductedSoFar)}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#15803d', marginTop: '2px' }}>
-                Paid across {tdsProjection.monthsDeductedCount} months
+              <div style={{ fontSize: '0.9rem', color: '#15803d', marginTop: '12px', fontWeight: 500 }}>
+                Across {tdsProjection.monthsDeductedCount} months
               </div>
             </div>
 
-            <div style={{ padding: '16px', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.25)' }}>
-              <div style={{ fontSize: '0.78rem', color: '#b91c1c', textTransform: 'uppercase', fontWeight: 700 }}>⚖️ Balance Tax to be Deducted</div>
-              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#dc2626', marginTop: '4px' }}>
+            <div style={{ padding: '24px', background: 'rgba(239,68,68,0.03)', borderRadius: '16px', border: '1px solid rgba(239,68,68,0.2)', boxShadow: '0 4px 15px rgba(239,68,68,0.05)', transition: '0.3s', position: 'relative', overflow: 'hidden' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <div style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.05 }}><AlertCircle size={100} color="#dc2626" /></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#b91c1c', textTransform: 'uppercase', fontWeight: 700, marginBottom: '12px' }}>
+                <AlertCircle size={16} /> Balance to Deduct
+              </div>
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: '#dc2626' }}>
                 {fmt(tdsProjection.tdsRemainingToBeDeducted)}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#b91c1c', marginTop: '2px' }}>
-                Remaining over {tdsProjection.monthsRemainingCount} months
+              <div style={{ fontSize: '0.9rem', color: '#b91c1c', marginTop: '12px', fontWeight: 500 }}>
+                Over remaining {tdsProjection.monthsRemainingCount} months
               </div>
             </div>
 
-            <div style={{ padding: '16px', background: 'rgba(201,168,76,0.12)', borderRadius: '10px', border: '1px solid rgba(201,168,76,0.35)' }}>
-              <div style={{ fontSize: '0.78rem', color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 700 }}>📅 TDS for Next Months</div>
-              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--accent)', marginTop: '4px' }}>
-                {fmt(tdsProjection.monthlyTdsNextMonths)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>/ mo</span>
+            <div style={{ padding: '24px', background: 'linear-gradient(135deg, rgba(201,168,76,0.1), rgba(10,49,97,0.05))', borderRadius: '16px', border: '1px solid rgba(201,168,76,0.3)', boxShadow: '0 4px 15px rgba(201,168,76,0.1)', transition: '0.3s', position: 'relative', overflow: 'hidden' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <div style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.05 }}><Calendar size={100} color="var(--primary)" /></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--primary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '12px' }}>
+                <Calendar size={16} /> Projected Monthly TDS
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                Estimated monthly deduction
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent)' }}>
+                {fmt(tdsProjection.monthlyTdsNextMonths)} <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--primary)' }}>/ mo</span>
+              </div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--primary)', marginTop: '12px', fontWeight: 500 }}>
+                Estimated for next months
               </div>
             </div>
           </div>
 
           {/* Month-by-Month TDS Schedule Table */}
-          <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', fontSize: '0.95rem' }}>
-            📅 Month-by-Month TDS Schedule & Status (April {currentYear} – March {currentYear + 1})
+          <div style={{ fontWeight: 800, color: 'var(--primary)', marginBottom: '16px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileText size={20} /> Month-by-Month Schedule (April {currentYear} – March {currentYear + 1})
           </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="table-iipm">
-              <thead>
+          <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+            <table className="table-iipm" style={{ margin: 0, width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ background: 'var(--bg-hover)' }}>
                 <tr>
-                  <th>Month</th>
-                  <th style={{ textAlign: 'right' }}>Gross Income</th>
-                  <th style={{ textAlign: 'center' }}>Deduction Status</th>
-                  <th style={{ textAlign: 'right' }}>Monthly TDS</th>
-                  <th style={{ textAlign: 'right' }}>Cumulative TDS</th>
+                  <th style={{ padding: '16px 20px', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.9rem' }}>Month</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.9rem' }}>Gross Income</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.9rem' }}>Status</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.9rem' }}>Monthly TDS</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.9rem' }}>Cumulative TDS</th>
                 </tr>
               </thead>
               <tbody>
                 {tdsProjection.monthlySchedule?.map((s: any, idx: number) => {
                   const isDeducted = s.status === 'DEDUCTED';
                   return (
-                    <tr key={idx} style={{ background: isDeducted ? 'rgba(34,197,94,0.03)' : 'transparent' }}>
-                      <td style={{ fontWeight: 600 }}>{s.monthName}</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(s.grossSalary)}</td>
-                      <td style={{ textAlign: 'center' }}>
+                    <tr key={idx} style={{ background: isDeducted ? 'rgba(34,197,94,0.02)' : '#fff', borderBottom: '1px solid var(--border)', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.background='var(--bg-hover)'} onMouseLeave={e => e.currentTarget.style.background=isDeducted ? 'rgba(34,197,94,0.02)' : '#fff'}>
+                      <td style={{ padding: '16px 20px', fontWeight: 700, color: 'var(--text-primary)', fontSize: '1rem' }}>{s.monthName}</td>
+                      <td style={{ padding: '16px 20px', textAlign: 'right', color: 'var(--text-primary)', fontWeight: 500, fontSize: '1rem' }}>{fmt(s.grossSalary)}</td>
+                      <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                         <span style={{
-                          padding: '3px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700,
-                          background: isDeducted ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
-                          color: isDeducted ? '#16a34a' : '#d97706',
-                          border: `1px solid ${isDeducted ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`
+                          display: 'inline-flex', alignItems: 'center', gap: '6px',
+                          padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700,
+                          background: isDeducted ? 'rgba(34,197,94,0.1)' : 'rgba(0,0,0,0.05)',
+                          color: isDeducted ? '#15803d' : 'var(--text-muted)',
+                          border: isDeducted ? '1px solid rgba(34,197,94,0.2)' : '1px solid transparent'
                         }}>
-                          {isDeducted ? '✓ DEDUCTED' : '⏳ PROJECTED'}
+                          {isDeducted ? <CheckCircle size={14} /> : <Clock size={14} />}
+                          {isDeducted ? 'Deducted' : 'Projected'}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: isDeducted ? '#16a34a' : 'var(--accent)' }}>
+                      <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 800, color: isDeducted ? '#15803d' : 'var(--primary)', fontSize: '1.05rem' }}>
                         {fmt(s.tdsAmount)}
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <td style={{ padding: '16px 20px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 600, fontSize: '1rem' }}>
                         {fmt(s.cumulativeTds)}
                       </td>
                     </tr>
@@ -1084,65 +1152,79 @@ const EmployeePortal: React.FC = () => {
         </div>
       )}
 
-      {/* Form 16 card */}
-      <div style={{ marginTop: '24px', padding: '20px 24px', background: 'linear-gradient(135deg, rgba(201,168,76,0.1), rgba(26,58,110,0.2))', borderRadius: 'var(--radius)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ fontWeight: 700, color: 'var(--accent)' }}>📋 Form 16 — Annual TDS Certificate</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>Download your income tax certificate for FY {currentYear - 1}-{currentYear}</div>
+      {/* Action Cards (Form 16 & IT Declaration) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', marginTop: '40px' }}>
+        {/* Form 16 card */}
+        <div style={{ padding: '32px', background: 'linear-gradient(135deg, rgba(10,49,97,0.02) 0%, rgba(201,168,76,0.1) 100%)', borderRadius: '16px', border: '1px solid rgba(201,168,76,0.3)', boxShadow: '0 8px 30px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: '0.3s' }} onMouseEnter={e => e.currentTarget.style.transform='translateY(-4px)'} onMouseLeave={e => e.currentTarget.style.transform='none'}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '12px' }}>
+              <FileCheck size={28} color="var(--accent)" /> Form 16 Certificate
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginBottom: '32px', lineHeight: 1.6, fontWeight: 500 }}>
+              Download your official annual TDS certificate for the financial year {currentYear - 1}-{currentYear}. Contains Part A and Part B.
+            </div>
+          </div>
+          <button onClick={printForm16} style={{ width: '100%', padding: '16px', fontSize: '1.1rem', fontWeight: 700, background: 'var(--accent)', color: 'var(--primary)', border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', transition: '0.2s', boxShadow: '0 4px 15px rgba(201,168,76,0.3)' }} onMouseEnter={e => e.currentTarget.style.background='#b89842'} onMouseLeave={e => e.currentTarget.style.background='var(--accent)'}>
+            <Download size={20} /> Download Form 16
+          </button>
         </div>
-        <button className="btn-accent-iipm" onClick={printForm16}>
-          Download Form 16
-        </button>
-      </div>
-      {/* IT Declaration link */}
-      <div style={{ marginTop: '24px', padding: '20px 24px', background: 'var(--card-bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyItems: 'space-between' }}>
-        <div style={{ flexGrow: 1 }}>
-          <div style={{ fontWeight: 700, color: 'var(--primary)' }}>💼 Submit IT Declaration</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>Declare your investments for TDS calculations (Form 12BB / Form 16 setup).</div>
+
+        {/* IT Declaration link */}
+        <div style={{ padding: '32px', background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: '0.3s' }} onMouseEnter={e => e.currentTarget.style.transform='translateY(-4px)'} onMouseLeave={e => e.currentTarget.style.transform='none'}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '12px' }}>
+              <PiggyBank size={28} color="var(--primary)" /> IT Declarations
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginBottom: '32px', lineHeight: 1.6, fontWeight: 500 }}>
+              Declare your tax-saving investments (Section 80C, HRA, etc.) to optimize your monthly TDS deductions.
+            </div>
+          </div>
+          <Link to="/it-declaration" style={{ width: '100%', textDecoration: 'none', padding: '16px', fontSize: '1.1rem', fontWeight: 700, background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', transition: '0.2s', boxShadow: '0 4px 15px rgba(10,49,97,0.3)' }} onMouseEnter={e => e.currentTarget.style.background='#08254c'} onMouseLeave={e => e.currentTarget.style.background='var(--primary)'}>
+            <Briefcase size={20} /> Manage Declarations
+          </Link>
         </div>
-        <Link to="/it-declaration" className="btn-primary-iipm" style={{ textDecoration: 'none' }}>Go to Declarations</Link>
       </div>
 
       {/* Full Screen Interactive Mobile / Desktop Payslip Preview Modal */}
       {showPayslipModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(4px)',
+          background: 'rgba(10,49,97, 0.8)', backdropFilter: 'blur(8px)',
           zIndex: 99999, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', padding: '10px'
+          alignItems: 'center', justifyContent: 'center', padding: '24px',
+          animation: 'fadeIn 0.3s ease'
         }}>
           <div style={{
-            width: '100%', maxWidth: '880px', height: '94vh',
-            background: '#fff', borderRadius: '12px', overflow: 'hidden',
-            display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)'
+            width: '100%', maxWidth: '900px', height: '100%', maxHeight: '90vh',
+            background: '#fff', borderRadius: '16px', overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
           }}>
             {/* Modal Top Bar */}
             <div style={{
-              padding: '12px 18px', background: '#0a3161', color: '#fff',
+              padding: '20px 32px', background: 'var(--primary)', color: '#fff',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              borderBottom: '1px solid rgba(255,255,255,0.1)'
             }}>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>📄</span> Official Payslip Preview {selectedPayroll ? `— ${months[selectedPayroll.month - 1]} ${selectedPayroll.year}` : ''}
+              <div style={{ fontWeight: 700, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Receipt size={22} color="var(--accent)" /> Official Payslip Preview {selectedPayroll ? `— ${months[selectedPayroll.month - 1]} ${selectedPayroll.year}` : ''}
               </div>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <button 
                   onClick={() => triggerPrint(activePayslipHtml)}
-                  style={{
-                    background: '#c9a84c', color: '#0a3161', border: 'none',
-                    padding: '7px 16px', borderRadius: '6px', fontWeight: 700,
-                    fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-                  }}>
-                  🖨 Print / Save PDF
+                  style={{ background: 'var(--accent)', color: 'var(--primary)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', transition: '0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.transform='scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform='none'}>
+                  <Printer size={18} /> Print / Save PDF
                 </button>
                 <button 
                   onClick={() => setShowPayslipModal(false)}
                   style={{
-                    background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none',
-                    width: '32px', height: '32px', borderRadius: '50%', fontWeight: 700,
-                    fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
-                  ✕
+                    background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none',
+                    width: '40px', height: '40px', borderRadius: '50%', fontWeight: 700,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: '0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.2)'}
+                  onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,0.1)'}>
+                  <X size={24} />
                 </button>
               </div>
             </div>
@@ -1151,12 +1233,16 @@ const EmployeePortal: React.FC = () => {
             <iframe 
               title="Payslip Preview"
               srcDoc={activePayslipHtml}
-              style={{ width: '100%', height: '100%', border: 'none', background: '#f8fafc' }}
+              style={{ width: '100%', flex: 1, border: 'none', background: '#f8fafc' }}
             />
           </div>
         </div>
       )}
 
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+      `}</style>
     </div>
   );
 };
