@@ -79,7 +79,27 @@
 .sidebar-user-role { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
 /* Nav */
-.sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+.sidebar-nav { 
+  flex: 1; 
+  padding: 16px 12px; 
+  overflow-y: auto; 
+}
+
+/* Modern thin scrollbar for sidebar */
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 .sidebar-section-label {
   font-size: 0.68rem;
   font-weight: 700;
@@ -88,6 +108,7 @@
   letter-spacing: 1px;
   padding: 8px 8px 4px;
   margin-top: 8px;
+  user-select: none; /* Prevents accidental text selection */
 }
 .sidebar-nav-link {
   display: flex;

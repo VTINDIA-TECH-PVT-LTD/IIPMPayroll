@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import apiService from '../services/api';
 import { UserContext } from '../App';
+import { Edit2, Eye, Ban, CheckCircle } from 'lucide-react';
 import payMatrixData from '../payMatrix.json';
 
 const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -245,9 +246,9 @@ const UserManagement: React.FC = () => {
           <h1>Employee Management</h1>
           <p>Add and manage employee records, pay levels, and salary details</p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px' }}>
           {selectedUsers.length > 0 && apiService.isSuperAdmin() && (
-            <button className="btn-iipm" onClick={handleBulkDelete} style={{ background: '#ef4444', color: 'white', border: 'none' }}>
+            <button className="btn-primary-iipm" onClick={handleBulkDelete} style={{ background: '#ef4444', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)' }}>
               Delete Selected ({selectedUsers.length})
             </button>
           )}
@@ -271,30 +272,27 @@ const UserManagement: React.FC = () => {
       )}
 
       {/* Category Bifurcation Tabs */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: '#f1f5f9', padding: '6px', borderRadius: '12px', width: 'fit-content', border: '1px solid #e2e8f0' }}>
         <button
           type="button"
           onClick={() => { setCategoryFilter('all'); setCurrentPage(1); }}
-          className={`btn-iipm ${categoryFilter === 'all' ? 'btn-accent-iipm' : 'btn-outline-iipm'}`}
-          style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+          style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: categoryFilter === 'all' ? '#153C7D' : 'transparent', color: categoryFilter === 'all' ? '#ffffff' : 'var(--text-secondary)', boxShadow: categoryFilter === 'all' ? '0 2px 4px rgba(21, 60, 125, 0.3)' : 'none' }}
         >
           All Employees ({users.length})
         </button>
         <button
           type="button"
           onClick={() => { setCategoryFilter('regular'); setCurrentPage(1); }}
-          className={`btn-iipm ${categoryFilter === 'regular' ? 'btn-accent-iipm' : 'btn-outline-iipm'}`}
-          style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+          style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: categoryFilter === 'regular' ? '#388E3C' : 'transparent', color: categoryFilter === 'regular' ? '#ffffff' : 'var(--text-secondary)', boxShadow: categoryFilter === 'regular' ? '0 2px 4px rgba(56, 142, 60, 0.3)' : 'none' }}
         >
-          👔 Regular (Faculty & Staff) ({regularCount})
+          👔 Regular ({regularCount})
         </button>
         <button
           type="button"
           onClick={() => { setCategoryFilter('contract'); setCurrentPage(1); }}
-          className={`btn-iipm ${categoryFilter === 'contract' ? 'btn-accent-iipm' : 'btn-outline-iipm'}`}
-          style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+          style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: categoryFilter === 'contract' ? '#F47C20' : 'transparent', color: categoryFilter === 'contract' ? '#ffffff' : 'var(--text-secondary)', boxShadow: categoryFilter === 'contract' ? '0 2px 4px rgba(244, 124, 32, 0.3)' : 'none' }}
         >
-          📄 Contract Staff ({contractCount})
+          📄 Contract ({contractCount})
         </button>
       </div>
 
@@ -308,7 +306,7 @@ const UserManagement: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="card-iipm" style={{ padding: 0 }}>
+      <div className="card-iipm" style={{ padding: 0, overflow: 'hidden' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
         ) : (
@@ -359,13 +357,25 @@ const UserManagement: React.FC = () => {
                         {u.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      <button onClick={() => openEdit(u)} style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', background: 'rgba(59,130,246,0.15)', color: '#3b82f6', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, marginRight: '6px', fontFamily: 'var(--font)' }}>
-                        {apiService.isAdminOperator() ? 'View' : 'Edit'}
+                    <td style={{ whiteSpace: 'nowrap', display: 'flex', gap: '6px' }}>
+                      <button 
+                        onClick={() => openEdit(u)} 
+                        title={apiService.isAdminOperator() ? 'View' : 'Edit'}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: '#3b82f6', color: '#ffffff', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)' }}
+                        onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.4)'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.3)'; }}
+                      >
+                        {apiService.isAdminOperator() ? <Eye size={16} /> : <Edit2 size={16} />}
                       </button>
                       {(apiService.isSuperAdmin() || apiService.isAdminAdmin()) && (
-                        <button onClick={() => handleDeactivate(u.id, u.isActive)} style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', background: u.isActive ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)', color: u.isActive ? '#ef4444' : '#22c55e', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, fontFamily: 'var(--font)' }}>
-                          {u.isActive ? 'Deactivate' : 'Activate'}
+                        <button 
+                          onClick={() => handleDeactivate(u.id, u.isActive)}
+                          title={u.isActive ? 'Deactivate' : 'Activate'}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: u.isActive ? '#ef4444' : '#22c55e', color: '#ffffff', cursor: 'pointer', transition: 'all 0.2s', boxShadow: u.isActive ? '0 2px 4px rgba(239, 68, 68, 0.3)' : '0 2px 4px rgba(34, 197, 94, 0.3)' }}
+                          onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = u.isActive ? '0 4px 6px rgba(239, 68, 68, 0.4)' : '0 4px 6px rgba(34, 197, 94, 0.4)'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = u.isActive ? '0 2px 4px rgba(239, 68, 68, 0.3)' : '0 2px 4px rgba(34, 197, 94, 0.3)'; }}
+                        >
+                          {u.isActive ? <Ban size={16} /> : <CheckCircle size={16} />}
                         </button>
                       )}
                     </td>

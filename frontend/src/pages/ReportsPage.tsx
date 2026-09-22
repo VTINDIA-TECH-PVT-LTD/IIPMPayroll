@@ -577,15 +577,18 @@ const ReportsPage: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border)', marginBottom: '24px', overflowX: 'auto' }}>
-        {tabList.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
-            padding: '10px 20px', background: 'none', border: 'none', whiteSpace: 'nowrap',
-            borderBottom: `2px solid ${tab === t.key ? 'var(--accent)' : 'transparent'}`,
-            color: tab === t.key ? 'var(--accent)' : 'var(--text-muted)',
-            fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem', fontFamily: 'var(--font)'
-          }}>{t.label}</button>
-        ))}
+      <div className="reports-tabs-wrapper">
+        <div className="reports-tabs-container">
+          {tabList.map(t => (
+            <button 
+              key={t.key} 
+              onClick={() => setTab(t.key)} 
+              className={`reports-tab ${tab === t.key ? 'active' : ''}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}

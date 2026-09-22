@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiService from '../services/api';
+import { Edit2, Save, X } from 'lucide-react';
 
 const settingsMeta: Record<string, { label: string; desc: string; unit: string }> = {
   DA_PERCENTAGE:           { label: 'DA Percentage',             desc: 'Dearness Allowance % of Basic Pay',           unit: '%' },
@@ -82,8 +83,8 @@ const SettingsPage: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
         {/* Settings table */}
-        <div className="card-iipm" style={{ padding: 0 }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', fontWeight: 600 }}>
+        <div className="card-iipm" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid var(--border)', fontWeight: 600, color: 'var(--text-primary)' }}>
             Payroll Configuration Parameters
           </div>
           {loading ? (
@@ -117,14 +118,38 @@ const SettingsPage: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      <td style={{ whiteSpace: 'nowrap', display: 'flex', gap: '6px' }}>
                         {editingId === s.id ? (
                           <>
-                            <button onClick={() => handleSave(s.key)} style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', background: 'rgba(34,197,94,0.15)', color: '#22c55e', cursor: 'pointer', marginRight: '6px', fontSize: '0.82rem', fontWeight: 600, fontFamily: 'var(--font)' }}>Save</button>
-                            <button onClick={() => setEditingId(null)} style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', background: 'var(--bg-hover)', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.82rem', fontFamily: 'var(--font)' }}>Cancel</button>
+                            <button 
+                              onClick={() => handleSave(s.key)} 
+                              title="Save"
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: '#22c55e', color: '#ffffff', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(34, 197, 94, 0.3)' }}
+                              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(34, 197, 94, 0.4)'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(34, 197, 94, 0.3)'; }}
+                            >
+                              <Save size={16} />
+                            </button>
+                            <button 
+                              onClick={() => setEditingId(null)} 
+                              title="Cancel"
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}
+                              onMouseOver={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#334155'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#64748b'; }}
+                            >
+                              <X size={16} />
+                            </button>
                           </>
                         ) : (
-                          <button onClick={() => { setEditingId(s.id); setEditingValue(s.value); }} style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, fontFamily: 'var(--font)' }}>Edit</button>
+                          <button 
+                            onClick={() => { setEditingId(s.id); setEditingValue(s.value); }} 
+                            title="Edit"
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: '#3b82f6', color: '#ffffff', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)' }}
+                            onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.4)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.3)'; }}
+                          >
+                            <Edit2 size={16} />
+                          </button>
                         )}
                       </td>
                     </tr>

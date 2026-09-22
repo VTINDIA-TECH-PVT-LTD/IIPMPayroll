@@ -34,11 +34,18 @@
   --text-muted: #64748b;    /* Darker slate for better contrast */
 
   /* PREMIUM BORDERS & SHADOWS */
-  --border: #cbd5e1;
-  --border-light: #e2e8f0;
-  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-soft: 0 20px 40px -10px rgba(21, 60, 125, 0.12);
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-soft: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+  
+  /* GLASSMORPHISM VARIABLES -> PROFESSIONAL SOLID VARIABLES */
+  --glass-bg: #ffffff;
+  --glass-bg-hover: #f8fafc;
+  --glass-border: 1px solid #cbd5e1;
+  --glass-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+
   --radius: 20px;
   --radius-sm: 12px;
   --radius-lg: 24px;
@@ -56,7 +63,7 @@ html { font-size: 15px; scroll-behavior: smooth; }
 
 body {
   font-family: var(--font);
-  background: var(--bg-dark);
+  background: #f1f5f9;
   color: var(--text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -71,7 +78,7 @@ body {
   min-width: 0;
   margin-left: var(--sidebar-width);
   min-height: 100vh;
-  background: var(--bg-dark);
+  background: transparent;
   transition: margin-left 0.3s ease;
 }
 
@@ -95,13 +102,15 @@ a:hover { color: var(--primary-light); }
 
 /* ---- Cards ---- */
 .card-iipm {
-  background: var(--bg-card);
-  border: none;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: var(--glass-border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--glass-shadow);
   transition: var(--transition);
 }
-.card-iipm:hover { box-shadow: var(--shadow-soft); transform: translateY(-2px); }
+.card-iipm:hover { box-shadow: var(--shadow-soft); transform: translateY(-3px); }
 
 /* ---- Stat Cards ---- */
 .stat-card {
@@ -207,23 +216,27 @@ a:hover { color: var(--primary-light); }
 /* ---- Tables ---- */
 .table-iipm {
   width: 100%;
-  border-collapse: separate;
+  border-collapse: collapse;
   border-spacing: 0;
 }
 .table-iipm thead th {
-  background: var(--bg-hover);
+  background: #f8fafc;
   color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.8px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid #e2e8f0;
 }
-.table-iipm tbody tr { border-bottom: 1px solid var(--border); transition: var(--transition); }
-.table-iipm tbody tr:hover { background: var(--bg-hover); }
-.table-iipm tbody td { padding: 14px 16px; color: var(--text-secondary); font-size: 0.9rem; }
-.table-iipm tbody td:first-child { color: var(--text-primary); font-weight: 500; }
+.table-iipm tbody tr {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  transition: var(--transition);
+}
+.table-iipm tbody tr:hover { background: #f8fafc; }
+.table-iipm tbody td { padding: 16px; color: var(--text-secondary); font-size: 0.95rem; }
+.table-iipm tbody td:first-child { color: var(--text-primary); font-weight: 600; }
 
 /* ---- Badges ---- */
 .badge-iipm {
