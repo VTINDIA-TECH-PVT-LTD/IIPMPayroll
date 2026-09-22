@@ -33,14 +33,25 @@ const Form16Portal: React.FC = () => {
   if (!form16Data) return null;
 
   return (
-    <div className="page-container" style={{ maxWidth: '1000px', margin: '0 auto', background: '#e5e7eb', padding: '20px' }}>
-      <div className="no-print" style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <button onClick={() => window.print()} style={{ padding: '10px 24px', cursor: 'pointer', background: '#153C7D', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px' }}>
-          🖨️ Print / Download Form 16
-        </button>
+    <div className="page-container" style={{ padding: '24px 32px', width: '100%', overflowX: 'hidden' }}>
+      <div className="page-header no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#ffffff', padding: '24px 28px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)', border: '1px solid var(--border)', marginBottom: '24px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>Form 16</h1>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>View, print, and download your official Form 16 document for tax filing.</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => window.print()} className="btn-primary-iipm" style={{ padding: '10px 24px', cursor: 'pointer', background: '#153C7D', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px rgba(21, 60, 125, 0.2)', transition: 'all 0.2s' }}
+            onMouseOver={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+            onMouseOut={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            🖨️ Print / Download Form 16
+          </button>
+        </div>
       </div>
 
-      <Form16Report form16Data={form16Data} />
+      <div style={{ maxWidth: '100%', overflowX: 'auto', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
+        <Form16Report form16Data={form16Data} />
+      </div>
     </div>
   );
 };
