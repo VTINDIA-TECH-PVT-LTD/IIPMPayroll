@@ -129,62 +129,88 @@ const ITDeclarationPortal = () => {
   );
 
   return (
-    <div className="page-container" style={{ maxWidth: '760px', margin: '0 auto' }}>
+    <div className="page-container" style={{ paddingBottom: '60px', animation: 'fadeIn 0.5s ease' }}>
       {/* Page Header */}
-      <div style={{ marginBottom: '28px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)' }}>IT Declaration</h2>
-        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          Financial Year: <strong>{currentFY}</strong> — Submit your tax regime and deductions for TDS calculation
-        </p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#ffffff', padding: '24px 28px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)', border: '1px solid var(--border)', marginBottom: '24px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>IT Declaration</h1>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Submit your tax regime and deductions for TDS calculation.</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-hover)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Financial Year:</span>
+          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)' }}>{currentFY}</span>
+        </div>
       </div>
 
       {/* Status Banner */}
       {declaration && (
         <div style={{
-          borderRadius: '12px',
-          padding: '16px 20px',
-          marginBottom: '24px',
+          borderRadius: '16px',
+          padding: '24px',
+          marginBottom: '32px',
           display: 'flex',
-          alignItems: 'flex-start',
-          gap: '14px',
-          border: `2px solid ${isApproved ? '#22c55e' : isPending ? '#f59e0b' : '#ef4444'}`,
-          background: isApproved ? '#f0fdf4' : isPending ? '#fffbeb' : '#fef2f2',
+          alignItems: 'center',
+          gap: '20px',
+          border: 'none',
+          boxShadow: isApproved ? '0 10px 25px -5px rgba(34, 197, 94, 0.2)' : isPending ? '0 10px 25px -5px rgba(245, 158, 11, 0.2)' : '0 10px 25px -5px rgba(239, 68, 68, 0.2)',
+          background: isApproved ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : isPending ? 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)' : 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
-          <div style={{ flexShrink: 0, marginTop: '2px' }}>
-            {isApproved && <CheckCircle size={22} color="#22c55e" />}
-            {isPending && <Clock size={22} color="#f59e0b" />}
-            {isRejected && <XCircle size={22} color="#ef4444" />}
+          <div style={{
+            position: 'absolute', top: '-20px', right: '-20px', opacity: 0.1, transform: 'scale(2.5)', pointerEvents: 'none'
+          }}>
+            {isApproved && <CheckCircle size={100} color="#166534" />}
+            {isPending && <Clock size={100} color="#92400e" />}
+            {isRejected && <XCircle size={100} color="#991b1b" />}
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: isApproved ? '#15803d' : isPending ? '#b45309' : '#b91c1c' }}>
-              {isApproved && '✅ Declaration Approved'}
-              {isPending && '⏳ Pending Review'}
-              {isRejected && '❌ Declaration Rejected — Please Resubmit'}
+          <div style={{ 
+            flexShrink: 0, 
+            background: '#fff', 
+            borderRadius: '50%', 
+            padding: '12px', 
+            boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            zIndex: 1
+          }}>
+            {isApproved && <CheckCircle size={32} color="#16a34a" />}
+            {isPending && <Clock size={32} color="#d97706" />}
+            {isRejected && <XCircle size={32} color="#dc2626" />}
+          </div>
+          <div style={{ flex: 1, zIndex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: '1.25rem', color: isApproved ? '#166534' : isPending ? '#92400e' : '#991b1b', marginBottom: '6px' }}>
+              {isApproved && 'Declaration Approved'}
+              {isPending && 'Pending Review'}
+              {isRejected && 'Declaration Rejected — Please Resubmit'}
             </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              {isApproved && 'Your IT Declaration has been approved by the FA Operator. Your deductions will be applied during payroll processing.'}
-              {isPending && 'Your declaration has been submitted and is currently under review by the FA Operator.'}
+            <div style={{ fontSize: '0.95rem', color: isApproved ? '#15803d' : isPending ? '#b45309' : '#b91c1c', lineHeight: 1.5 }}>
+              {isApproved && 'Your IT Declaration has been verified and approved by the FA Operator. The deductions will be applied automatically during your payroll processing.'}
+              {isPending && 'Your declaration has been successfully submitted and is currently in the queue for review by the FA Operator.'}
               {isRejected && (
                 <>
-                  <span>Reason: </span>
-                  <strong style={{ color: '#b91c1c' }}>{declaration.rejectionReason || 'No reason provided'}</strong>
+                  <span style={{ fontWeight: 600 }}>Reason for rejection: </span>
+                  <strong>{declaration.rejectionReason || 'No reason provided'}</strong>
                   <br />
-                  <span>Please update your declaration and resubmit below.</span>
+                  <span>Please review the comments, update your declaration accordingly, and resubmit it below.</span>
                 </>
               )}
             </div>
             {isApproved && (
-              <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+              <div style={{ marginTop: '16px' }}>
                 <button
                   onClick={() => navigate('/form16')}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    background: '#153C7D', color: '#fff', border: 'none',
-                    borderRadius: '8px', padding: '8px 16px', fontWeight: 600,
-                    fontSize: '0.85rem', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    background: '#166534', color: '#fff', border: 'none',
+                    borderRadius: '8px', padding: '10px 20px', fontWeight: 700,
+                    fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 4px 6px rgba(22, 101, 52, 0.2)', transition: 'all 0.2s'
                   }}
+                  onMouseOver={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                  onMouseOut={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
                 >
-                  <Printer size={16} /> View & Print Form 16
+                  <Printer size={18} /> View & Print Form 16
                 </button>
               </div>
             )}
@@ -209,114 +235,138 @@ const ITDeclarationPortal = () => {
 
       {/* Declaration Summary (read-only when pending or approved) */}
       {(isPending || isApproved) && declaration && (
-        <div className="card-iipm" style={{ padding: '24px', marginBottom: '24px' }}>
-          <h4 style={{ margin: '0 0 16px', color: 'var(--text-main)', fontWeight: 700 }}>Submitted Declaration</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <SummaryRow label="Tax Regime" value={declaration.taxRegime === 'OLD' ? '🏛️ Old Regime' : '🆕 New Regime'} />
+        <div className="card-iipm" style={{ padding: '32px', marginBottom: '32px', border: 'none', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.08)', borderRadius: '16px', background: '#fff' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
+            <h4 style={{ margin: 0, color: 'var(--text-main)', fontWeight: 800, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FileText size={22} color="var(--primary)" /> Submitted Declaration Details
+            </h4>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', background: '#f8fafc', padding: '6px 12px', borderRadius: '20px', fontWeight: 600 }}>
+              Submitted on {fmtDate(declaration.createdAt)}
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+            <SummaryRow label="Tax Regime" value={declaration.taxRegime === 'OLD' ? '🏛️ Old Regime' : '🆕 New Regime'} highlight={true} />
             <SummaryRow label="Section 80C" value={fmt(declaration.section80C)} />
             <SummaryRow label="Section 80D" value={fmt(declaration.section80D)} />
             <SummaryRow label="HRA Exemption" value={fmt(declaration.hraExemption)} />
             <SummaryRow label="Home Loan Interest" value={fmt(declaration.homeLoanInterest)} />
           </div>
-          <p style={{ margin: '16px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Submitted on {fmtDate(declaration.createdAt)}
-          </p>
         </div>
       )}
 
       {/* Form — only editable when not submitted OR when rejected */}
       {canEdit && (
-        <div className="card-iipm" style={{ padding: '28px' }}>
-          <h4 style={{ margin: '0 0 8px', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FileText size={18} />
-            {isRejected ? 'Update & Resubmit Declaration' : 'Submit IT Declaration'}
-          </h4>
-          <p style={{ margin: '0 0 24px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Select your tax regime first. For Old Regime, fill the deduction details. New Regime uses standard deduction only.
-          </p>
+        <div className="card-iipm" style={{ padding: '32px', border: 'none', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.08)', borderRadius: '16px', background: '#fff' }}>
+          <div style={{ marginBottom: '32px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
+            <h4 style={{ margin: '0 0 8px', fontWeight: 800, fontSize: '1.3rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FileText size={24} color="var(--primary)" />
+              {isRejected ? 'Update & Resubmit IT Declaration' : 'New IT Declaration'}
+            </h4>
+            <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-muted)' }}>
+              Please select your preferred tax regime and provide accurate deduction details.
+            </p>
+          </div>
 
           <form onSubmit={handleSubmit}>
             {/* Tax Regime Selector */}
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '10px' }}>
-                Select Tax Regime <span style={{ color: '#ef4444' }}>*</span>
+            <div style={{ marginBottom: '32px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '1rem', color: 'var(--text-main)', marginBottom: '16px' }}>
+                1. Select Tax Regime <span style={{ color: '#ef4444' }}>*</span>
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 {[
-                  { value: 'NEW', label: 'New Regime', desc: 'Standard Deduction ₹75,000. No 80C/80D.', badge: 'Default' },
-                  { value: 'OLD', label: 'Old Regime', desc: 'Standard Deduction ₹50,000. Allows 80C, 80D, HRA, Home Loan.', badge: null },
-                ].map(opt => (
-                  <div
-                    key={opt.value}
-                    onClick={() => setForm(f => ({ ...f, taxRegime: opt.value }))}
-                    style={{
-                      border: `2px solid ${form.taxRegime === opt.value ? '#153C7D' : 'var(--border)'}`,
-                      borderRadius: '12px',
-                      padding: '14px 16px',
-                      cursor: 'pointer',
-                      background: form.taxRegime === opt.value ? '#eef2ff' : 'var(--bg-surface)',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <div style={{
-                        width: '18px', height: '18px', borderRadius: '50%',
-                        border: `2px solid ${form.taxRegime === opt.value ? '#153C7D' : 'var(--border)'}`,
-                        background: form.taxRegime === opt.value ? '#153C7D' : 'transparent',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      }}>
-                        {form.taxRegime === opt.value && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fff' }} />}
-                      </div>
-                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>{opt.label}</span>
+                  { value: 'NEW', label: 'New Tax Regime', desc: 'Default regime. Includes standard deduction of ₹75,000. No other deductions (80C, 80D) are allowed.', badge: 'Recommended', color: '#3b82f6', bg: '#eff6ff' },
+                  { value: 'OLD', label: 'Old Tax Regime', desc: 'Allows various deductions like 80C, 80D, HRA, and Home Loan Interest. Standard deduction is ₹50,000.', badge: null, color: '#6366f1', bg: '#eef2ff' },
+                ].map(opt => {
+                  const isSelected = form.taxRegime === opt.value;
+                  return (
+                    <div
+                      key={opt.value}
+                      onClick={() => setForm(f => ({ ...f, taxRegime: opt.value }))}
+                      style={{
+                        position: 'relative',
+                        border: `2px solid ${isSelected ? opt.color : '#e2e8f0'}`,
+                        borderRadius: '16px',
+                        padding: '24px',
+                        cursor: 'pointer',
+                        background: isSelected ? opt.bg : '#fff',
+                        boxShadow: isSelected ? `0 10px 25px -5px ${opt.color}33` : 'none',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        transform: isSelected ? 'translateY(-4px)' : 'none'
+                      }}
+                    >
                       {opt.badge && (
-                        <span style={{ background: '#153C7D', color: '#fff', borderRadius: '20px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>
+                        <div style={{ position: 'absolute', top: '-12px', right: '24px', background: opt.color, color: '#fff', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, boxShadow: `0 4px 6px ${opt.color}40` }}>
                           {opt.badge}
-                        </span>
+                        </div>
                       )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                        <div style={{
+                          width: '24px', height: '24px', borderRadius: '50%',
+                          border: `2px solid ${isSelected ? opt.color : '#cbd5e1'}`,
+                          background: isSelected ? opt.color : '#fff',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          transition: 'all 0.2s'
+                        }}>
+                          {isSelected && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fff' }} />}
+                        </div>
+                        <span style={{ fontWeight: 800, fontSize: '1.2rem', color: isSelected ? opt.color : 'var(--text-main)' }}>{opt.label}</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.9rem', color: isSelected ? '#1e293b' : 'var(--text-muted)', lineHeight: 1.5, paddingLeft: '36px' }}>{opt.desc}</p>
                     </div>
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)', paddingLeft: '26px' }}>{opt.desc}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {/* Deduction Fields — only for OLD regime */}
             {isOldRegime && (
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '32px', animation: 'fadeIn 0.4s ease' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '1rem', color: 'var(--text-main)', marginBottom: '16px' }}>
+                  2. Declare Your Deductions
+                </label>
                 <div style={{
-                  padding: '10px 14px', background: '#fffbeb', borderRadius: '8px',
-                  border: '1px solid #fcd34d', fontSize: '0.82rem', color: '#92400e',
-                  marginBottom: '16px', fontWeight: 600,
+                  padding: '16px 20px', background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', borderRadius: '12px',
+                  border: '1px solid #fde68a', fontSize: '0.9rem', color: '#92400e',
+                  marginBottom: '24px', fontWeight: 600, display: 'flex', gap: '12px', alignItems: 'center'
                 }}>
-                  💡 Old Regime selected — enter your deduction amounts below. Caps: 80C max ₹1,50,000 | Home Loan max ₹2,00,000
+                  <div style={{ fontSize: '1.5rem' }}>💡</div>
+                  <div>Old Regime selected — enter your annual deduction amounts below.<br/><span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Maximum caps: Section 80C up to ₹1,50,000 | Home Loan Interest up to ₹2,00,000.</span></div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <FormField label="Section 80C (EPF, ELSS, PPF, LIC)" value={form.section80C} onChange={v => setForm(f => ({ ...f, section80C: v }))} max={150000} />
-                  <FormField label="Section 80D (Health Insurance Premium)" value={form.section80D} onChange={v => setForm(f => ({ ...f, section80D: v }))} />
-                  <FormField label="HRA Exemption" value={form.hraExemption} onChange={v => setForm(f => ({ ...f, hraExemption: v }))} />
-                  <FormField label="Home Loan Interest (max ₹2,00,000)" value={form.homeLoanInterest} onChange={v => setForm(f => ({ ...f, homeLoanInterest: v }))} max={200000} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                  <FormField label="Section 80C" subtext="(EPF, ELSS, PPF, LIC, etc.)" value={form.section80C} onChange={v => setForm(f => ({ ...f, section80C: v }))} max={150000} icon="💰" />
+                  <FormField label="Section 80D" subtext="(Health Insurance Premium)" value={form.section80D} onChange={v => setForm(f => ({ ...f, section80D: v }))} icon="🏥" />
+                  <FormField label="HRA Exemption" subtext="(House Rent Allowance)" value={form.hraExemption} onChange={v => setForm(f => ({ ...f, hraExemption: v }))} icon="🏠" />
+                  <FormField label="Home Loan Interest" subtext="(Under Section 24b)" value={form.homeLoanInterest} onChange={v => setForm(f => ({ ...f, homeLoanInterest: v }))} max={200000} icon="🏦" />
                 </div>
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '8px' }}>
-              <button
-                type="submit"
-                disabled={saving}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  background: saving ? '#94a3b8' : '#153C7D',
-                  color: '#fff', border: 'none', borderRadius: '10px',
-                  padding: '12px 24px', fontWeight: 700, fontSize: '0.9rem',
-                  cursor: saving ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
-                }}
-              >
-                {isRejected ? <RotateCcw size={16} /> : <Send size={16} />}
-                {saving ? 'Submitting...' : isRejected ? 'Resubmit Declaration' : 'Submit Declaration'}
-              </button>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                You can resubmit if rejected by the FA Operator.
-              </span>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '16px', paddingTop: '24px', borderTop: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  Ensure all details are correct before submission.
+                </span>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    background: saving ? '#94a3b8' : 'linear-gradient(135deg, var(--primary) 0%, #1a3a6e 100%)',
+                    color: '#fff', border: 'none', borderRadius: '12px',
+                    padding: '14px 32px', fontWeight: 800, fontSize: '1rem',
+                    cursor: saving ? 'not-allowed' : 'pointer', 
+                    boxShadow: saving ? 'none' : '0 10px 20px -5px rgba(21, 60, 125, 0.3)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transform: saving ? 'none' : 'translateY(0)',
+                  }}
+                  onMouseOver={(e) => { if(!saving) e.currentTarget.style.transform = 'translateY(-2px)' }}
+                  onMouseOut={(e) => { if(!saving) e.currentTarget.style.transform = 'translateY(0)' }}
+                >
+                  {isRejected ? <RotateCcw size={20} /> : <Send size={20} />}
+                  {saving ? 'Submitting...' : isRejected ? 'Resubmit Declaration' : 'Submit Declaration'}
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -327,32 +377,50 @@ const ITDeclarationPortal = () => {
   );
 };
 
-const SummaryRow = ({ label, value }: { label: string; value: string }) => (
-  <div style={{ background: 'var(--bg-hover)', borderRadius: '8px', padding: '10px 14px' }}>
-    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>{label}</div>
-    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>{value}</div>
+const SummaryRow = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
+  <div style={{ 
+    background: highlight ? '#eff6ff' : '#f8fafc', 
+    border: highlight ? '1px solid #bfdbfe' : '1px solid #e2e8f0', 
+    borderRadius: '12px', 
+    padding: '16px 20px',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.02)'
+  }}>
+    <div style={{ fontSize: '0.85rem', color: highlight ? '#2563eb' : 'var(--text-muted)', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
+    <div style={{ fontWeight: 800, fontSize: '1.25rem', color: highlight ? '#1d4ed8' : 'var(--text-main)' }}>{value}</div>
   </div>
 );
 
-const FormField = ({ label, value, onChange, max }: { label: string; value: any; onChange: (v: string) => void; max?: number }) => (
-  <div>
-    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-      {label} {max && <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(max ₹{max.toLocaleString('en-IN')})</span>}
+const FormField = ({ label, subtext, value, onChange, max, icon }: { label: string; subtext?: string; value: any; onChange: (v: string) => void; max?: number; icon?: string }) => (
+  <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>{label}</span>
+        {subtext && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{subtext}</span>}
+      </div>
+      {max && <span style={{ fontSize: '0.8rem', color: '#f59e0b', fontWeight: 700, background: '#fffbeb', padding: '2px 8px', borderRadius: '12px' }}>Max ₹{max.toLocaleString('en-IN')}</span>}
     </label>
-    <input
-      type="number"
-      min="0"
-      max={max}
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder="0"
-      style={{
-        width: '100%', padding: '10px 12px', borderRadius: '8px',
-        border: '1.5px solid var(--border)', fontSize: '0.9rem',
-        background: 'var(--bg-surface)', color: 'var(--text-main)',
-        outline: 'none', boxSizing: 'border-box',
-      }}
-    />
+    <div style={{ position: 'relative' }}>
+      <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', opacity: 0.7 }}>
+        {icon || '₹'}
+      </div>
+      <input
+        type="number"
+        min="0"
+        max={max}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="0"
+        style={{
+          width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px',
+          border: '2px solid #e2e8f0', fontSize: '1rem', fontWeight: 600,
+          background: '#f8fafc', color: 'var(--text-main)',
+          outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s',
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+        }}
+        onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = '#fff'; }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+      />
+    </div>
   </div>
 );
 
