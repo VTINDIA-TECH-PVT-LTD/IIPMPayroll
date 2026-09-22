@@ -1,8 +1,8 @@
 import axios, { AxiosInstance } from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost'
+const API_BASE_URL = (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
   ? 'http://localhost:3330/api'
-  : 'http://100.28.238.125:3330/api');
+  : (typeof window !== 'undefined' && window.location.hostname ? `http://${window.location.hostname}:3330/api` : 'http://100.28.238.125:3330/api');
 
 interface AuthToken {
   token: string;
