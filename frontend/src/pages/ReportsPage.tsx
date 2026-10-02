@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import * as XLSX from 'xlsx';
 import apiService from '../services/api';
 import { UserContext } from '../App';
+import { formatEmployeeNameWithTitle } from '../utils/nameUtils';
 
 const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -52,6 +53,7 @@ const ReportsPage: React.FC = () => {
   const userCtx = useContext(UserContext);
   const [tab, setTab] = useState<'register' | 'bank' | 'projection' | 'nps' | 'tds' | 'dept' | 'ytd' | 'comparison'>('register');
   const [bankCategoryFilter, setBankCategoryFilter] = useState<'all' | 'teaching' | 'non_teaching' | 'contract'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'draft'>('all');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [userId, setUserId] = useState<string>('');
@@ -61,31 +63,46 @@ const ReportsPage: React.FC = () => {
   const [msg, setMsg] = useState<string | null>(null);
 
   const getEmployeeCategory = (p: any): 'teaching' | 'non_teaching' | 'contract' => {
-    const eid = (p.employeeId || '').toUpperCase();
-    const empType = (p.employeeType || p.staffFunction || '').toUpperCase();
+    const eid = (p.employeeId || '').toUpperCase().trim();
+    const empType = (p.employeeType || p.staffFunction || p.function || '').toUpperCase();
     const desig = (p.designation || '').toUpperCase();
     const payLevel = (p.payLevel || '').toUpperCase();
 
+    // 1) TS is ALWAYS Teaching (Regular - Teaching)
+    if (eid.startsWith('TS')) {
+      return 'teaching';
+    }
+
+    // 2) NT, NTS, DIR are ALWAYS Non-Teaching (Regular - Non Teaching)
+    if (eid.startsWith('NT') || eid.startsWith('NTS') || eid.startsWith('DIR')) {
+      return 'non_teaching';
+    }
+
+    // 3) Contract: CNT, CT, CMED prefixes or explicit contract employment
     if (
       eid.startsWith('CNT') || 
       eid.startsWith('CT') || 
       eid.startsWith('CMED') || 
       empType.includes('CONTRACT') || 
       desig.includes('CONTRACT') || 
-      payLevel.includes('CONSOLIDATED')
+      payLevel.includes('CONSOLIDATED') ||
+      payLevel.includes('FIXED')
     ) {
       return 'contract';
     }
-    if (eid.startsWith('TS') || p.department === 'Faculty' || p.staffFunction === 'Faculty') {
+
+    // Fallback based on designation/function
+    if (desig.includes('PROFESSOR') || empType.includes('TEACHING')) {
       return 'teaching';
     }
+
     return 'non_teaching';
   };
 
   const getCategoryLabel = (cat: 'teaching' | 'non_teaching' | 'contract' | 'all') => {
-    if (cat === 'teaching') return 'Regular Teaching Staff';
-    if (cat === 'non_teaching') return 'Regular Non-Teaching Staff';
-    if (cat === 'contract') return 'Contract Employees';
+    if (cat === 'teaching') return '1) Regular - Teaching';
+    if (cat === 'non_teaching') return '2) Regular - Non Teaching';
+    if (cat === 'contract') return '3) Contract';
     return 'All Categories (Consolidated)';
   };
 
@@ -148,11 +165,11 @@ const ReportsPage: React.FC = () => {
         const payload = result.data || result;
         payload.payrolls = payload.payrolls?.map((p: any) => {
           const emp = userList?.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
-          const fullName = (emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : '') || `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.employeeName || p.employeeId;
+          const fullName = formatEmployeeNameWithTitle(p, emp);
           const rawBank = p.bankName || emp?.bankName || 'State Bank of India';
           return { 
             ...p, 
-            employeeName: p.employeeName || fullName,
+            employeeName: fullName,
             designation: p.designation || emp?.designation || '-', 
             payLevel: p.payLevel || emp?.payLevel || '10', 
             staffFunction: p.staffFunction || emp?.function || emp?.employeeType || '',
@@ -177,150 +194,249 @@ const ReportsPage: React.FC = () => {
   const fmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
   const fmtN = (n: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n || 0);
 
+  const isStatusMatch = (status: string | undefined, filter: 'all' | 'pending' | 'approved' | 'draft') => {
+    if (filter === 'all') return true;
+    const s = (status || '').toUpperCase().trim();
+    if (filter === 'pending') return s === 'PENDING' || s === 'SUBMITTED';
+    if (filter === 'approved') return s === 'APPROVED' || s === 'RELEASED';
+    if (filter === 'draft') return s === 'DRAFT';
+    return true;
+  };
+
+  const getStatusBadge = (status: string | undefined) => {
+    const s = (status || '').toUpperCase().trim();
+    if (s === 'APPROVED' || s === 'RELEASED') {
+      return (
+        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 9px', borderRadius: '12px', background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          ✅ {s === 'RELEASED' ? 'Released' : 'Approved'}
+        </span>
+      );
+    }
+    if (s === 'PENDING' || s === 'SUBMITTED') {
+      return (
+        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 9px', borderRadius: '12px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          ⏳ Submit For Approval
+        </span>
+      );
+    }
+    if (s === 'DRAFT') {
+      return (
+        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 9px', borderRadius: '12px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          📝 Draft
+        </span>
+      );
+    }
+    if (s === 'REJECTED') {
+      return (
+        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 9px', borderRadius: '12px', background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          ❌ Rejected
+        </span>
+      );
+    }
+    return (
+      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 9px', borderRadius: '12px', background: '#f1f5f9', color: '#64748b' }}>
+        {status || 'PROCESSED'}
+      </span>
+    );
+  };
+
   const exportSalaryRegisterToExcel = () => {
     if (!data || !data.payrolls) return;
 
-    // Split payrolls by staff type
-    const facultyPayrolls = data.payrolls.filter((p: any) => p.staffFunction === 'Faculty');
-    const nonTeachingPayrolls = data.payrolls.filter((p: any) => p.staffFunction !== 'Faculty');
+    // Filter by selected status
+    const targetPayrolls = data.payrolls.filter((p: any) => isStatusMatch(p.status, statusFilter));
+    if (targetPayrolls.length === 0) {
+      alert(`No records found for status: ${statusFilter === 'pending' ? 'Submit For Approval (Pending)' : statusFilter === 'approved' ? 'Approved' : statusFilter === 'draft' ? 'Drafts' : 'All'}`);
+      return;
+    }
+
+    // Split payrolls by 3 categories
+    const teachingPayrolls = targetPayrolls.filter((p: any) => getEmployeeCategory(p) === 'teaching');
+    const nonTeachingPayrolls = targetPayrolls.filter((p: any) => getEmployeeCategory(p) === 'non_teaching');
+    const contractPayrolls = targetPayrolls.filter((p: any) => getEmployeeCategory(p) === 'contract');
 
     const wb = XLSX.utils.book_new();
 
-    // 1. Generate Faculty Sheet
-    if (facultyPayrolls.length > 0) {
-      const facultyData = facultyPayrolls.map((p: any, i: number) => ({
+    // Helper for signature block
+    const appendSignatureRows = (sheetData: any[], col1: string, col2: string, col3: string, col4: string) => {
+      sheetData.push({}, {}, {});
+      sheetData.push({
+        [col1]: 'PREPARED BY',
+        [col2]: 'VERIFIED BY',
+        [col3]: 'VERIFIED BY',
+        [col4]: 'APPROVED / NOT APPROVED'
+      });
+      sheetData.push({
+        [col1]: `(${signatures.preparedBy})`,
+        [col2]: `(${signatures.verifiedBy1})`,
+        [col3]: `(${signatures.verifiedBy2})`,
+        [col4]: `(${signatures.approvedBy})`
+      });
+      sheetData.push({
+        [col1]: 'ACCOUNTS EXECUTIVE',
+        [col2]: 'Jr SUPTD (ACTING AR F&A)',
+        [col3]: 'JOINT REGISTRAR / DR (F&A)',
+        [col4]: 'REGISTRAR'
+      });
+    };
+
+    // 1. Generate Regular - Teaching Sheet
+    if (teachingPayrolls.length > 0) {
+      const teachingData = teachingPayrolls.map((p: any, i: number) => ({
         'Sl.no': i + 1,
-        'Pay level': p.payLevel || '10',
+        'Emp ID': p.employeeId,
+        'Name of the Employee': p.employeeName || p.employeeId,
+        'Designation': p.designation || 'Faculty',
+        'Pay level': p.payLevel ? `Level-${p.payLevel}` : 'Level-10',
         'Basic': p.basicPay || 0,
         'DA 60%': p.da || 0,
         'TA( Rs.3600+ * DA@60%)': p.ta || 0,
         'HRA 20 %': p.hra || 0,
         'Dean / Warden Allowance': p.otherAllowances || 0,
         'NPS Employer share': p.npsEmployerShare || 0,
+        'Deductable Pension': p.ignorablePension || 0,
         'Gross Salary': p.grossSalary || 0,
         'PT': p.professionalTax || 0,
         'TDS': p.tds || 0,
         'NPS Employee share': p.npsEmployeeShare || 0,
-        'NPS Employer share_1': p.npsEmployerShare || 0, // Duplicate name bypass in XLSX
         'CGHS Contribution': p.cghs || 0,
         'Other deductions': p.otherDeductions || 0,
         'Total Deductions': p.totalDeductions || 0,
         'Net Salary': p.netSalary || 0
       }));
 
-      const facultyTotals = facultyData.reduce((acc: any, curr: any) => {
+      const totals = teachingData.reduce((acc: any, curr: any) => {
         Object.keys(curr).forEach(key => {
-          if (key !== 'Sl.no' && key !== 'Pay level') {
+          if (!['Sl.no', 'Emp ID', 'Name of the Employee', 'Designation', 'Pay level'].includes(key)) {
             acc[key] = (acc[key] || 0) + (curr[key] || 0);
           }
         });
         return acc;
-      }, { 'Sl.no': 'Total', 'Pay level': '' });
-      facultyData.push(facultyTotals);
+      }, { 'Sl.no': 'Total', 'Emp ID': '', 'Name of the Employee': '', 'Designation': '', 'Pay level': '' });
+      teachingData.push(totals);
 
-      // Fix duplicate column name for rendering
-      const finalFacultyData = facultyData.map((row: any) => {
-        const newRow: any = { ...row };
-        newRow['NPS Employer share '] = newRow['NPS Employer share_1']; // Add trailing space to differentiate keys
-        delete newRow['NPS Employer share_1'];
-        return newRow;
-      });
-
-      // Append Signature Block
-      finalFacultyData.push({}, {}, {}); // 3 empty rows
-      finalFacultyData.push({
-        'Sl.no': 'PREPARED BY',
-        'DA 60%': 'VERIFIED BY',
-        'Gross Salary': 'VERIFIED BY',
-        'CGHS Contribution': 'APPROVED /NOT APPROVED'
-      });
-      finalFacultyData.push({
-        'Sl.no': `(${signatures.preparedBy})`,
-        'DA 60%': `(${signatures.verifiedBy1})`,
-        'Gross Salary': `(${signatures.verifiedBy2})`,
-        'CGHS Contribution': `(${signatures.approvedBy})`
-      });
-      finalFacultyData.push({
-        'Sl.no': 'ACCOUNTS EXECUTIVE',
-        'DA 60%': 'Jr SUPTD(ACTING ASSISTANT REGISTRAR (F&A))',
-        'Gross Salary': 'JOINT REGISTRAR',
-        'CGHS Contribution': 'REGISTRAR'
-      });
-
-      const wsFaculty = XLSX.utils.json_to_sheet(finalFacultyData);
-      XLSX.utils.book_append_sheet(wb, wsFaculty, "Faculty");
+      appendSignatureRows(teachingData, 'Sl.no', 'DA 60%', 'Gross Salary', 'Total Deductions');
+      const wsTeaching = XLSX.utils.json_to_sheet(teachingData);
+      XLSX.utils.book_append_sheet(wb, wsTeaching, "Regular - Teaching");
     }
 
-    // 2. Generate Non-Teaching Sheet
+    // 2. Generate Regular - Non Teaching Sheet
     if (nonTeachingPayrolls.length > 0) {
-      const nonTeachingData = nonTeachingPayrolls.map((p: any) => ({
+      const nonTeachingData = nonTeachingPayrolls.map((p: any, i: number) => ({
+        'Sl.no': i + 1,
+        'Emp ID': p.employeeId,
+        'Name of the Employee': p.employeeName || p.employeeId,
         'Designation': p.designation || 'Staff',
-        'Pay Scale': `Level-${p.payLevel || '10'}`,
+        'Pay Scale': p.payLevel ? `Level-${p.payLevel}` : 'Level-10',
         'Basic': p.basicPay || 0,
         'DA 60%': p.da || 0,
         'TA': p.ta || 0,
         'HRA 20 %': p.hra || 0,
         'NPS Employer Share': p.npsEmployerShare || 0,
+        'Deductable Pension': p.ignorablePension || 0,
         'Gross salary': p.grossSalary || 0,
         'PT': p.professionalTax || 0,
         'TDS': p.tds || 0,
         'NPS Employee share': p.npsEmployeeShare || 0,
-        'NPS Employer share': p.npsEmployerShare || 0,
         'CGHS Contribution': p.cghs || 0,
         'Other Recovery': p.otherDeductions || 0,
         'Total Deductions': p.totalDeductions || 0,
         'Net Salary': p.netSalary || 0
       }));
 
-      const nonTeachingTotals = nonTeachingData.reduce((acc: any, curr: any) => {
+      const ntTotals = nonTeachingData.reduce((acc: any, curr: any) => {
         Object.keys(curr).forEach(key => {
-          if (key !== 'Designation' && key !== 'Pay Scale') {
+          if (!['Sl.no', 'Emp ID', 'Name of the Employee', 'Designation', 'Pay Scale'].includes(key)) {
             acc[key] = (acc[key] || 0) + (curr[key] || 0);
           }
         });
         return acc;
-      }, { 'Designation': 'TOTAL', 'Pay Scale': '' });
-      nonTeachingData.push(nonTeachingTotals);
+      }, { 'Sl.no': 'TOTAL', 'Emp ID': '', 'Name of the Employee': '', 'Designation': '', 'Pay Scale': '' });
+      nonTeachingData.push(ntTotals);
 
-      // Fix duplicate column name
-      const finalNTData = nonTeachingData.map((row: any) => {
-        const newRow: any = { ...row };
-        // Since XLSX handles duplicate keys in objects by overwriting, we need to ensure the JS objects have unique keys, but the excel sheet can have same headers. 
-        // Wait, JSON objects can't have duplicate keys. So I need to use an array of arrays for custom headers, but this is fine (trailing space).
-        newRow['NPS Employer share '] = newRow['NPS Employer share']; 
-        return newRow;
-      });
-
-      // Append Signature Block
-      finalNTData.push({}, {}, {}); // 3 empty rows
-      finalNTData.push({
-        'Designation': 'PREPARED BY',
-        'DA 60%': 'VERIFIED BY',
-        'Gross salary': 'VERIFIED BY',
-        'CGHS Contribution': 'APPROVED /NOT APPROVED'
-      });
-      finalNTData.push({
-        'Designation': `(${signatures.preparedBy})`,
-        'DA 60%': `(${signatures.verifiedBy1})`,
-        'Gross salary': `(${signatures.verifiedBy2})`,
-        'CGHS Contribution': `(${signatures.approvedBy})`
-      });
-      finalNTData.push({
-        'Designation': 'ACCOUNTS EXECUTIVE',
-        'DA 60%': 'Jr SUPTD(ACTING ASSISTANT REGISTRAR (F&A))',
-        'Gross salary': 'JOINT REGISTRAR',
-        'CGHS Contribution': 'REGISTRAR'
-      });
-
-      const wsNT = XLSX.utils.json_to_sheet(finalNTData);
-      XLSX.utils.book_append_sheet(wb, wsNT, "Non teaching Staff");
+      appendSignatureRows(nonTeachingData, 'Sl.no', 'DA 60%', 'Gross salary', 'Total Deductions');
+      const wsNT = XLSX.utils.json_to_sheet(nonTeachingData);
+      XLSX.utils.book_append_sheet(wb, wsNT, "Regular - Non Teaching");
     }
 
-    if (wb.SheetNames.length === 0) {
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ Message: "No data available" }]), "Sheet1");
+    // 3. Generate Contract Sheet
+    if (contractPayrolls.length > 0) {
+      const contractData = contractPayrolls.map((p: any, i: number) => ({
+        'Sl.no': i + 1,
+        'Emp ID': p.employeeId,
+        'Name of the Employee': p.employeeName || p.employeeId,
+        'Designation': p.designation || 'Contract Staff',
+        'Pay Scale': 'Consolidated',
+        'Consolidated Pay': p.basicPay || 0,
+        'Other Allowances': p.otherAllowances || 0,
+        'Deductable Pension': p.ignorablePension || 0,
+        'Gross Salary': p.grossSalary || 0,
+        'PT': p.professionalTax || 0,
+        'TDS': p.tds || 0,
+        'Other Deductions': p.otherDeductions || 0,
+        'Total Deductions': p.totalDeductions || 0,
+        'Net Salary': p.netSalary || 0
+      }));
+
+      const cTotals = contractData.reduce((acc: any, curr: any) => {
+        Object.keys(curr).forEach(key => {
+          if (!['Sl.no', 'Emp ID', 'Name of the Employee', 'Designation', 'Pay Scale'].includes(key)) {
+            acc[key] = (acc[key] || 0) + (curr[key] || 0);
+          }
+        });
+        return acc;
+      }, { 'Sl.no': 'TOTAL', 'Emp ID': '', 'Name of the Employee': '', 'Designation': '', 'Pay Scale': '' });
+      contractData.push(cTotals);
+
+      appendSignatureRows(contractData, 'Sl.no', 'Consolidated Pay', 'Gross Salary', 'Total Deductions');
+      const wsContract = XLSX.utils.json_to_sheet(contractData);
+      XLSX.utils.book_append_sheet(wb, wsContract, "Contract");
     }
 
-    XLSX.writeFile(wb, `INDIAN_INSTITUTE_OF_PETROLEUM_AND_ENERGY_Salary_${months[month-1]}_${year}.xlsx`);
+    // 4. Generate Consolidated Summary Sheet
+    const summaryData = targetPayrolls.map((p: any, i: number) => {
+      const cat = getEmployeeCategory(p);
+      const catLabel = cat === 'teaching' ? 'Regular - Teaching' : cat === 'non_teaching' ? 'Regular - Non Teaching' : 'Contract';
+      return {
+        'Sl.no': i + 1,
+        'Emp ID': p.employeeId,
+        'Name of the Employee': p.employeeName || p.employeeId,
+        'Category': catLabel,
+        'Designation': p.designation || '-',
+        'Pay Scale': p.payLevel ? `Level-${p.payLevel}` : 'Consolidated',
+        'Basic / Fixed Pay': p.basicPay || 0,
+        'DA': p.da || 0,
+        'TA': p.ta || 0,
+        'HRA': p.hra || 0,
+        'Dean / Warden Allowances': p.otherAllowances || 0,
+        'NPS Employer': p.npsEmployerShare || 0,
+        'Deductable Pension': p.ignorablePension || 0,
+        'Gross Salary': p.grossSalary || 0,
+        'PT': p.professionalTax || 0,
+        'TDS': p.tds || 0,
+        'NPS Employee': p.npsEmployeeShare || 0,
+        'CGHS': p.cghs || 0,
+        'Other Deductions': p.otherDeductions || 0,
+        'Total Deductions': p.totalDeductions || 0,
+        'Net Salary': p.netSalary || 0
+      };
+    });
+
+    const sumTotals = summaryData.reduce((acc: any, curr: any) => {
+      Object.keys(curr).forEach(key => {
+        if (!['Sl.no', 'Emp ID', 'Name of the Employee', 'Category', 'Designation', 'Pay Scale'].includes(key)) {
+          acc[key] = (acc[key] || 0) + (curr[key] || 0);
+        }
+      });
+      return acc;
+    }, { 'Sl.no': 'TOTAL', 'Emp ID': '', 'Name of the Employee': '', 'Category': '', 'Designation': '', 'Pay Scale': '' });
+    summaryData.push(sumTotals);
+    appendSignatureRows(summaryData, 'Sl.no', 'DA', 'Gross Salary', 'CGHS');
+    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, wsSummary, "Consolidated Summary");
+
+    const statusSuffix = statusFilter === 'approved' ? '_Approved' : statusFilter === 'pending' ? '_Submitted_For_Approval' : statusFilter === 'draft' ? '_Drafts' : '';
+    XLSX.writeFile(wb, `INDIAN_INSTITUTE_OF_PETROLEUM_AND_ENERGY_Salary_${months[month-1]}_${year}${statusSuffix}.xlsx`);
   };
 
   const exportBankPaymentSheetToExcel = () => {
@@ -330,18 +446,16 @@ const ReportsPage: React.FC = () => {
     const createSheetData = (list: any[], title: string) => {
       const exportRows = list.map((p: any, idx: number) => {
         const emp = employees.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
-        const name = p.employeeName || (emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : '') || `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.employeeId;
+        const name = formatEmployeeNameWithTitle(p, emp);
         const rawBank = p.bankName || emp?.bankName || 'State Bank of India';
         const bank = normalizeBankName(rawBank);
         const acc = p.bankAccountNumber || emp?.bankAccountNumber || '-';
         const ifsc = p.ifscCode || emp?.ifscCode || 'SBIN0003170';
-        const desig = p.designation || emp?.designation || '-';
 
         return {
           'Sl. No.': idx + 1,
           'Employee ID': p.employeeId,
           'Employee Name': name,
-          'Designation': desig,
           'Bank Name': bank,
           'Bank Account Number': acc,
           'IFSC Code': ifsc,
@@ -354,7 +468,6 @@ const ReportsPage: React.FC = () => {
         'Sl. No.': 'TOTAL',
         'Employee ID': '',
         'Employee Name': '',
-        'Designation': '',
         'Bank Name': '',
         'Bank Account Number': '',
         'IFSC Code': '',
@@ -365,19 +478,19 @@ const ReportsPage: React.FC = () => {
       exportRows.push({} as any, {} as any);
       exportRows.push({
         'Sl. No.': 'PREPARED BY',
-        'Designation': 'VERIFIED BY',
+        'Bank Name': 'VERIFIED BY',
         'Bank Account Number': 'VERIFIED BY',
         'Net Amount Payable (Rs.)': 'AUTHORISED SIGNATORY'
       } as any);
       exportRows.push({
         'Sl. No.': `(${signatures.preparedBy})`,
-        'Designation': `(${signatures.verifiedBy1})`,
+        'Bank Name': `(${signatures.verifiedBy1})`,
         'Bank Account Number': `(${signatures.verifiedBy2})`,
         'Net Amount Payable (Rs.)': `(${signatures.approvedBy})`
       } as any);
       exportRows.push({
         'Sl. No.': 'Junior Superintendent (F&A)',
-        'Designation': 'AR (F&A)',
+        'Bank Name': 'AR (F&A)',
         'Bank Account Number': 'Deputy Registrar (F&A)',
         'Net Amount Payable (Rs.)': 'Authorised Signatory'
       } as any);
@@ -385,31 +498,34 @@ const ReportsPage: React.FC = () => {
       return XLSX.utils.json_to_sheet(exportRows);
     };
 
-    const teachingList = data.payrolls.filter((p: any) => getEmployeeCategory(p) === 'teaching');
-    const nonTeachingList = data.payrolls.filter((p: any) => getEmployeeCategory(p) === 'non_teaching');
-    const contractList = data.payrolls.filter((p: any) => getEmployeeCategory(p) === 'contract');
+    const targetList = (data.payrolls || []).filter((p: any) => isStatusMatch(p.status, statusFilter));
+    const teachingList = targetList.filter((p: any) => getEmployeeCategory(p) === 'teaching');
+    const nonTeachingList = targetList.filter((p: any) => getEmployeeCategory(p) === 'non_teaching');
+    const contractList = targetList.filter((p: any) => getEmployeeCategory(p) === 'contract');
 
     if (bankCategoryFilter === 'all') {
-      if (teachingList.length > 0) XLSX.utils.book_append_sheet(wb, createSheetData(teachingList, 'Regular Teaching Staff'), 'Regular Teaching Staff');
-      if (nonTeachingList.length > 0) XLSX.utils.book_append_sheet(wb, createSheetData(nonTeachingList, 'Regular Non-Teaching Staff'), 'Regular Non-Teaching Staff');
-      if (contractList.length > 0) XLSX.utils.book_append_sheet(wb, createSheetData(contractList, 'Contract Employees'), 'Contract Employees');
-      XLSX.utils.book_append_sheet(wb, createSheetData(data.payrolls, 'Consolidated Bank Advice'), 'Consolidated Summary');
+      if (teachingList.length > 0) XLSX.utils.book_append_sheet(wb, createSheetData(teachingList, 'Regular - Teaching'), 'Regular - Teaching');
+      if (nonTeachingList.length > 0) XLSX.utils.book_append_sheet(wb, createSheetData(nonTeachingList, 'Regular - Non Teaching'), 'Regular - Non Teaching');
+      if (contractList.length > 0) XLSX.utils.book_append_sheet(wb, createSheetData(contractList, 'Contract'), 'Contract');
+      XLSX.utils.book_append_sheet(wb, createSheetData(targetList, 'Consolidated Bank Advice'), 'Consolidated Summary');
     } else if (bankCategoryFilter === 'teaching') {
-      XLSX.utils.book_append_sheet(wb, createSheetData(teachingList, 'Regular Teaching Staff'), 'Regular Teaching Staff');
+      XLSX.utils.book_append_sheet(wb, createSheetData(teachingList, 'Regular - Teaching'), 'Regular - Teaching');
     } else if (bankCategoryFilter === 'non_teaching') {
-      XLSX.utils.book_append_sheet(wb, createSheetData(nonTeachingList, 'Regular Non-Teaching Staff'), 'Regular Non-Teaching Staff');
+      XLSX.utils.book_append_sheet(wb, createSheetData(nonTeachingList, 'Regular - Non Teaching'), 'Regular - Non Teaching');
     } else if (bankCategoryFilter === 'contract') {
-      XLSX.utils.book_append_sheet(wb, createSheetData(contractList, 'Contract Employees'), 'Contract Employees');
+      XLSX.utils.book_append_sheet(wb, createSheetData(contractList, 'Contract'), 'Contract');
     }
 
-    XLSX.writeFile(wb, `IIPE_Bank_Payment_Advice_${months[month - 1]}_${year}.xlsx`);
+    const statusSuffix = statusFilter === 'approved' ? '_Approved' : statusFilter === 'pending' ? '_Submitted_For_Approval' : statusFilter === 'draft' ? '_Drafts' : '';
+    XLSX.writeFile(wb, `IIPE_Bank_Payment_Advice_${months[month - 1]}_${year}${statusSuffix}.xlsx`);
   };
 
   const printBankAdviceLetter = () => {
     if (!data || !data.payrolls) return;
     const filtered = data.payrolls.filter((p: any) => {
-      if (bankCategoryFilter === 'all') return true;
-      return getEmployeeCategory(p) === bankCategoryFilter;
+      const matchCat = bankCategoryFilter === 'all' || getEmployeeCategory(p) === bankCategoryFilter;
+      const matchStatus = isStatusMatch(p.status, statusFilter);
+      return matchCat && matchStatus;
     });
     const totalAmount = filtered.reduce((s: number, p: any) => s + (p.netSalary || 0), 0);
     const categoryTitle = getCategoryLabel(bankCategoryFilter);
@@ -446,8 +562,8 @@ const ReportsPage: React.FC = () => {
       <body>
         <div class="header">
           <div class="title">INDIAN INSTITUTE OF PETROLEUM AND ENERGY</div>
-          <div class="subtitle">(An Institute of National Importance at par with IITs/IIMs) - Ministry of Petroleum and Natural Gas, Govt. of India</div>
-          <div class="subtitle">EAB, Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India</div>
+          <div class="subtitle">(An Institute of National Importance) - Ministry of Petroleum and Natural Gas, Govt. of India</div>
+          <div class="subtitle">Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India</div>
         </div>
         <table class="ref-table">
           <tr>
@@ -465,7 +581,6 @@ const ReportsPage: React.FC = () => {
               <th class="text-center" style="width:5%;">Sl.No</th>
               <th class="text-center" style="width:10%;">Emp ID</th>
               <th>Employee Name</th>
-              <th>Designation</th>
               <th>Bank Name</th>
               <th>Account Number</th>
               <th class="text-center">IFSC Code</th>
@@ -475,19 +590,17 @@ const ReportsPage: React.FC = () => {
           <tbody>
             ${filtered.map((p: any, idx: number) => {
               const emp = employees.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
-              const name = p.employeeName || (emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : '') || `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.employeeId;
+              const name = formatEmployeeNameWithTitle(p, emp);
               const rawBank = p.bankName || emp?.bankName || 'State Bank of India';
               const bank = normalizeBankName(rawBank);
               const acc = p.bankAccountNumber || emp?.bankAccountNumber || '-';
               const ifsc = p.ifscCode || emp?.ifscCode || 'SBIN0003170';
-              const desig = p.designation || emp?.designation || '-';
 
               return `
               <tr>
                 <td class="text-center">${idx + 1}</td>
                 <td class="text-center">${p.employeeId}</td>
                 <td><b>${name}</b></td>
-                <td>${desig}</td>
                 <td>${bank}</td>
                 <td>${acc}</td>
                 <td class="text-center">${ifsc}</td>
@@ -495,11 +608,11 @@ const ReportsPage: React.FC = () => {
               </tr>
             `;}).join('')}
             <tr style="background:#f9f9f9;">
-              <td colspan="7" class="bold text-center">TOTAL DISBURSEMENT AMOUNT (${categoryTitle.toUpperCase()})</td>
+              <td colspan="6" class="bold text-center">TOTAL DISBURSEMENT AMOUNT (${categoryTitle.toUpperCase()})</td>
               <td class="text-right bold" style="font-size:11pt;">₹ ${Number(totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
             </tr>
             <tr style="background:#fdfdfd;">
-              <td colspan="8" class="bold" style="padding: 8px 10px; font-size: 10pt; background:#f8fafc; border-top: 1px solid #000;">
+              <td colspan="7" class="bold" style="padding: 8px 10px; font-size: 10pt; background:#f8fafc; border-top: 1px solid #000;">
                 Amount in Words: <span style="font-style: italic; color: #0f172a;">${amountInWords}</span>
               </td>
             </tr>
@@ -529,7 +642,7 @@ const ReportsPage: React.FC = () => {
     const rows = data.map((d: any, idx: number) => ({
       'Sl.No': idx + 1,
       'Emp ID': d.employeeId,
-      'Employee Name': d.employeeName,
+      'Employee Name': formatEmployeeNameWithTitle(d),
       'Designation': d.designation,
       'Department': d.department,
       'PAN': d.pan,
@@ -565,6 +678,11 @@ const ReportsPage: React.FC = () => {
               📊 Export to Excel
             </button>
           )}
+          {tab === 'bank' && (
+            <button className="btn-success-iipm" onClick={exportBankPaymentSheetToExcel}>
+              📊 Export Bank Excel
+            </button>
+          )}
           {tab === 'projection' && (
             <button className="btn-success-iipm" onClick={exportTdsProjectionToExcel}>
               📊 Export TDS Excel
@@ -594,7 +712,7 @@ const ReportsPage: React.FC = () => {
       {/* Filters */}
       <div className="card-iipm" style={{ padding: '16px 20px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          {(tab === 'register' || tab === 'dept') && (
+          {(tab === 'register' || tab === 'bank' || tab === 'dept') && (
             <div>
               <label className="form-label-iipm">Month</label>
               <select className="form-control-iipm" value={month} onChange={e => setMonth(+e.target.value)} style={{ width: '150px' }}>
@@ -626,6 +744,22 @@ const ReportsPage: React.FC = () => {
               <input type="number" className="form-control-iipm" value={year} onChange={e => setYear(+e.target.value)} style={{ width: '100px' }} />
             </div>
           )}
+          {(tab === 'register' || tab === 'bank') && (
+            <div>
+              <label className="form-label-iipm">Approval Status</label>
+              <select 
+                className="form-control-iipm" 
+                value={statusFilter} 
+                onChange={e => setStatusFilter(e.target.value as any)} 
+                style={{ width: '240px', fontWeight: 600, color: statusFilter === 'approved' ? '#166534' : statusFilter === 'pending' ? '#92400e' : statusFilter === 'draft' ? '#475569' : 'inherit' }}
+              >
+                <option value="all">🌐 All Records (Consolidated)</option>
+                <option value="pending">⏳ Submit For Approval (Pending)</option>
+                <option value="approved">✅ Approved / Finalized</option>
+                <option value="draft">📝 Saved Drafts</option>
+              </select>
+            </div>
+          )}
           <button className="btn-primary-iipm" onClick={loadReport} disabled={loading || (tab === 'comparison' && !userId)}>
             {loading ? '⏳ Loading...' : '🔍 Generate Report'}
           </button>
@@ -646,69 +780,219 @@ const ReportsPage: React.FC = () => {
       {msg && <div className="alert-iipm alert-danger">{msg}</div>}
 
       {/* ===== SALARY REGISTER ===== */}
-      {tab === 'register' && data && (
-        <>
-          {/* Summary */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-            {[
-              { label: 'Total Employees', value: fmtN(data.totalEmployees), icon: '👥', color: '#3b82f6' },
-              { label: 'Total Gross', value: fmt(data.totalGross), icon: '💰', color: '#c9a84c' },
-              { label: 'Total Deductions', value: fmt(data.totalDeductions), icon: '➖', color: '#ef4444' },
-              { label: 'Net Disbursement', value: fmt(data.totalNet), icon: '✅', color: '#22c55e' },
-            ].map((s, i) => (
-              <div className="stat-card" key={i}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div><div className="stat-label">{s.label}</div><div className="stat-value" style={{ fontSize: '1.4rem', color: s.color }}>{s.value}</div></div>
-                  <div style={{ fontSize: '1.8rem', opacity: 0.4 }}>{s.icon}</div>
+      {tab === 'register' && data && (() => {
+        const allList: any[] = data.payrolls || [];
+        const regFiltered = allList.filter((p: any) => isStatusMatch(p.status, statusFilter));
+        const countAll = allList.length;
+        const countPending = allList.filter((p: any) => isStatusMatch(p.status, 'pending')).length;
+        const countApproved = allList.filter((p: any) => isStatusMatch(p.status, 'approved')).length;
+        const countDraft = allList.filter((p: any) => isStatusMatch(p.status, 'draft')).length;
+
+        const regTotals = regFiltered.reduce((acc: any, p: any) => ({
+          basic: acc.basic + (p.basicPay || 0),
+          da: acc.da + (p.da || 0),
+          hra: acc.hra + (p.hra || 0),
+          ta: acc.ta + (p.ta || 0),
+          dean: acc.dean + (p.otherAllowances || 0),
+          npsEmployer: acc.npsEmployer + (p.npsEmployerShare || 0),
+          ignorablePension: acc.ignorablePension + (p.ignorablePension || 0),
+          gross: acc.gross + (p.grossSalary || 0),
+          tds: acc.tds + (p.tds || 0),
+          npsEmp: acc.npsEmp + (p.npsEmployeeShare || 0),
+          pt: acc.pt + (p.professionalTax || 0),
+          otherDed: acc.otherDed + (p.otherDeductions || 0),
+          totalDed: acc.totalDed + (p.totalDeductions || 0),
+          net: acc.net + (p.netSalary || 0)
+        }), {
+          basic: 0, da: 0, hra: 0, ta: 0, dean: 0, npsEmployer: 0, ignorablePension: 0, gross: 0,
+          tds: 0, npsEmp: 0, pt: 0, otherDed: 0, totalDed: 0, net: 0
+        });
+
+        const totalGross = regTotals.gross;
+        const totalDeductions = regTotals.totalDed;
+        const totalNet = regTotals.net;
+
+        const statusLabel = statusFilter === 'pending' ? 'Submit For Approval (Pending)' : statusFilter === 'approved' ? 'Approved' : statusFilter === 'draft' ? 'Saved Drafts' : 'All Records';
+
+        return (
+          <>
+            {/* Quick Status Filter Pill Bar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'all', label: 'All Records', count: countAll, icon: '🌐' },
+                  { id: 'pending', label: 'Submit For Approval', count: countPending, icon: '⏳' },
+                  { id: 'approved', label: 'Approved', count: countApproved, icon: '✅' },
+                  { id: 'draft', label: 'Saved Drafts', count: countDraft, icon: '📝' }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setStatusFilter(item.id as any)}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: '20px',
+                      border: `1.5px solid ${statusFilter === item.id ? '#0a3161' : '#cbd5e1'}`,
+                      background: statusFilter === item.id ? '#0a3161' : '#ffffff',
+                      color: statusFilter === item.id ? '#ffffff' : '#334155',
+                      fontWeight: statusFilter === item.id ? 700 : 600,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: statusFilter === item.id ? '0 2px 6px rgba(10,49,97,0.2)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                    <span style={{
+                      background: statusFilter === item.id ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                      color: statusFilter === item.id ? '#ffffff' : '#475569',
+                      padding: '1px 8px',
+                      borderRadius: '10px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      marginLeft: '2px'
+                    }}>
+                      {item.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button className="btn-success-iipm" onClick={exportSalaryRegisterToExcel} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  📊 Export to Excel ({regFiltered.length})
+                </button>
+              </div>
+            </div>
+
+            {/* Summary Stat Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+              {[
+                { label: `Total Employees (${statusLabel})`, value: `${fmtN(regFiltered.length)} Staff`, icon: '👥', color: '#3b82f6' },
+                { label: 'Total Gross', value: fmt(totalGross), icon: '💰', color: '#c9a84c' },
+                { label: 'Total Deductions', value: fmt(totalDeductions), icon: '➖', color: '#ef4444' },
+                { label: 'Net Disbursement', value: fmt(totalNet), icon: '✅', color: '#22c55e' },
+              ].map((s, i) => (
+                <div className="stat-card" key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div className="stat-label">{s.label}</div>
+                      <div className="stat-value" style={{ fontSize: '1.4rem', color: s.color }}>{s.value}</div>
+                    </div>
+                    <div style={{ fontSize: '1.8rem', opacity: 0.4 }}>{s.icon}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Salary Register Table */}
+            <div className="card-iipm" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a' }}>
+                    Salary Register — {months[month - 1]} {year}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Showing: <strong style={{ color: '#0a3161' }}>{statusLabel}</strong> ({regFiltered.length} records)
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
 
-          <div className="card-iipm" style={{ padding: 0 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontWeight: 600 }}>
-              Salary Register — {months[month - 1]} {year}
-            </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="table-iipm">
-                <thead>
-                  <tr>
-                    <th>#</th><th>Employee ID</th><th>Basic</th><th>DA</th><th>HRA</th><th>TA</th>
-                    <th>Gross</th><th>TDS</th><th>NPS Emp</th><th>NPS Emp (14%)</th><th>PT</th><th>Total Ded.</th><th>Net Pay</th><th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(data.payrolls || []).map((p: any, i: number) => (
-                    <tr key={p.id}>
-                      <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{p.employeeId}</td>
-                      <td>{fmt(p.basicPay)}</td><td>{fmt(p.da)}</td><td>{fmt(p.hra)}</td><td>{fmt(p.ta)}</td>
-                      <td style={{ fontWeight: 600 }}>{fmt(p.grossSalary)}</td>
-                      <td>{fmt(p.tds)}</td><td>{fmt(p.npsEmployeeShare)}</td><td>{fmt(p.npsEmployerShare)}</td>
-                      <td>{fmt(p.professionalTax)}</td><td>{fmt(p.totalDeductions)}</td>
-                      <td style={{ color: '#22c55e', fontWeight: 700 }}>{fmt(p.netSalary)}</td>
-                      <td><span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{p.status}</span></td>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table-iipm" style={{ whiteSpace: 'nowrap', fontSize: '0.84rem' }}>
+                  <thead>
+                    <tr style={{ background: '#f1f5f9' }}>
+                      <th>#</th>
+                      <th>Employee ID</th>
+                      <th>Employee Name</th>
+                      <th>Basic</th>
+                      <th>DA (60%)</th>
+                      <th>HRA (20%)</th>
+                      <th>TA</th>
+                      <th>Dean / Warden Allow.</th>
+                      <th>NPS Employer (14%)</th>
+                      <th style={{ color: '#b91c1c' }}>Deductable Pension</th>
+                      <th style={{ textAlign: 'right' }}>Gross</th>
+                      <th>TDS</th>
+                      <th>NPS Emp (10%)</th>
+                      <th>PT</th>
+                      <th>Other Ded.</th>
+                      <th style={{ textAlign: 'right' }}>Total Ded.</th>
+                      <th style={{ textAlign: 'right' }}>Net Pay</th>
+                      <th style={{ textAlign: 'center' }}>Status</th>
                     </tr>
-                  ))}
-                  {!data.payrolls?.length && (
-                    <tr><td colSpan={14} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>No payroll data for this period.</td></tr>
+                  </thead>
+                  <tbody>
+                    {regFiltered.map((p: any, i: number) => {
+                      const emp = employees.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
+                      const name = formatEmployeeNameWithTitle(p, emp);
+
+                      return (
+                        <tr key={p.id || p.employeeId || i}>
+                          <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                          <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.employeeId}</td>
+                          <td style={{ fontWeight: 600, color: '#0f172a' }}>{name}</td>
+                          <td>{fmt(p.basicPay)}</td>
+                          <td>{fmt(p.da)}</td>
+                          <td>{fmt(p.hra)}</td>
+                          <td>{fmt(p.ta)}</td>
+                          <td>{fmt(p.otherAllowances)}</td>
+                          <td>{fmt(p.npsEmployerShare)}</td>
+                          <td style={{ color: '#b91c1c', fontWeight: 600 }}>{p.ignorablePension ? `- ${fmt(p.ignorablePension)}` : '-'}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 600, background: '#f8fafc' }}>{fmt(p.grossSalary)}</td>
+                          <td style={{ color: '#b45309' }}>{fmt(p.tds)}</td>
+                          <td>{fmt(p.npsEmployeeShare)}</td>
+                          <td>{fmt(p.professionalTax)}</td>
+                          <td>{fmt(p.otherDeductions)}</td>
+                          <td style={{ textAlign: 'right', color: '#ef4444', background: '#fef2f2', fontWeight: 600 }}>{fmt(p.totalDeductions)}</td>
+                          <td style={{ textAlign: 'right', color: '#22c55e', background: '#f0fdf4', fontWeight: 700 }}>{fmt(p.netSalary)}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            {getStatusBadge(p.status)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {!regFiltered.length && (
+                      <tr>
+                        <td colSpan={18} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                          No payroll records found for <strong>{statusLabel}</strong> in {months[month - 1]} {year}.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                  {regFiltered.length > 0 && (
+                    <tfoot>
+                      <tr style={{ background: '#e2e8f0', fontWeight: 700, borderTop: '2px solid #cbd5e1' }}>
+                        <td colSpan={3} style={{ padding: '12px 14px', color: 'var(--accent)', fontWeight: 800 }}>
+                          TOTALS ({statusLabel.toUpperCase()} - {regFiltered.length})
+                        </td>
+                        <td style={{ padding: '12px 10px' }}>{fmt(regTotals.basic)}</td>
+                        <td style={{ padding: '12px 10px' }}>{fmt(regTotals.da)}</td>
+                        <td style={{ padding: '12px 10px' }}>{fmt(regTotals.hra)}</td>
+                        <td style={{ padding: '12px 10px' }}>{fmt(regTotals.ta)}</td>
+                        <td style={{ padding: '12px 10px' }}>{fmt(regTotals.dean)}</td>
+                        <td style={{ padding: '12px 10px' }}>{fmt(regTotals.npsEmployer)}</td>
+                        <td style={{ padding: '12px 10px', color: '#b91c1c' }}>{fmt(regTotals.ignorablePension)}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'right', color: 'var(--accent)', background: '#d8e1eb', fontWeight: 800 }}>{fmt(regTotals.gross)}</td>
+                        <td style={{ padding: '12px 10px', color: '#b45309' }}>{fmt(regTotals.tds)}</td>
+                        <td style={{ padding: '12px 10px' }}>{fmt(regTotals.npsEmp)}</td>
+                        <td style={{ padding: '12px 10px' }}>{fmt(regTotals.pt)}</td>
+                        <td style={{ padding: '12px 10px' }}>{fmt(regTotals.otherDed)}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'right', color: '#b91c1c', background: '#f8c2c2', fontWeight: 800 }}>{fmt(regTotals.totalDed)}</td>
+                        <td style={{ padding: '12px 10px', textAlign: 'right', color: '#15803d', background: '#bbf7d0', fontSize: '0.95rem', fontWeight: 800 }}>{fmt(regTotals.net)}</td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
                   )}
-                </tbody>
-                <tfoot>
-                  <tr style={{ background: 'var(--bg-hover)', fontWeight: 700 }}>
-                    <td colSpan={6} style={{ padding: '12px 16px', color: 'var(--accent)' }}>TOTALS</td>
-                    <td style={{ padding: '12px 16px', color: 'var(--accent)' }}>{fmt(data.totalGross)}</td>
-                    <td colSpan={4}></td>
-                    <td style={{ padding: '12px 16px', color: '#ef4444' }}>{fmt(data.totalDeductions)}</td>
-                    <td style={{ padding: '12px 16px', color: '#22c55e' }}>{fmt(data.totalNet)}</td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
+                </table>
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        );
+      })()}
 
       {/* ===== BANK PAYMENT SHEET ===== */}
       {tab === 'bank' && data && (
@@ -732,7 +1016,7 @@ const ReportsPage: React.FC = () => {
                     boxShadow: bankCategoryFilter === cat ? '0 2px 4px rgba(10,49,97,0.2)' : 'none'
                   }}
                 >
-                  {cat === 'teaching' ? '1️⃣ Regular Teaching Staff' : cat === 'non_teaching' ? '2️⃣ Regular Non-Teaching Staff' : cat === 'contract' ? '3️⃣ Contract Employees' : '🌐 All Categories (Consolidated)'}
+                  {cat === 'teaching' ? '👨‍🏫 1) Regular - Teaching' : cat === 'non_teaching' ? '👔 2) Regular - Non Teaching' : cat === 'contract' ? '📄 3) Contract' : '🌐 All Categories (Consolidated)'}
                 </button>
               ))}
             </div>
@@ -750,8 +1034,9 @@ const ReportsPage: React.FC = () => {
           {/* Bank Summary Cards */}
           {(() => {
             const filteredPayrolls = (data.payrolls || []).filter((p: any) => {
-              if (bankCategoryFilter === 'all') return true;
-              return getEmployeeCategory(p) === bankCategoryFilter;
+              const matchCat = bankCategoryFilter === 'all' || getEmployeeCategory(p) === bankCategoryFilter;
+              const matchStatus = isStatusMatch(p.status, statusFilter);
+              return matchCat && matchStatus;
             });
             const totalDisbursement = filteredPayrolls.reduce((sum: number, p: any) => sum + (p.netSalary || 0), 0);
             const sbiCount = filteredPayrolls.filter((p: any) => (p.bankName || '').toLowerCase().includes('state bank') || (p.ifscCode || '').startsWith('SBIN')).length;
@@ -810,9 +1095,9 @@ const ReportsPage: React.FC = () => {
                           const cat = getEmployeeCategory(p);
                           const badgeColor = cat === 'teaching' ? '#3b82f6' : cat === 'non_teaching' ? '#10b981' : '#f59e0b';
                           const badgeBg = cat === 'teaching' ? '#eff6ff' : cat === 'non_teaching' ? '#ecfdf5' : '#fffbeb';
-                          const catText = cat === 'teaching' ? 'Teaching' : cat === 'non_teaching' ? 'Non-Teaching' : 'Contract';
+                          const catText = cat === 'teaching' ? 'Regular - Teaching' : cat === 'non_teaching' ? 'Regular - Non Teaching' : 'Contract';
                           const emp = employees.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
-                          const name = p.employeeName || (emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : '') || `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.employeeId;
+                          const name = formatEmployeeNameWithTitle(p, emp);
                           const rawBank = p.bankName || emp?.bankName || 'State Bank of India';
                           const bank = normalizeBankName(rawBank);
                           const isSbi = bank.toLowerCase().includes('state bank') || (p.ifscCode || '').startsWith('SBIN');
@@ -847,24 +1132,22 @@ const ReportsPage: React.FC = () => {
                               <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{p.ifscCode || emp?.ifscCode || 'SBIN0003170'}</td>
                               <td style={{ textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>{fmt(p.netSalary)}</td>
                               <td style={{ textAlign: 'center' }}>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: p.status === 'APPROVED' ? '#dcfce7' : '#fef3c7', color: p.status === 'APPROVED' ? '#166534' : '#92400e' }}>
-                                  {p.status || 'PROCESSED'}
-                                </span>
+                                {getStatusBadge(p.status)}
                               </td>
                             </tr>
                           );
                         })}
                         {!filteredPayrolls.length && (
                           <tr>
-                            <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                              No bank payment records found for the selected category.
+                            <td colSpan={10} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                              No bank payment records found for the selected filter.
                             </td>
                           </tr>
                         )}
                       </tbody>
                       <tfoot>
                         <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
-                          <td colSpan={7} style={{ padding: '12px 16px', color: 'var(--accent)' }}>TOTAL DISBURSEMENT AMOUNT</td>
+                          <td colSpan={8} style={{ padding: '12px 16px', color: 'var(--accent)' }}>TOTAL DISBURSEMENT AMOUNT</td>
                           <td style={{ padding: '12px 16px', textAlign: 'right', color: '#16a34a', fontSize: '1rem' }}>{fmt(totalDisbursement)}</td>
                           <td></td>
                         </tr>
@@ -953,7 +1236,7 @@ const ReportsPage: React.FC = () => {
                           <tr key={d.userId || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ textAlign: 'center' }}>{idx + 1}</td>
                             <td><strong>{d.employeeId}</strong></td>
-                            <td>{d.employeeName}</td>
+                            <td>{formatEmployeeNameWithTitle(d)}</td>
                             <td>{d.designation}</td>
                             <td><span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{d.pan}</span></td>
                             <td>
@@ -1197,7 +1480,7 @@ const ReportsPage: React.FC = () => {
             <select className="form-control-iipm" id="form16EmployeeSelect" style={{ width: '300px', fontWeight: 600 }}>
               <option value="">-- Select Employee --</option>
               {employees.map(e => {
-                const empName = e.name || `${e.firstName || ''} ${e.lastName || ''}`.trim() || e.employeeId;
+                const empName = formatEmployeeNameWithTitle(e);
                 const empId = e.employeeId || e.id || e._id;
                 const val = e.id || e._id || e.employeeId;
                 return <option key={val} value={val}>{empName} ({empId})</option>;

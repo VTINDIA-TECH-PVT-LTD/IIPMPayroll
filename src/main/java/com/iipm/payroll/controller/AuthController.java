@@ -102,7 +102,7 @@ public class AuthController {
 
         List<DemoUser> demoUsers = List.of(
             new DemoUser("superadmin", "defaultPassword123", "SUP001", "Super", "Admin",
-                    "superadmin@iipm.gov.in", "Administration", "Director", "13",
+                    "superadmin@iipe.ac.in", "Administration", "Director", "13",
                     123100.0, UserRole.SUPER_ADMIN)
         );
 

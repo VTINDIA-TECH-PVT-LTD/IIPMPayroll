@@ -61,6 +61,11 @@ public class AuthService {
 
         // Try database if available
         Optional<User> userOpt = userRepository.findByUsername(loginRequest.getUsername());
+        if (userOpt.isEmpty() && "IIPEAdmin".equalsIgnoreCase(loginRequest.getUsername())) {
+            userOpt = userRepository.findByUsername("IIPMAdmin");
+        } else if (userOpt.isEmpty() && "IIPMAdmin".equalsIgnoreCase(loginRequest.getUsername())) {
+            userOpt = userRepository.findByUsername("IIPEAdmin");
+        }
 
         if (userOpt.isEmpty()) {
             throw new RuntimeException("User not found");
@@ -104,6 +109,11 @@ public class AuthService {
 
         String username = jwtUtil.getUsernameFromToken(refreshToken);
         Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty() && "IIPEAdmin".equalsIgnoreCase(username)) {
+            userOpt = userRepository.findByUsername("IIPMAdmin");
+        } else if (userOpt.isEmpty() && "IIPMAdmin".equalsIgnoreCase(username)) {
+            userOpt = userRepository.findByUsername("IIPEAdmin");
+        }
 
         if (userOpt.isEmpty()) {
             throw new RuntimeException("User not found");

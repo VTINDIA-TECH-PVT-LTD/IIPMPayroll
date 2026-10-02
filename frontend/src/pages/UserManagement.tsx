@@ -4,6 +4,7 @@ import apiService from '../services/api';
 import { UserContext } from '../App';
 import { Edit2, Eye, Ban, CheckCircle } from 'lucide-react';
 import payMatrixData from '../payMatrix.json';
+import { formatEmployeeNameWithTitle } from '../utils/nameUtils';
 
 const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const payMatrix: Record<string, number[]> = payMatrixData;
@@ -27,6 +28,7 @@ const UserManagement: React.FC = () => {
     username: '', password: '', firstName: '', lastName: '',
     email: '', phone: '', role: 'EMPLOYEE', designation: '', department: '',
     payLevel: '7', payIndex: '1', basicPay: '', employeeId: '',
+    tds: '', ignorablePension: '',
     bankAccountNumber: '', ifscCode: '', bankName: '',
     pan: '', aadhar: '', employeeType: 'PERMANENT',
     function: 'Regular', location: 'Visakhapatnam', taxRegime: 'Regular Tax Regime',
@@ -34,30 +36,94 @@ const UserManagement: React.FC = () => {
   };
   const [form, setForm] = useState(emptyForm);
 
-  const departments = ['Academic', 'Finance', 'Administration', 'Research', 'Library', 'IT', 'Maintenance', 'Security'];
-  // The levels available in the matrix
-  const levels = Object.keys(payMatrix).sort((a, b) => {
-    // Sort numerically, handling '13A'
-    const aN = parseFloat(a.replace('A', '.5'));
-    const bN = parseFloat(b.replace('A', '.5'));
-    return aN - bN;
-  });
+  const academicDepartments = [
+    'Petroleum Engineering & Earth Sciences',
+    'Chemical Engineering',
+    'Humanities and Sciences',
+    'Mechanical Engineering'
+  ];
+
+  const nonAcademicDepartments = [
+    'Administration',
+    'Finance & Accounts',
+    'Lab Assistant',
+    'Stores and Purchase',
+    'Establishment',
+    'Library'
+  ];
+
+  const otherDepartments = [
+    'Faculty',
+    'Non-Teaching',
+    'Academic',
+    'Finance',
+    'IT',
+    'Laboratory',
+    'Maintenance',
+    'Research',
+    'Security'
+  ];
+
+  const departments = [
+    ...academicDepartments,
+    ...nonAcademicDepartments,
+    ...otherDepartments
+  ];
+  
+  const facultyLevels = ['APL 10', 'APL 11', 'APL 12', 'APL 13A1', 'APL 13A2', 'APL 14', 'APL 14A', 'APL 15'];
+  const staffLevels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '13A', '14', '15', '16', '17', '18'];
+
+  const getMatrixCells = (lvl: string): number[] => {
+    if (!lvl) return [];
+    const clean = String(lvl).trim();
+    return payMatrix[clean] || payMatrix[clean.replace(/^APL\s*/i, '')] || payMatrix['APL ' + clean] || [];
+  };
+
+  const getPayLevelDisplayName = (lvl: string) => {
+    if (lvl === 'APL 10') return 'APL 10 (Asst. Prof. Gr. II - ₹57,700)';
+    if (lvl === 'APL 11') return 'APL 11 (Asst. Prof. Gr. II - ₹68,900)';
+    if (lvl === 'APL 12') return 'APL 12 (Asst. Prof. Gr. I - ₹1,01,500)';
+    if (lvl === 'APL 13A1') return 'APL 13A1 (Asst. Prof. Gr. I - ₹1,31,400)';
+    if (lvl === 'APL 13A2') return 'APL 13A2 (Associate Prof. - ₹1,39,600)';
+    if (lvl === 'APL 14') return 'APL 14 (Associate Prof. - ₹1,44,200)';
+    if (lvl === 'APL 14A') return 'APL 14A (Professor - ₹1,59,100)';
+    if (lvl === 'APL 15') return 'APL 15 (Professor HAG - ₹1,82,200)';
+    const num = parseInt(lvl, 10);
+    if (!isNaN(num)) {
+      if (num <= 5) return `Level ${lvl} (Group C - Entry ₹${(payMatrix[lvl]?.[0] || 0).toLocaleString('en-IN')})`;
+      if (num <= 9) return `Level ${lvl} (Group B - Entry ₹${(payMatrix[lvl]?.[0] || 0).toLocaleString('en-IN')})`;
+      return `Level ${lvl} (Group A - Entry ₹${(payMatrix[lvl]?.[0] || 0).toLocaleString('en-IN')})`;
+    }
+    return `Level ${lvl}`;
+  };
 
   useEffect(() => { loadUsers(); }, []);
 
-  // Auto-fill basic pay when payLevel or payIndex changes (if no manual override)
-  useEffect(() => {
-    if (!editUser && form.payLevel && form.payIndex) {
-      const cells = payMatrix[form.payLevel];
-      if (cells) {
-        // Cells are 1-indexed for the user, 0-indexed in the array
-        const index = parseInt(form.payIndex, 10) - 1;
-        if (index >= 0 && index < cells.length) {
-          setForm(f => ({ ...f, basicPay: String(cells[index]) }));
-        }
-      }
-    }
-  }, [form.payLevel, form.payIndex]);
+  // Auto-fill basic pay when payLevel or payIndex changes
+  const handlePayLevelChange = (lvl: string) => {
+    const cells = getMatrixCells(lvl);
+    let newIdx = parseInt(form.payIndex, 10) || 1;
+    if (newIdx < 1) newIdx = 1;
+    if (newIdx > cells.length) newIdx = Math.max(1, cells.length);
+    const basic = cells[newIdx - 1] !== undefined ? String(cells[newIdx - 1]) : form.basicPay;
+    setForm(prev => ({
+      ...prev,
+      payLevel: lvl,
+      payIndex: String(newIdx),
+      basicPay: basic
+    }));
+  };
+
+  const handlePayIndexChange = (idxStr: string) => {
+    const idx = parseInt(idxStr, 10) || 1;
+    const cells = getMatrixCells(form.payLevel);
+    const basic = cells[idx - 1] !== undefined ? String(cells[idx - 1]) : form.basicPay;
+    setForm(prev => ({
+      ...prev,
+      payIndex: idxStr,
+      basicPay: basic
+    }));
+  };
 
   const loadUsers = async () => {
     try { setLoading(true); const data = await apiService.getAllUsers(); setUsers(data); }
@@ -65,17 +131,54 @@ const UserManagement: React.FC = () => {
     finally { setLoading(false); }
   };
 
-  const openCreate = () => { setEditUser(null); setForm(emptyForm); setShowModal(true); };
+  const generateNextEmployeeId = () => {
+    let maxNum = 0;
+    users.forEach(u => {
+      const eid = (u.employeeId || '').toUpperCase().trim();
+      const match = eid.match(/^(?:IIPE|IIPM)[-_]?(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    });
+    const nextNum = maxNum > 0 ? maxNum + 1 : (users.length + 1);
+    return `IIPE-${String(nextNum).padStart(4, '0')}`;
+  };
+
+  const openCreate = () => { 
+    setEditUser(null); 
+    const defaultLevel = '10';
+    const defaultIndex = '1';
+    const defaultBasic = String(payMatrix[defaultLevel]?.[0] || '56100');
+    setForm({
+      ...emptyForm,
+      employeeId: generateNextEmployeeId(),
+      payLevel: defaultLevel,
+      payIndex: defaultIndex,
+      basicPay: defaultBasic
+    }); 
+    setShowModal(true); 
+  };
   const openEdit = (u: any) => {
     setEditUser(u);
+    const lvl = u.payLevel ? String(u.payLevel).replace(/^Level-?/i, '').trim() : '10';
+    const idx = String(u.payIndex || '1');
+    const cells = getMatrixCells(lvl);
+    const derivedBasic = (cells[parseInt(idx, 10) - 1] !== undefined) ? String(cells[parseInt(idx, 10) - 1]) : String(u.basicPay || '');
+    
     setForm({
       username: u.username || '', password: '',
       firstName: u.firstName || '', lastName: u.lastName || '',
       email: u.email || '', phone: u.phone || '',
       role: u.role || 'EMPLOYEE', designation: u.designation || '',
-      department: u.department || '', payLevel: u.payLevel || '7',
-      payIndex: String(u.payIndex || '1'), basicPay: String(u.basicPay || ''),
+      department: u.department || '', payLevel: lvl,
+      payIndex: idx, 
+      basicPay: u.basicPay ? String(u.basicPay) : derivedBasic,
       employeeId: u.employeeId || '',
+      tds: u.tds !== undefined && u.tds !== null ? String(u.tds) : '',
+      ignorablePension: u.ignorablePension !== undefined && u.ignorablePension !== null ? String(u.ignorablePension) : '',
       bankAccountNumber: u.bankAccountNumber || '', ifscCode: u.ifscCode || '', bankName: u.bankName || '',
       pan: u.pan || '', aadhar: u.aadhar || '', employeeType: u.employeeType || 'PERMANENT',
       function: u.function || 'Regular', location: u.location || 'Visakhapatnam', taxRegime: u.taxRegime || 'Regular Tax Regime',
@@ -91,9 +194,16 @@ const UserManagement: React.FC = () => {
     }
     try {
       setLoading(true);
-      const payload = { ...form, basicPay: parseFloat(form.basicPay) || 0, payIndex: parseInt(form.payIndex) || 1, isActive: true };
-      if (editUser) { await apiService.updateUser(editUser.id, payload); setMsg({ type: 'success', text: 'Employee updated.' }); }
-      else { await apiService.createUser(payload); setMsg({ type: 'success', text: 'Employee created.' }); }
+      const payload = {
+        ...form,
+        basicPay: parseFloat(form.basicPay) || 0,
+        payIndex: parseInt(form.payIndex) || 1,
+        tds: form.tds !== '' ? parseFloat(form.tds) : (editUser?.tds || 0),
+        ignorablePension: form.ignorablePension !== '' ? parseFloat(form.ignorablePension) : (editUser?.ignorablePension || 0),
+        isActive: true
+      };
+      if (editUser) { await apiService.updateUser(editUser.id, payload); setMsg({ type: 'success', text: 'Employee updated successfully.' }); }
+      else { await apiService.createUser(payload); setMsg({ type: 'success', text: 'Employee created successfully.' }); }
       setShowModal(false); loadUsers();
     } catch (e: any) { setMsg({ type: 'error', text: e.response?.data?.message || 'Save failed.' }); }
     finally { setLoading(false); }
@@ -109,27 +219,62 @@ const UserManagement: React.FC = () => {
     } catch { setMsg({ type: 'error', text: 'Update failed.' }); }
   };
 
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'regular' | 'contract'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'teaching' | 'non_teaching' | 'contract'>('all');
 
-  const isContractUser = (u: any) => {
-    const et = (u.employeeType || '').toLowerCase();
-    const pl = (u.payLevel || '').toLowerCase();
-    const fn = (u.function || '').toLowerCase();
-    const dept = (u.department || '').toLowerCase();
-    return et.includes('contract') || pl.includes('consolidated') || pl.includes('contract') || pl.includes('fixed') || fn.includes('contract') || dept.includes('contract');
+  const getCategory = (u: any): 'teaching' | 'non_teaching' | 'contract' => {
+    const eid = (u?.employeeId || '').toUpperCase().trim();
+    const et = (u?.employeeType || '').toUpperCase();
+    const fn = (u?.function || '').toUpperCase();
+    const pl = (u?.payLevel || '').toUpperCase();
+    const desig = (u?.designation || '').toUpperCase();
+
+    // 1) TS is ALWAYS Teaching (Regular - Teaching)
+    if (eid.startsWith('TS')) {
+      return 'teaching';
+    }
+
+    // 2) NT, NTS, DIR are ALWAYS Non-Teaching (Regular - Non Teaching)
+    if (eid.startsWith('NT') || eid.startsWith('NTS') || eid.startsWith('DIR')) {
+      return 'non_teaching';
+    }
+
+    // 3) Contract: CNT, CT, CMED prefixes or explicit contract employment
+    if (
+      eid.startsWith('CNT') || 
+      eid.startsWith('CT') || 
+      eid.startsWith('CMED') || 
+      et.includes('CONTRACT') || 
+      fn.includes('CONTRACT') || 
+      pl.includes('CONSOLIDATED') || 
+      pl.includes('FIXED') ||
+      desig.includes('CONTRACT')
+    ) {
+      return 'contract';
+    }
+
+    // Fallback based on designation/function
+    if (desig.includes('PROFESSOR') || fn.includes('TEACHING')) {
+      return 'teaching';
+    }
+
+    return 'non_teaching';
   };
+
+  const isContractUser = (u: any) => getCategory(u) === 'contract';
 
   const filtered = users.filter(u => {
     const matchesSearch = `${u.firstName} ${u.lastName} ${u.employeeId} ${u.department} ${u.designation} ${u.role}`
       .toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false;
-    if (categoryFilter === 'regular') return !isContractUser(u) && u.role !== 'SUPER_ADMIN' && u.role !== 'ADMIN_ADMIN' && u.role !== 'ADMIN_OPERATOR';
-    if (categoryFilter === 'contract') return isContractUser(u);
+    if (categoryFilter === 'teaching') return getCategory(u) === 'teaching';
+    if (categoryFilter === 'non_teaching') return getCategory(u) === 'non_teaching';
+    if (categoryFilter === 'contract') return getCategory(u) === 'contract';
     return true;
   });
 
-  const regularCount = users.filter(u => !isContractUser(u) && u.role !== 'SUPER_ADMIN' && u.role !== 'ADMIN_ADMIN' && u.role !== 'ADMIN_OPERATOR').length;
-  const contractCount = users.filter(u => isContractUser(u)).length;
+  const teachingCount = users.filter(u => getCategory(u) === 'teaching').length;
+  const nonTeachingCount = users.filter(u => getCategory(u) === 'non_teaching').length;
+  const contractCount = users.filter(u => getCategory(u) === 'contract').length;
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   const currentData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -272,25 +417,32 @@ const UserManagement: React.FC = () => {
       )}
 
       {/* Category Bifurcation Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: '#f1f5f9', padding: '6px', borderRadius: '12px', width: 'fit-content', border: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: '#f1f5f9', padding: '6px', borderRadius: '12px', width: 'fit-content', border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
         <button
           type="button"
           onClick={() => { setCategoryFilter('all'); setCurrentPage(1); }}
-          style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: categoryFilter === 'all' ? '#153C7D' : 'transparent', color: categoryFilter === 'all' ? '#ffffff' : 'var(--text-secondary)', boxShadow: categoryFilter === 'all' ? '0 2px 4px rgba(21, 60, 125, 0.3)' : 'none' }}
+          style={{ padding: '8px 18px', fontSize: '0.88rem', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: categoryFilter === 'all' ? '#0f172a' : 'transparent', color: categoryFilter === 'all' ? '#ffffff' : 'var(--text-secondary)', boxShadow: categoryFilter === 'all' ? '0 2px 4px rgba(15, 23, 42, 0.3)' : 'none' }}
         >
           All Employees ({users.length})
         </button>
         <button
           type="button"
-          onClick={() => { setCategoryFilter('regular'); setCurrentPage(1); }}
-          style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: categoryFilter === 'regular' ? '#388E3C' : 'transparent', color: categoryFilter === 'regular' ? '#ffffff' : 'var(--text-secondary)', boxShadow: categoryFilter === 'regular' ? '0 2px 4px rgba(56, 142, 60, 0.3)' : 'none' }}
+          onClick={() => { setCategoryFilter('teaching'); setCurrentPage(1); }}
+          style={{ padding: '8px 18px', fontSize: '0.88rem', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: categoryFilter === 'teaching' ? '#153C7D' : 'transparent', color: categoryFilter === 'teaching' ? '#ffffff' : 'var(--text-secondary)', boxShadow: categoryFilter === 'teaching' ? '0 2px 4px rgba(21, 60, 125, 0.3)' : 'none' }}
         >
-          👔 Regular ({regularCount})
+          👨‍🏫 Regular - Teaching ({teachingCount})
+        </button>
+        <button
+          type="button"
+          onClick={() => { setCategoryFilter('non_teaching'); setCurrentPage(1); }}
+          style={{ padding: '8px 18px', fontSize: '0.88rem', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: categoryFilter === 'non_teaching' ? '#388E3C' : 'transparent', color: categoryFilter === 'non_teaching' ? '#ffffff' : 'var(--text-secondary)', boxShadow: categoryFilter === 'non_teaching' ? '0 2px 4px rgba(56, 142, 60, 0.3)' : 'none' }}
+        >
+          👔 Regular - Non Teaching ({nonTeachingCount})
         </button>
         <button
           type="button"
           onClick={() => { setCategoryFilter('contract'); setCurrentPage(1); }}
-          style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: categoryFilter === 'contract' ? '#F47C20' : 'transparent', color: categoryFilter === 'contract' ? '#ffffff' : 'var(--text-secondary)', boxShadow: categoryFilter === 'contract' ? '0 2px 4px rgba(244, 124, 32, 0.3)' : 'none' }}
+          style={{ padding: '8px 18px', fontSize: '0.88rem', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: categoryFilter === 'contract' ? '#F47C20' : 'transparent', color: categoryFilter === 'contract' ? '#ffffff' : 'var(--text-secondary)', boxShadow: categoryFilter === 'contract' ? '0 2px 4px rgba(244, 124, 32, 0.3)' : 'none' }}
         >
           📄 Contract ({contractCount})
         </button>
@@ -319,9 +471,10 @@ const UserManagement: React.FC = () => {
                   </th>
                   <th>Employee ID</th>
                   <th>Name</th>
+                  <th>Category</th>
                   <th>Department</th>
                   <th>Designation</th>
-                  <th>Pay Level</th>
+                  <th>Pay Level & Cell</th>
                   <th>Basic Pay</th>
                   <th>Role</th>
                   <th>Status</th>
@@ -329,34 +482,63 @@ const UserManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {currentData.map(u => (
-                  <tr key={u.id} style={{ background: selectedUsers.includes(u.id) ? 'var(--bg-hover)' : '' }}>
-                    <td>
-                      <input type="checkbox" checked={selectedUsers.includes(u.id)} onChange={() => handleSelect(u.id)} />
-                    </td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{u.employeeId}</td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{u.firstName} {u.lastName}</div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{u.email}</div>
-                    </td>
-                    <td>{u.department || '—'}</td>
-                    <td>{u.designation || '—'}</td>
-                    <td>
-                      {u.payLevel ? <span className="badge-iipm badge-accent">Level {u.payLevel}</span> : '—'}
-                    </td>
-                    <td style={{ fontWeight: 600 }}>
-                      {u.basicPay ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(u.basicPay) : '—'}
-                    </td>
-                    <td>
-                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '0.73rem', fontWeight: 700, background: `${roleColor[u.role]}20`, color: roleColor[u.role] }}>
-                        {(u.role || '').replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge-iipm ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
-                        {u.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
+                {currentData.map(u => {
+                  const cat = getCategory(u);
+                  const isTeach = cat === 'teaching';
+                  const isNonTeach = cat === 'non_teaching';
+                  return (
+                    <tr key={u.id} style={{ background: selectedUsers.includes(u.id) ? 'var(--bg-hover)' : '' }}>
+                      <td>
+                        <input type="checkbox" checked={selectedUsers.includes(u.id)} onChange={() => handleSelect(u.id)} />
+                      </td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{u.employeeId}</td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatEmployeeNameWithTitle(u)}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{u.email}</div>
+                      </td>
+                      <td>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.74rem',
+                          fontWeight: 700,
+                          background: isTeach ? '#eff6ff' : isNonTeach ? '#ecfdf5' : '#fffbeb',
+                          color: isTeach ? '#1d4ed8' : isNonTeach ? '#047857' : '#b45309',
+                          border: `1px solid ${isTeach ? '#bfdbfe' : isNonTeach ? '#a7f3d0' : '#fde68a'}`
+                        }}>
+                          {isTeach ? '👨‍🏫 Regular - Teaching' : isNonTeach ? '👔 Regular - Non Teaching' : '📄 Contract'}
+                        </span>
+                      </td>
+                      <td>{u.department || '—'}</td>
+                      <td>{u.designation || '—'}</td>
+                      <td>
+                        {u.payLevel ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span className="badge-iipm badge-accent" style={{ fontSize: '0.78rem', fontWeight: 700, width: 'fit-content' }}>
+                              Level {u.payLevel}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                              Cell {u.payIndex || 1}
+                            </span>
+                          </div>
+                        ) : '—'}
+                      </td>
+                      <td style={{ fontWeight: 600, color: '#16a34a' }}>
+                        {u.basicPay ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(u.basicPay) : '—'}
+                      </td>
+                      <td>
+                        <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '0.73rem', fontWeight: 700, background: `${roleColor[u.role]}20`, color: roleColor[u.role] }}>
+                          {(u.role || '').replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge-iipm ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
+                          {u.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
                     <td style={{ whiteSpace: 'nowrap', display: 'flex', gap: '6px' }}>
                       <button 
                         onClick={() => openEdit(u)} 
@@ -380,9 +562,10 @@ const UserManagement: React.FC = () => {
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No employees found.</td></tr>
+                  <tr><td colSpan={10} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No employees found.</td></tr>
                 )}
               </tbody>
             </table>
@@ -436,12 +619,12 @@ const UserManagement: React.FC = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                         <label className="form-label-iipm" style={{ marginBottom: 0 }}>Employee ID *</label>
                         {!editUser && (
-                          <button type="button" onClick={() => setForm({ ...form, employeeId: `IIPM-${String(users.length + 1).padStart(4, '0')}` })} style={{ background: 'none', border: 'none', color: 'var(--info)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                          <button type="button" onClick={() => setForm({ ...form, employeeId: generateNextEmployeeId() })} style={{ background: 'none', border: 'none', color: 'var(--info)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
                             ⚡ Auto Generate
                           </button>
                         )}
                       </div>
-                      <input className="form-control-iipm" value={form.employeeId} onChange={e => setForm({ ...form, employeeId: e.target.value.toUpperCase() })} placeholder="e.g. IIPM-0001" required />
+                      <input className="form-control-iipm" value={form.employeeId} onChange={e => setForm({ ...form, employeeId: e.target.value.toUpperCase() })} placeholder="e.g. IIPE-0001" required />
                     </div>
                     <div><label className="form-label-iipm">Username *</label><input className="form-control-iipm" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} required disabled={!!editUser} /></div>
                     {!editUser && <div><label className="form-label-iipm">Password *</label>
@@ -464,11 +647,13 @@ const UserManagement: React.FC = () => {
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Official Payroll Details</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                    <div><label className="form-label-iipm">Staff Type (Function)</label>
+                    <div><label className="form-label-iipm">Category / Staff Function</label>
                       <select className="form-control-iipm" value={form.function} onChange={e => setForm({ ...form, function: e.target.value })} disabled={apiService.isAdminOperator()}>
-                        <option value="Faculty">Faculty</option>
-                        <option value="Non-Teaching Staff">Non-Teaching Staff</option>
-                        <option value="Regular">Regular</option>
+                        <option value="Regular - Teaching">1) Regular - Teaching</option>
+                        <option value="Regular - Non Teaching">2) Regular - Non Teaching</option>
+                        <option value="Contract">3) Contract</option>
+                        <option value="Faculty">Faculty (Regular - Teaching)</option>
+                        <option value="Non-Teaching Staff">Non-Teaching Staff (Regular)</option>
                       </select>
                     </div>
                     <div><label className="form-label-iipm">Location</label><input className="form-control-iipm" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} disabled={apiService.isAdminOperator()} /></div>
@@ -486,8 +671,17 @@ const UserManagement: React.FC = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                     <div><label className="form-label-iipm">Department</label>
                       <select className="form-control-iipm" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} disabled={apiService.isAdminOperator()}>
-                        <option value="">Select...</option>
-                        {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                        <option value="">Select Department...</option>
+                        <optgroup label="Academic Departments">
+                          {academicDepartments.map(d => <option key={d} value={d}>{d}</option>)}
+                        </optgroup>
+                        <optgroup label="Non-Academic Departments">
+                          {nonAcademicDepartments.map(d => <option key={d} value={d}>{d}</option>)}
+                        </optgroup>
+                        <optgroup label="Other / Legacy">
+                          {otherDepartments.map(d => <option key={d} value={d}>{d}</option>)}
+                        </optgroup>
+                        {!departments.includes(form.department) && form.department && <option value={form.department}>{form.department}</option>}
                       </select>
                     </div>
                     <div><label className="form-label-iipm">Designation</label><input className="form-control-iipm" value={form.designation} onChange={e => setForm({ ...form, designation: e.target.value })} disabled={apiService.isAdminOperator()} /></div>
@@ -516,28 +710,50 @@ const UserManagement: React.FC = () => {
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Salary — 7th CPC Pay Matrix</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                    <div><label className="form-label-iipm">Pay Level</label>
-                      <select className="form-control-iipm" value={form.payLevel} onChange={e => setForm({ ...form, payLevel: e.target.value })} disabled={apiService.isAdminOperator()}>
-                        {levels.map(l => <option key={l} value={l}>Level {l} {l <= '5' ? '(Group C)' : l <= '9' ? '(Group B)' : '(Group A)'}</option>)}
+                    <div><label className="form-label-iipm" style={{ fontWeight: 600 }}>Pay Level</label>
+                      <select className="form-control-iipm" value={form.payLevel} onChange={e => handlePayLevelChange(e.target.value)} disabled={apiService.isAdminOperator()} style={{ fontWeight: 600 }}>
+                        <optgroup label="── Faculty / Academic Pay Levels (CFTI / IIPE) ──">
+                          {facultyLevels.map(l => <option key={l} value={l}>{getPayLevelDisplayName(l)}</option>)}
+                        </optgroup>
+                        <optgroup label="── Non-Teaching / General 7th CPC Levels ──">
+                          {staffLevels.map(l => <option key={l} value={l}>{getPayLevelDisplayName(l)}</option>)}
+                        </optgroup>
                       </select>
                     </div>
-                    <div><label className="form-label-iipm">Pay Index (Cell)</label>
-                      <select className="form-control-iipm" value={form.payIndex} onChange={e => setForm({ ...form, payIndex: e.target.value })} disabled={apiService.isAdminOperator()}>
-                        {form.payLevel && payMatrix[form.payLevel] ? payMatrix[form.payLevel].map((_, i) => (
-                          <option key={i+1} value={i+1}>Cell {i+1}</option>
+                    <div><label className="form-label-iipm" style={{ fontWeight: 600 }}>Pay Index (Cell)</label>
+                      <select className="form-control-iipm" value={form.payIndex} onChange={e => handlePayIndexChange(e.target.value)} disabled={apiService.isAdminOperator()} style={{ fontWeight: 600, color: 'var(--primary)' }}>
+                        {form.payLevel && getMatrixCells(form.payLevel).length > 0 ? getMatrixCells(form.payLevel).map((amt, i) => (
+                          <option key={i+1} value={i+1}>Cell {i+1} (₹{amt.toLocaleString('en-IN')})</option>
                         )) : <option value="1">Cell 1</option>}
                       </select>
                     </div>
-                    <div><label className="form-label-iipm">Basic Pay (₹)</label>
+                    <div><label className="form-label-iipm" style={{ fontWeight: 600 }}>Basic Pay (₹)</label>
                       <input type="number" className="form-control-iipm" value={form.basicPay}
-                        onChange={e => setForm({ ...form, basicPay: e.target.value })} placeholder="Auto-filled by level" disabled={apiService.isAdminOperator()} />
+                        onChange={e => setForm({ ...form, basicPay: e.target.value })} placeholder="Auto-filled by level" disabled={apiService.isAdminOperator()} style={{ fontWeight: 700, color: '#16a34a' }} />
+                    </div>
+                    <div><label className="form-label-iipm">Monthly TDS (₹)</label>
+                      <input type="number" className="form-control-iipm" value={form.tds}
+                        onChange={e => setForm({ ...form, tds: e.target.value })} placeholder="e.g. 30000" disabled={apiService.isAdminOperator()} />
+                    </div>
+                    <div><label className="form-label-iipm">Deductable Pension (₹)</label>
+                      <input type="number" className="form-control-iipm" value={form.ignorablePension}
+                        onChange={e => setForm({ ...form, ignorablePension: e.target.value })} placeholder="e.g. 15000" disabled={apiService.isAdminOperator()} />
                     </div>
                   </div>
                   {form.payLevel && (
-                    <div style={{ marginTop: '10px', padding: '10px 14px', background: 'var(--bg-hover)', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                      Level {form.payLevel} — TA: <strong style={{ color: 'var(--text-primary)' }}>₹{parseInt(form.payLevel) >= 10 ? '5,760' : '2,880'}</strong>
-                      &nbsp;· DA @ 53%: <strong style={{ color: 'var(--text-primary)' }}>₹{Math.round((parseFloat(form.basicPay) || 0) * 0.53).toLocaleString('en-IN')}</strong>
-                      &nbsp;· HRA @ 20%: <strong style={{ color: 'var(--text-primary)' }}>₹{Math.round((parseFloat(form.basicPay) || 0) * 0.20).toLocaleString('en-IN')}</strong>
+                    <div style={{ marginTop: '12px', padding: '12px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.85rem' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--primary)', marginBottom: '4px' }}>
+                        📍 7th CPC Matrix: Level {form.payLevel} — Cell {form.payIndex || 1} (Basic: ₹{Number(form.basicPay || 0).toLocaleString('en-IN')})
+                      </div>
+                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', color: 'var(--text-secondary)', fontSize: '0.82rem', marginTop: '6px' }}>
+                        <span>DA @ 60%: <strong style={{ color: 'var(--text-primary)' }}>₹{Math.round((parseFloat(form.basicPay) || 0) * 0.60).toLocaleString('en-IN')}</strong></span>
+                        <span>HRA @ 20%: <strong style={{ color: 'var(--text-primary)' }}>₹{Math.round((parseFloat(form.basicPay) || 0) * 0.20).toLocaleString('en-IN')}</strong></span>
+                        <span>TA: <strong style={{ color: 'var(--text-primary)' }}>₹{parseInt(form.payLevel) >= 10 ? '5,760' : '2,880'}</strong></span>
+                        <span>NPS Employer (14%): <strong style={{ color: 'var(--text-primary)' }}>₹{Math.round(((parseFloat(form.basicPay) || 0) * 1.60) * 0.14).toLocaleString('en-IN')}</strong></span>
+                        {parseFloat(form.ignorablePension) > 0 && (
+                          <span style={{ color: '#b91c1c' }}>Deductable Pension: <strong style={{ color: '#b91c1c' }}>- ₹{Math.round(parseFloat(form.ignorablePension)).toLocaleString('en-IN')}</strong></span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

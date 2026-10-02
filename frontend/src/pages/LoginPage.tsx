@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { User, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import apiService from '../services/api';
 import iipeLogo from '../assets/logoBase64';
+import iipeCampus from '../assets/iipe_campus.jpeg';
 import '../styles/LoginPage.css';
 
 interface LoginPageProps {
@@ -103,12 +104,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div className="login-left">
         <div className="login-left-bg-grid"></div>
         <div className="particles-container">
-          <div className="particle p-1">$</div>
-          <div className="particle p-2">%</div>
-          <div className="particle p-3">{`{ }`}</div>
-          <div className="particle p-4">#</div>
-          <div className="particle p-5">+</div>
-          <div className="particle p-6">&lt;/&gt;</div>
+          <div className="particle p-1">✦</div>
+          <div className="particle p-2">●</div>
+          <div className="particle p-3">◆</div>
+          <div className="particle p-4">▲</div>
+          <div className="particle p-5">◈</div>
+          <div className="particle p-6">✦</div>
         </div>
         <div className="login-left-content">
           <div className="logo-wrapper">
@@ -120,15 +121,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             <div className="divider-glow" />
           </div>
           
-          <div className="features-container">
-            <ul className="login-features">
-              <li><CheckCircle2 className="feature-icon" size={18} /> <span>7th CPC Pay Matrix Integration</span></li>
-              <li><CheckCircle2 className="feature-icon" size={18} /> <span>Automated NPS & TDS Calculations</span></li>
-              <li><CheckCircle2 className="feature-icon" size={18} /> <span>Bulk Payroll Processing</span></li>
-              <li><CheckCircle2 className="feature-icon" size={18} /> <span>PDF Payslips & Form 16</span></li>
-              <li><CheckCircle2 className="feature-icon" size={18} /> <span>Salary Register & Reports</span></li>
-              <li><CheckCircle2 className="feature-icon" size={18} /> <span>Role-Based Access Control</span></li>
-            </ul>
+          <div className="campus-image-card">
+            <div className="campus-image-wrapper">
+              <img src={iipeCampus} alt="Indian Institute of Petroleum & Energy Campus" className="campus-image" />
+              <div className="campus-image-overlay">
+                <span className="campus-badge">Permanent Campus &bull; Sabbavaram, Anakapalle</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -137,12 +136,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div className="login-right">
         <div className="login-right-bg-grid"></div>
         <div className="particles-container">
-          <div className="particle p-1">@</div>
+          <div className="particle p-1">✦</div>
           <div className="particle p-2">₹</div>
-          <div className="particle p-3">()</div>
-          <div className="particle p-4">&amp;</div>
-          <div className="particle p-5">*</div>
-          <div className="particle p-6">/&gt;</div>
+          <div className="particle p-3">●</div>
+          <div className="particle p-4">◆</div>
+          <div className="particle p-5">★</div>
+          <div className="particle p-6">✦</div>
         </div>
         <div className="login-form-container">
             <div className="login-form-header">

@@ -35,6 +35,7 @@ public class ItDeclarationController {
         item.put("homeLoanInterest", d.getHomeLoanInterest());
         item.put("status", d.getStatus());
         item.put("taxRegime", d.getTaxRegime());
+        item.put("documents", d.getDocuments() != null ? d.getDocuments() : new ArrayList<>());
         item.put("rejectionReason", d.getRejectionReason());
         item.put("reviewedBy", d.getReviewedBy());
         item.put("reviewedAt", d.getReviewedAt());

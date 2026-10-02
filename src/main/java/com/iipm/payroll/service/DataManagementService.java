@@ -101,7 +101,7 @@ public class DataManagementService {
                 .employeeId(empId)
                 .firstName(firstName)
                 .lastName(lastName)
-                .email(username + "@iipm.gov.in")
+                .email(username + "@iipe.ac.in")
                 .department(dept)
                 .designation(designation)
                 .payLevel(payLevel)

@@ -4,6 +4,7 @@ import { UserContext } from '../App';
 import { Link } from 'react-router-dom';
 import { IIPE_LOGO_BASE64 } from '../assets/logoBase64';
 import { FileText, Download, CheckCircle, Clock, CreditCard, DollarSign, Calendar, Shield, PiggyBank, Receipt, Eye, Printer, X, FileCheck, Landmark, User, Hash, Info, Briefcase, Building, ChevronRight, AlertCircle } from 'lucide-react';
+import { formatEmployeeNameWithTitle } from '../utils/nameUtils';
 
 const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -161,17 +162,84 @@ const EmployeePortal: React.FC = () => {
     }
   };
 
+  const getCalculatedNet = (p: any): number => {
+    if (!p) return 0;
+    const isContract = (p.employeeType || '').toLowerCase().includes('contract') || (p.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
+    const isDirector = (p.employeeId === 'DIR001') || (p.payLevel && String(p.payLevel).includes('17'));
+
+    const basic = p.basicPay || 0;
+    const da = p.da || 0;
+    const hra = p.hra || 0;
+    const ta = p.ta || 0;
+    const arrears = (p.daArrears || 0) + (p.promotionArrears || 0) + (p.arrears || 0);
+    const otherAllowances = p.otherAllowances || 0;
+    const npsEmpE = p.npsEmployerShare !== undefined && p.npsEmployerShare !== null ? p.npsEmployerShare : ((isContract || isDirector) ? 0 : Math.round((basic + da) * 0.14));
+    const ignorablePension = p.ignorablePension || 0;
+    const gross = Math.max(0, (basic + da + hra + ta + arrears + otherAllowances + npsEmpE) - ignorablePension);
+
+    const npsEmp = p.npsEmployeeShare !== undefined && p.npsEmployeeShare !== null ? p.npsEmployeeShare : ((isContract || isDirector) ? 0 : Math.round((basic + da) * 0.10));
+    const pt = p.professionalTax !== undefined && p.professionalTax !== null ? p.professionalTax : (basic >= 20000 ? 200 : 0);
+    const cleanLvl = (p.payLevel || '10').replace(/\D/g, '');
+    const numLvl = parseInt(cleanLvl || '10', 10);
+    const cghs = p.cghs !== undefined && p.cghs !== null ? p.cghs : (isContract ? 0 : (numLvl >= 12 ? 1000 : (numLvl >= 7 ? 650 : (numLvl === 6 ? 450 : 250))));
+    const tds = p.tds || 0;
+    const otherDed = p.otherDeductions || 0;
+    const totalDed = npsEmp + npsEmpE + pt + cghs + tds + otherDed;
+    return Math.max(0, gross - totalDed);
+  };
+
   const generatePayslipHtml = (p: any, u: any): string => {
     const user = u || userProfile;
-    const rawName = (user?.name || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || p.employeeName || 'Mr. Y Rama Rao').trim();
-    const name = (rawName.startsWith('Mr.') || rawName.startsWith('Dr.') || rawName.startsWith('Prof.') || rawName.startsWith('Ms.') || rawName.startsWith('Mrs.')) ? rawName : `Mr. ${rawName}`;
-    const words = numberToWords(Math.round(p.netSalary || 0));
+    const name = formatEmployeeNameWithTitle(p, user) || 'Mr. Y Rama Rao';
     const monthLabel = months[p.month - 1];
     const payDateStr = formatPayDate(p.year, p.month);
     const fmt = (n: number) => (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const npsEmpE = p.npsEmployerShare || 0;
-    const npsEmpD = p.npsEmployerShare || 0;
-    const totalEarnings = (p.basicPay || 0) + (p.da || 0) + (p.hra || 0) + (p.ta || 0) + (p.daArrears || 0) + (p.promotionArrears || 0) + (p.arrears || 0) + (p.otherAllowances || 0) + npsEmpE;
+    
+    const isContract = (p.employeeType || user?.employeeType || user?.function || '').toLowerCase().includes('contract') || (p.payLevel || user?.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
+    const isFaculty = ((p.employeeId || '').startsWith('TS') || (user?.function || '').toLowerCase().includes('teaching') || (user?.department || '').toLowerCase().includes('academic') || (user?.designation || '').toLowerCase().includes('professor')) && !isContract;
+    const isDirector = (p.employeeId === 'DIR001') || (user?.employeeId === 'DIR001') || (user?.payLevel && String(user.payLevel).includes('17')) || (user?.designation && user.designation.toLowerCase().includes('director'));
+    const empCategory = isFaculty ? 'Regular - Teaching' : isContract ? 'Contract' : 'Regular - Non Teaching';
+
+    const basicPay = p.basicPay || 0;
+    const da = p.da || 0;
+    const hra = p.hra || 0;
+    const ta = p.ta || 0;
+    const daArrears = p.daArrears || 0;
+    const promotionArrears = p.promotionArrears || 0;
+    const arrears = p.arrears || 0;
+    const otherAllowances = p.otherAllowances || 0;
+    const ignorablePension = p.ignorablePension || u?.ignorablePension || user?.ignorablePension || 0;
+
+    const npsEmpE = p.npsEmployerShare !== undefined && p.npsEmployerShare !== null
+      ? p.npsEmployerShare
+      : ((isContract || isDirector) ? 0 : Math.round((basicPay + da) * 0.14));
+    const npsEmpD = npsEmpE;
+
+    // Line items sum for Gross Earnings
+    const totalEarnings = Math.max(0, (basicPay + da + hra + ta + daArrears + promotionArrears + arrears + otherAllowances + npsEmpE) - ignorablePension);
+
+    const npsEmployeeShare = p.npsEmployeeShare !== undefined && p.npsEmployeeShare !== null
+      ? p.npsEmployeeShare
+      : ((isContract || isDirector) ? 0 : Math.round((basicPay + da) * 0.10));
+    const professionalTax = p.professionalTax !== undefined && p.professionalTax !== null
+      ? p.professionalTax
+      : (basicPay >= 20000 ? 200 : 0);
+
+    const cleanLevel = (user?.payLevel || p.payLevel || '10').replace(/\D/g, '');
+    const numLevel = parseInt(cleanLevel || '10', 10);
+    const cghs = p.cghs !== undefined && p.cghs !== null
+      ? p.cghs
+      : (isContract ? 0 : (numLevel >= 12 ? 1000 : (numLevel >= 7 ? 650 : (numLevel === 6 ? 450 : 250))));
+    const tds = p.tds || 0;
+    const otherDeductions = p.otherDeductions || 0;
+
+    // Exact computed total deductions (sum of all displayed lines)
+    const totalDeductions = npsEmployeeShare + npsEmpD + professionalTax + cghs + tds + otherDeductions;
+
+    // Net payable amount
+    const netSalary = Math.max(0, totalEarnings - totalDeductions);
+    const words = numberToWords(Math.round(netSalary));
+    const deductionPercentage = totalEarnings > 0 ? ((totalDeductions / totalEarnings) * 100).toFixed(2) : '0.00';
     
     const daysInMonth = new Date(p.year, p.month, 0).getDate();
     const paidDays = daysInMonth;
@@ -191,10 +259,6 @@ const EmployeePortal: React.FC = () => {
       ? new Date(user.dateOfNextIncrement).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
       : (p.month < 7 ? `01-Jul-${p.year}` : `01-Jul-${p.year + 1}`);
 
-    const isContract = (p.employeeType || user?.employeeType || user?.function || '').toLowerCase().includes('contract') || (p.payLevel || user?.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
-    const isFaculty = (p.employeeId || '').startsWith('TS') && !isContract;
-    const empCategory = isFaculty ? 'Teaching Faculty' : isContract ? 'Contractual Staff' : 'Non-Teaching Staff';
-
     const rawRegime = (user?.taxRegime || p.taxRegime || 'New').replace(/Tax\s*Regime/gi, '').trim();
     const taxRegime = rawRegime ? `${rawRegime} Tax Regime` : 'New Tax Regime (u/s 115BAC)';
 
@@ -202,10 +266,9 @@ const EmployeePortal: React.FC = () => {
       ? user.department 
       : ((p.employeeId || '').startsWith('TS') ? 'Academic & Research' : 'Finance & Accounts');
 
-    const deductionPercentage = totalEarnings > 0 ? ((p.totalDeductions / totalEarnings) * 100).toFixed(2) : '0.00';
     const logoSrc = IIPE_LOGO_BASE64;
-    const cleanLevel = (user?.payLevel || p.payLevel || '-').replace(/^Level-?/i, '');
-    const displayLevel = cleanLevel !== '-' ? `Level-${cleanLevel}` : '-';
+    const cleanLevelStr = (user?.payLevel || p.payLevel || '-').replace(/^Level-?/i, '');
+    const displayLevel = cleanLevelStr !== '-' ? `Level-${cleanLevelStr}` : '-';
     
     return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/>
@@ -348,9 +411,9 @@ const EmployeePortal: React.FC = () => {
       <img src="${logoSrc}" alt="Logo" style="width:85px;height:85px;object-fit:contain;"/>
       <div class="header-text">
         <h1>INDIAN INSTITUTE OF PETROLEUM AND ENERGY</h1>
-        <div class="inst-sub">(An Institute of National Importance at par with IITs/IIMs)</div>
+        <div class="inst-sub">(An Institute of National Importance)</div>
         <div class="inst-min">Ministry of Petroleum and Natural Gas, Government of India</div>
-        <div class="inst-addr">EAB, Vangali, Sabbavaram, Anakapalle &ndash; 531035, Andhra Pradesh, India</div>
+        <div class="inst-addr">Vangali, Sabbavaram, Anakapalle &ndash; 531035, Andhra Pradesh, India</div>
         <div class="inst-contact"><span>E-mail:</span> dr.finance@iipe.ac.in &nbsp;|&nbsp; <span>Website:</span> www.iipe.ac.in</div>
       </div>
     </div>
@@ -391,7 +454,7 @@ const EmployeePortal: React.FC = () => {
       <!-- Col 2 -->
       <div class="detail-row"><div class="lbl">Designation</div><div class="sep">:</div><div class="val">${u?.designation||'-'}</div></div>
       <div class="detail-row"><div class="lbl">Date of Next Increment</div><div class="sep">:</div><div class="val">${dni}</div></div>
-      <div class="detail-row"><div class="lbl">PRAN / NPS Number</div><div class="sep">:</div><div class="val">${u?.pranAccountNumber||'-'}</div></div>
+      <div class="detail-row"><div class="lbl">PRAN / EPF Number</div><div class="sep">:</div><div class="val">${u?.pranAccountNumber || u?.pfAccountNumber || '-'}</div></div>
       
       <!-- Col 3 -->
       <div class="detail-row"><div class="lbl">Department</div><div class="sep">:</div><div class="val">${department}</div></div>
@@ -410,6 +473,16 @@ const EmployeePortal: React.FC = () => {
     </div>
   </div>
 
+  ${ignorablePension > 0 ? `
+  <!-- Deductable Pension Warning Banner -->
+  <div style="margin-bottom: 8px; padding: 6px 10px; background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; border-radius: 4px; font-size: 8.5px; color: #92400e; display: flex; align-items: center; gap: 8px; position: relative; z-index: 1;">
+    <span style="font-size: 13px; line-height: 1;">⚠️</span>
+    <div>
+      <strong>Notice on Deductable Pension:</strong> Deductable Pension of <strong>Rs. ${fmt(ignorablePension)}</strong> has been deducted from Gross Salary as per applicable 7th CPC / Government re-employment rules.
+    </div>
+  </div>
+  ` : ''}
+
   <!-- Salary Tables -->
   <div class="salary-container">
     <div class="tables-wrapper">
@@ -422,15 +495,16 @@ const EmployeePortal: React.FC = () => {
         <table>
           <thead><tr><th>Particulars</th><th class="amt-col">Amount (INR)</th></tr></thead>
           <tbody>
-            <tr><td>Basic Pay</td><td class="amt-col">${fmt(p.basicPay)}</td></tr>
-            <tr><td>Dearness Allowance (DA)</td><td class="amt-col">${fmt(p.da)}</td></tr>
-            <tr><td>House Rent Allowance (HRA)</td><td class="amt-col">${fmt(p.hra)}</td></tr>
-            <tr><td>Transport Allowance (TA)</td><td class="amt-col">${fmt(p.ta)}</td></tr>
-            ${(p.daArrears || 0) > 0 ? `<tr><td>DA&TA Arrears</td><td class="amt-col" style="color:#0a3161;font-weight:700;">${fmt(p.daArrears)}</td></tr>` : ''}
-            ${(p.promotionArrears || 0) > 0 ? `<tr><td>Promotional Arrears</td><td class="amt-col" style="color:#0a3161;font-weight:700;">${fmt(p.promotionArrears)}</td></tr>` : ''}
-            ${(p.arrears || 0) > 0 ? `<tr><td>Arrears</td><td class="amt-col" style="color:#0a3161;font-weight:700;">${fmt(p.arrears)}</td></tr>` : ''}
-            ${(p.otherAllowances || 0) > 0 ? `<tr><td>Special / Dean Allowance</td><td class="amt-col">${fmt(p.otherAllowances)}</td></tr>` : ''}
-            <tr><td>NPS Employer Contribution (14%)</td><td class="amt-col">${fmt(npsEmpE)}</td></tr>
+            <tr><td>Basic Pay</td><td class="amt-col">${fmt(basicPay)}</td></tr>
+            ${(da > 0 || !isContract) ? `<tr><td>Dearness Allowance (DA)</td><td class="amt-col">${fmt(da)}</td></tr>` : ''}
+            ${(hra > 0 || !isContract) ? `<tr><td>House Rent Allowance (HRA)</td><td class="amt-col">${fmt(hra)}</td></tr>` : ''}
+            ${(ta > 0 || !isContract) ? `<tr><td>Transport Allowance (TA)</td><td class="amt-col">${fmt(ta)}</td></tr>` : ''}
+            ${daArrears > 0 ? `<tr><td>DA&TA Arrears</td><td class="amt-col" style="color:#0a3161;font-weight:700;">${fmt(daArrears)}</td></tr>` : ''}
+            ${promotionArrears > 0 ? `<tr><td>Promotional Arrears</td><td class="amt-col" style="color:#0a3161;font-weight:700;">${fmt(promotionArrears)}</td></tr>` : ''}
+            ${arrears > 0 ? `<tr><td>Arrears</td><td class="amt-col" style="color:#0a3161;font-weight:700;">${fmt(arrears)}</td></tr>` : ''}
+            ${otherAllowances > 0 ? `<tr><td>Special / Dean Allowance</td><td class="amt-col">${fmt(otherAllowances)}</td></tr>` : ''}
+            ${npsEmpE > 0 ? `<tr><td>NPS Employer Contribution (14%)</td><td class="amt-col">${fmt(npsEmpE)}</td></tr>` : ''}
+            ${ignorablePension > 0 ? `<tr><td style="color:#b91c1c;font-weight:600;">Less: Deductable Pension</td><td class="amt-col" style="color:#b91c1c;font-weight:700;">- ${fmt(ignorablePension)}</td></tr>` : ''}
             <tr class="total-row"><td>TOTAL EARNINGS (GROSS)</td><td class="amt-col">${fmt(totalEarnings)}</td></tr>
           </tbody>
         </table>
@@ -445,13 +519,13 @@ const EmployeePortal: React.FC = () => {
         <table>
           <thead><tr><th>Particulars</th><th class="amt-col">Amount (INR)</th></tr></thead>
           <tbody>
-            <tr><td>NPS Employee Contribution (10%)</td><td class="amt-col">${fmt(p.npsEmployeeShare)}</td></tr>
-            <tr><td>NPS Employer Share (Deduction)</td><td class="amt-col">${fmt(npsEmpD)}</td></tr>
-            <tr><td>Professional Tax (PT)</td><td class="amt-col">${fmt(p.professionalTax)}</td></tr>
-            <tr><td>CGHS / Medical Contribution</td><td class="amt-col">${fmt(p.cghs)}</td></tr>
-            ${p.tds > 0 ? `<tr><td>Income Tax (TDS)</td><td class="amt-col">${fmt(p.tds)}</td></tr>` : '<tr><td>Income Tax (TDS)</td><td class="amt-col">0.00</td></tr>'}
-            ${p.otherDeductions > 0 ? `<tr><td>Other Deductions / Salary Recovery</td><td class="amt-col">${fmt(p.otherDeductions)}</td></tr>` : ''}
-            <tr class="total-row"><td>TOTAL DEDUCTIONS</td><td class="amt-col">${fmt(p.totalDeductions)}</td></tr>
+            ${(npsEmployeeShare > 0 || !isContract) ? `<tr><td>NPS Employee Contribution (10%)</td><td class="amt-col">${fmt(npsEmployeeShare)}</td></tr>` : ''}
+            ${npsEmpD > 0 ? `<tr><td>NPS Employer Share (Deduction)</td><td class="amt-col">${fmt(npsEmpD)}</td></tr>` : ''}
+            <tr><td>Professional Tax (PT)</td><td class="amt-col">${fmt(professionalTax)}</td></tr>
+            ${(cghs > 0 || !isContract) ? `<tr><td>CGHS / Medical Contribution</td><td class="amt-col">${fmt(cghs)}</td></tr>` : ''}
+            <tr><td>Income Tax (TDS)</td><td class="amt-col">${fmt(tds)}</td></tr>
+            ${otherDeductions > 0 ? `<tr><td>Other Deductions / Salary Recovery</td><td class="amt-col">${fmt(otherDeductions)}</td></tr>` : ''}
+            <tr class="total-row"><td>TOTAL DEDUCTIONS</td><td class="amt-col">${fmt(totalDeductions)}</td></tr>
           </tbody>
         </table>
       </div>
@@ -462,8 +536,8 @@ const EmployeePortal: React.FC = () => {
   <div class="net-pay-box">
     <div class="net-pay-header">NET PAYABLE AMOUNT</div>
     <div class="net-pay-body">
-      <div class="net-pay-amount">₹ ${fmt(p.netSalary)}</div>
-      <div class="net-pay-words">(${words} Only)</div>
+      <div class="net-pay-amount">Rs. ${fmt(netSalary)}</div>
+      <div class="net-pay-words">(${words})</div>
     </div>
   </div>
 
@@ -471,15 +545,15 @@ const EmployeePortal: React.FC = () => {
   <div class="summary-cards">
     <div class="card earn">
       <div class="card-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></div>
-      <div class="card-info"><div class="lbl">Total Earnings</div><div class="val">₹ ${fmt(totalEarnings)}</div></div>
+      <div class="card-info"><div class="lbl">Total Earnings</div><div class="val">Rs. ${fmt(totalEarnings)}</div></div>
     </div>
     <div class="card ded">
       <div class="card-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg></div>
-      <div class="card-info"><div class="lbl">Total Deductions</div><div class="val">₹ ${fmt(p.totalDeductions)}</div></div>
+      <div class="card-info"><div class="lbl">Total Deductions</div><div class="val">Rs. ${fmt(totalDeductions)}</div></div>
     </div>
     <div class="card net">
-      <div class="card-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
-      <div class="card-info"><div class="lbl">Net Pay</div><div class="val">₹ ${fmt(p.netSalary)}</div></div>
+      <div class="card-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+      <div class="card-info"><div class="lbl">Net Pay</div><div class="val">Rs. ${fmt(netSalary)}</div></div>
     </div>
     <div class="card perc">
       <div class="card-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg></div>
@@ -489,10 +563,7 @@ const EmployeePortal: React.FC = () => {
 
   <!-- Footer Area -->
   <div class="footer-row">
-    <div class="footer-words">
-      Amount in words:
-      <span>INR ${words} Only</span>
-    </div>
+    <div></div>
     <div class="auth-box">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
       <div>This is a computer generated pay slip<br>and does not require physical signature.</div>
@@ -878,7 +949,7 @@ const EmployeePortal: React.FC = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '50px' }}>
                       <div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Net Salary</div>
-                        <div style={{ fontSize: '1.1rem', color: '#16a34a', fontWeight: 800 }}>{fmt(p.netSalary)}</div>
+                        <div style={{ fontSize: '1.1rem', color: '#16a34a', fontWeight: 800 }}>{fmt(getCalculatedNet(p))}</div>
                       </div>
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleOpenPayslip(p); }}
@@ -939,7 +1010,7 @@ const EmployeePortal: React.FC = () => {
                   { icon: <Briefcase size={16}/>, label: 'Designation', value: userProfile?.designation },
                   { icon: <Building size={16}/>, label: 'Department', value: userProfile?.department || 'Finance & Accounts' },
                   { icon: <CreditCard size={16}/>, label: 'PAN Number', value: userProfile?.pan },
-                  { icon: <Shield size={16}/>, label: 'PRAN Number', value: userProfile?.pranAccountNumber },
+                  { icon: <Shield size={16}/>, label: 'PRAN / EPF Number', value: userProfile?.pranAccountNumber || userProfile?.pfAccountNumber },
                   { icon: <Landmark size={16}/>, label: 'Bank A/C', value: userProfile?.bankAccountNumber ? `****${String(userProfile.bankAccountNumber).slice(-4)}` : null },
                   { icon: <Calendar size={16}/>, label: 'Date of Joining', value: userProfile?.dateOfJoining || userProfile?.joiningDate },
                   { icon: <CheckCircle size={16}/>, label: 'Approved By', value: selectedPayroll.approvedBy },
@@ -955,79 +1026,120 @@ const EmployeePortal: React.FC = () => {
               </div>
 
               {/* Earnings vs Deductions */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px' }}>
-                {/* Earnings */}
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid rgba(34,197,94,0.4)' }}>
-                    <div style={{ background: 'rgba(34,197,94,0.15)', color: '#15803d', padding: '6px', borderRadius: '8px' }}><DollarSign size={20} /></div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '1px' }}>Earnings</div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {[
-                      ['Basic Pay', selectedPayroll.basicPay],
-                      ['DA (53%)', selectedPayroll.da],
-                      ['HRA (20%)', selectedPayroll.hra],
-                      ['Transport Allowance', selectedPayroll.ta],
-                      selectedPayroll.daArrears ? ['DA Arrears', selectedPayroll.daArrears] : null,
-                      selectedPayroll.promotionArrears ? ['Promotional Arrears', selectedPayroll.promotionArrears] : null,
-                      selectedPayroll.arrears ? ['Arrears', selectedPayroll.arrears] : null,
-                      ['Other Allowances', selectedPayroll.otherAllowances || 0],
-                      ['NPS Employer (14%)', selectedPayroll.npsEmployerShare || 0],
-                    ].filter(Boolean).map(([label, val]: any, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', paddingBottom: '8px', borderBottom: '1px dashed rgba(0,0,0,0.05)' }}>
-                        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{label}</span>
-                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fmt(Number(val))}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(34,197,94,0.05)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(34,197,94,0.2)' }}>
-                    <span style={{ fontWeight: 800, color: '#15803d', fontSize: '1.1rem' }}>Gross Salary</span>
-                    <span style={{ fontWeight: 800, color: '#16a34a', fontSize: '1.25rem' }}>{fmt(selectedPayroll.grossSalary)}</span>
-                  </div>
-                </div>
+              {(() => {
+                const isSelContract = (selectedPayroll.employeeType || userProfile?.employeeType || userProfile?.function || '').toLowerCase().includes('contract') || (selectedPayroll.payLevel || userProfile?.payLevel || '').toLowerCase().includes('consolidated') || (selectedPayroll.employeeId || '').startsWith('CNT') || (selectedPayroll.employeeId || '').startsWith('CT') || (selectedPayroll.employeeId || '').startsWith('CMED');
+                const isSelDirector = (selectedPayroll.employeeId === 'DIR001') || (userProfile?.employeeId === 'DIR001');
 
-                {/* Deductions */}
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid rgba(239,68,68,0.4)' }}>
-                    <div style={{ background: 'rgba(239,68,68,0.15)', color: '#b91c1c', padding: '6px', borderRadius: '8px' }}><Hash size={20} /></div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '1px' }}>Deductions</div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {[
-                      ['NPS (Employee 10%)', selectedPayroll.npsEmployeeShare],
-                      ['NPS (Employer 14%)', selectedPayroll.npsEmployerShare],
-                      ['Professional Tax', selectedPayroll.professionalTax || 200],
-                      ['CGHS / Medical', selectedPayroll.cghs || 450],
-                      ['TDS / Income Tax', selectedPayroll.tds || 0],
-                      ['Other Deductions', selectedPayroll.otherDeductions || 0],
-                    ].map(([label, val], idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', paddingBottom: '8px', borderBottom: '1px dashed rgba(0,0,0,0.05)' }}>
-                        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{label}</span>
-                        <span style={{ fontWeight: 600, color: '#dc2626' }}>{fmt(Number(val))}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(239,68,68,0.05)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(239,68,68,0.2)' }}>
-                    <span style={{ fontWeight: 800, color: '#b91c1c', fontSize: '1.1rem' }}>Total Deductions</span>
-                    <span style={{ fontWeight: 800, color: '#dc2626', fontSize: '1.25rem' }}>{fmt(selectedPayroll.totalDeductions)}</span>
-                  </div>
-                </div>
-              </div>
+                const inBasic = selectedPayroll.basicPay || 0;
+                const inDa = selectedPayroll.da || 0;
+                const inHra = selectedPayroll.hra || 0;
+                const inTa = selectedPayroll.ta || 0;
+                const inDaArrears = selectedPayroll.daArrears || 0;
+                const inPromotionArrears = selectedPayroll.promotionArrears || 0;
+                const inArrears = selectedPayroll.arrears || 0;
+                const inOtherAllowances = selectedPayroll.otherAllowances || 0;
+                const inNpsEmpE = selectedPayroll.npsEmployerShare !== undefined && selectedPayroll.npsEmployerShare !== null
+                  ? selectedPayroll.npsEmployerShare
+                  : ((isSelContract || isSelDirector) ? 0 : Math.round((inBasic + inDa) * 0.14));
+                const inIgnorablePension = selectedPayroll.ignorablePension || userProfile?.ignorablePension || 0;
+                const inGross = Math.max(0, (inBasic + inDa + inHra + inTa + inDaArrears + inPromotionArrears + inArrears + inOtherAllowances + inNpsEmpE) - inIgnorablePension);
 
-              {/* Net Salary */}
-              <div style={{ marginTop: '40px', padding: '32px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(26,58,110,0.05))', borderRadius: '16px', border: '1px solid rgba(34,197,94,0.3)', boxShadow: '0 10px 30px -10px rgba(34,197,94,0.2)' }}>
-                <div style={{ fontSize: '0.9rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle size={18} /> Net Salary Payable
-                </div>
-                <div style={{ fontSize: '3rem', fontWeight: 900, color: '#16a34a', margin: '12px 0', textShadow: '0 2px 10px rgba(22,163,74,0.2)' }}>
-                  {fmt(selectedPayroll.netSalary)}
-                </div>
-                <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  Transferred to your bank account for the month of {months[selectedPayroll.month - 1]} {selectedPayroll.year}.
-                </div>
+                const inNpsEmpShare = selectedPayroll.npsEmployeeShare !== undefined && selectedPayroll.npsEmployeeShare !== null
+                  ? selectedPayroll.npsEmployeeShare
+                  : ((isSelContract || isSelDirector) ? 0 : Math.round((inBasic + inDa) * 0.10));
+                const inNpsEmpD = inNpsEmpE;
+                const inPt = selectedPayroll.professionalTax !== undefined && selectedPayroll.professionalTax !== null
+                  ? selectedPayroll.professionalTax
+                  : (inBasic >= 20000 ? 200 : 0);
+                const cleanLvl = (userProfile?.payLevel || selectedPayroll.payLevel || '10').replace(/\D/g, '');
+                const numLvl = parseInt(cleanLvl || '10', 10);
+                const inCghs = selectedPayroll.cghs !== undefined && selectedPayroll.cghs !== null
+                  ? selectedPayroll.cghs
+                  : (isSelContract ? 0 : (numLvl >= 12 ? 1000 : (numLvl >= 7 ? 650 : (numLvl === 6 ? 450 : 250))));
+                const inTds = selectedPayroll.tds || 0;
+                const inOtherDed = selectedPayroll.otherDeductions || 0;
+                const inTotalDed = inNpsEmpShare + inNpsEmpD + inPt + inCghs + inTds + inOtherDed;
+                const inNet = Math.max(0, inGross - inTotalDed);
+
+                return (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px' }}>
+                      {/* Earnings */}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid rgba(34,197,94,0.4)' }}>
+                          <div style={{ background: 'rgba(34,197,94,0.15)', color: '#15803d', padding: '6px', borderRadius: '8px' }}><DollarSign size={20} /></div>
+                          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '1px' }}>Earnings</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                          {[
+                            ['Basic Pay', inBasic],
+                            (inDa > 0 || !isSelContract) ? ['Dearness Allowance (DA)', inDa] : null,
+                            (inHra > 0 || !isSelContract) ? ['House Rent Allowance (HRA)', inHra] : null,
+                            (inTa > 0 || !isSelContract) ? ['Transport Allowance (TA)', inTa] : null,
+                            inDaArrears ? ['DA&TA Arrears', inDaArrears] : null,
+                            inPromotionArrears ? ['Promotional Arrears', inPromotionArrears] : null,
+                            inArrears ? ['Arrears', inArrears] : null,
+                            inOtherAllowances ? ['Special / Dean Allowance', inOtherAllowances] : null,
+                            inNpsEmpE > 0 ? ['NPS Employer (14%)', inNpsEmpE] : null,
+                            inIgnorablePension > 0 ? ['Less: Deductable Pension', -inIgnorablePension] : null,
+                          ].filter(Boolean).map(([label, val]: any, idx) => (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', paddingBottom: '8px', borderBottom: '1px dashed rgba(0,0,0,0.05)' }}>
+                              <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{label}</span>
+                              <span style={{ fontWeight: 600, color: (val < 0 ? '#b91c1c' : 'var(--text-primary)') }}>{fmt(Number(val))}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(34,197,94,0.05)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(34,197,94,0.2)' }}>
+                          <span style={{ fontWeight: 800, color: '#15803d', fontSize: '1.1rem' }}>Gross Salary</span>
+                          <span style={{ fontWeight: 800, color: '#16a34a', fontSize: '1.25rem' }}>{fmt(inGross)}</span>
+                        </div>
+                      </div>
+
+                      {/* Deductions */}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid rgba(239,68,68,0.4)' }}>
+                          <div style={{ background: 'rgba(239,68,68,0.15)', color: '#b91c1c', padding: '6px', borderRadius: '8px' }}><Hash size={20} /></div>
+                          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '1px' }}>Deductions</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                          {[
+                            (inNpsEmpShare > 0 || !isSelContract) ? ['NPS (Employee 10%)', inNpsEmpShare] : null,
+                            inNpsEmpD > 0 ? ['NPS (Employer 14%)', inNpsEmpD] : null,
+                            ['Professional Tax', inPt],
+                            (inCghs > 0 || !isSelContract) ? ['CGHS / Medical', inCghs] : null,
+                            ['TDS / Income Tax', inTds],
+                            inOtherDed > 0 ? ['Other Deductions', inOtherDed] : null,
+                          ].filter(Boolean).map(([label, val]: any, idx) => (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', paddingBottom: '8px', borderBottom: '1px dashed rgba(0,0,0,0.05)' }}>
+                              <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{label}</span>
+                              <span style={{ fontWeight: 600, color: '#dc2626' }}>{fmt(Number(val))}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(239,68,68,0.05)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(239,68,68,0.2)' }}>
+                          <span style={{ fontWeight: 800, color: '#b91c1c', fontSize: '1.1rem' }}>Total Deductions</span>
+                          <span style={{ fontWeight: 800, color: '#dc2626', fontSize: '1.25rem' }}>{fmt(inTotalDed)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Net Salary */}
+                    <div style={{ marginTop: '40px', padding: '32px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(26,58,110,0.05))', borderRadius: '16px', border: '1px solid rgba(34,197,94,0.3)', boxShadow: '0 10px 30px -10px rgba(34,197,94,0.2)' }}>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                        <CheckCircle size={18} /> Net Salary Payable
+                      </div>
+                      <div style={{ fontSize: '3rem', fontWeight: 900, color: '#16a34a', margin: '12px 0', textShadow: '0 2px 10px rgba(22,163,74,0.2)' }}>
+                        {fmt(inNet)}
+                      </div>
+                      <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                        Transferred to your bank account for the month of {months[selectedPayroll.month - 1]} {selectedPayroll.year}.
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
               </div>
             </div>
-          </div>
         )}
       </div>
 

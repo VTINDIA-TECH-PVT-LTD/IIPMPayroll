@@ -216,7 +216,7 @@ a:hover { color: var(--primary-light); }
 /* ---- Tables ---- */
 .table-iipm {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
   border-spacing: 0;
 }
 .table-iipm thead th {
@@ -237,6 +237,112 @@ a:hover { color: var(--primary-light); }
 .table-iipm tbody tr:hover { background: #f8fafc; }
 .table-iipm tbody td { padding: 16px; color: var(--text-secondary); font-size: 0.95rem; }
 .table-iipm tbody td:first-child { color: var(--text-primary); font-weight: 600; }
+
+/* ---- Sticky / Frozen Columns for Salary & Approval Tables ---- */
+.table-sticky-freeze {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.table-sticky-freeze thead th.sticky-col,
+.table-sticky-freeze tbody td.sticky-col,
+.table-sticky-freeze tfoot td.sticky-col {
+  position: sticky !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  transition: background-color 0.15s ease;
+}
+
+.table-sticky-freeze thead th.sticky-col {
+  z-index: 35 !important;
+  background-color: #f8fafc !important;
+  top: 0;
+}
+
+.table-sticky-freeze tbody td.sticky-col {
+  z-index: 15 !important;
+  background-color: #ffffff !important;
+}
+
+.table-sticky-freeze tbody tr:hover td.sticky-col {
+  background-color: #f1f5f9 !important;
+}
+
+.table-sticky-freeze tfoot td.sticky-col {
+  z-index: 30 !important;
+  background-color: #e2e8f0 !important;
+  bottom: 0;
+}
+
+/* 6 Frozen Columns:
+   0) Checkbox:    width 42px, left: 0px
+   1) Sl.No:       width 55px, left: 42px
+   2) Emp ID:      width 85px, left: 97px
+   3) Name:        width 180px, left: 182px
+   4) Category:    width 155px, left: 362px
+   5) Designation: width 200px, left: 517px
+*/
+.sticky-col-check { left: 0px !important; min-width: 42px !important; max-width: 42px !important; width: 42px !important; text-align: center; }
+.sticky-col-1 { left: 42px !important; min-width: 55px !important; max-width: 55px !important; width: 55px !important; text-align: center; }
+.sticky-col-2 { left: 97px !important; min-width: 85px !important; max-width: 85px !important; width: 85px !important; }
+.sticky-col-3 { left: 182px !important; min-width: 180px !important; max-width: 180px !important; width: 180px !important; }
+.sticky-col-4 { left: 362px !important; min-width: 155px !important; max-width: 155px !important; width: 155px !important; }
+.sticky-col-5 { 
+  left: 517px !important; 
+  min-width: 200px !important; 
+  max-width: 200px !important; 
+  width: 200px !important; 
+  border-right: 2px solid #cbd5e1 !important; 
+  box-shadow: 4px 0 10px -2px rgba(0, 0, 0, 0.15) !important; 
+}
+
+/* Expanded Column Widths (When user toggles expand for full names & designations) */
+.table-sticky-freeze.table-expanded .sticky-col-3 {
+  left: 182px !important;
+  min-width: 250px !important;
+  max-width: 250px !important;
+  width: 250px !important;
+}
+
+.table-sticky-freeze.table-expanded .sticky-col-4 {
+  left: 432px !important;
+  min-width: 155px !important;
+  max-width: 155px !important;
+  width: 155px !important;
+}
+
+.table-sticky-freeze.table-expanded .sticky-col-5 {
+  left: 587px !important;
+  min-width: 300px !important;
+  max-width: 300px !important;
+  width: 300px !important;
+}
+
+/* Approval / View / Draft Table Frozen Columns */
+.sticky-view-col-check { left: 0px !important; min-width: 42px !important; max-width: 42px !important; width: 42px !important; text-align: center; }
+.sticky-view-col-1 { left: 42px !important; min-width: 85px !important; max-width: 85px !important; width: 85px !important; }
+.sticky-view-col-2 { left: 127px !important; min-width: 185px !important; max-width: 185px !important; width: 185px !important; }
+.sticky-view-col-3 { 
+  left: 312px !important; 
+  min-width: 160px !important; 
+  max-width: 160px !important; 
+  width: 160px !important; 
+  border-right: 2px solid #cbd5e1 !important; 
+  box-shadow: 4px 0 10px -2px rgba(0, 0, 0, 0.15) !important; 
+}
+
+/* Responsive handling for mobile/tablets (< 768px) */
+@media (max-width: 768px) {
+  .table-sticky-freeze thead th.sticky-col,
+  .table-sticky-freeze tbody td.sticky-col,
+  .table-sticky-freeze tfoot td.sticky-col {
+    position: static !important;
+    box-shadow: none !important;
+    border-right: none !important;
+  }
+}
 
 /* ---- Badges ---- */
 .badge-iipm {

@@ -32,6 +32,7 @@ public class Payroll {
     private double ta;
     private double npsEmployerShare;
     private double otherAllowances;
+    private double ignorablePension;
     private double daArrears;
     private double promotionArrears;
     private double arrears;

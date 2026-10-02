@@ -282,6 +282,36 @@ const ITDeclarationHistory = () => {
                   <div>{viewModal.rejectionReason}</div>
                 </div>
               )}
+
+              {/* Attached Proofs */}
+              {viewModal.documents && viewModal.documents.length > 0 && (
+                <div style={{ padding: '16px 20px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', marginBottom: '20px' }}>
+                  <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    📎 Attached Investment Proofs ({viewModal.documents.length}):
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
+                    {viewModal.documents.map((docStr: string, idx: number) => {
+                      const parts = docStr.split('|');
+                      const docName = parts[0] || `Proof_${idx + 1}`;
+                      const docUrl = parts.slice(1).join('|');
+                      return (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{docName}</span>
+                          <a
+                            href={docUrl}
+                            download={docName}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', textDecoration: 'none', fontWeight: 700 }}
+                          >
+                            View / Download
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               
               {loadingForm16 ? (
                 <div style={{ textAlign: 'center', padding: '40px', background: '#fff', borderRadius: '8px' }}>

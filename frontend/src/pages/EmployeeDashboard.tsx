@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
 import { UserContext } from '../App';
 import { FileText, Download, ClipboardList, ArrowRight, TrendingUp, DollarSign, Minus, CheckCircle } from 'lucide-react';
+import { DashboardContractCard } from '../components/ContractValidity';
 
 const EmployeeDashboard: React.FC = () => {
   const userCtx = useContext(UserContext);
@@ -50,6 +51,48 @@ const EmployeeDashboard: React.FC = () => {
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num || 0);
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+  const getCalculatedNet = (p: any): number => {
+    if (!p) return 0;
+    const isContract = (p.employeeType || '').toLowerCase().includes('contract') || (p.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
+    const isDirector = (p.employeeId === 'DIR001') || (p.payLevel && String(p.payLevel).includes('17'));
+
+    const basic = p.basicPay || 0;
+    const da = p.da || 0;
+    const hra = p.hra || 0;
+    const ta = p.ta || 0;
+    const arrears = (p.daArrears || 0) + (p.promotionArrears || 0) + (p.arrears || 0);
+    const otherAllowances = p.otherAllowances || 0;
+    const npsEmpE = p.npsEmployerShare !== undefined && p.npsEmployerShare !== null ? p.npsEmployerShare : ((isContract || isDirector) ? 0 : Math.round((basic + da) * 0.14));
+    const ignorablePension = p.ignorablePension || 0;
+    const gross = Math.max(0, (basic + da + hra + ta + arrears + otherAllowances + npsEmpE) - ignorablePension);
+
+    const npsEmp = p.npsEmployeeShare !== undefined && p.npsEmployeeShare !== null ? p.npsEmployeeShare : ((isContract || isDirector) ? 0 : Math.round((basic + da) * 0.10));
+    const pt = p.professionalTax !== undefined && p.professionalTax !== null ? p.professionalTax : (basic >= 20000 ? 200 : 0);
+    const cleanLvl = (p.payLevel || '10').replace(/\D/g, '');
+    const numLvl = parseInt(cleanLvl || '10', 10);
+    const cghs = p.cghs !== undefined && p.cghs !== null ? p.cghs : (isContract ? 0 : (numLvl >= 12 ? 1000 : (numLvl >= 7 ? 650 : (numLvl === 6 ? 450 : 250))));
+    const tds = p.tds || 0;
+    const otherDed = p.otherDeductions || 0;
+    const totalDed = npsEmp + npsEmpE + pt + cghs + tds + otherDed;
+    return Math.max(0, gross - totalDed);
+  };
+
+  const getCalculatedGross = (p: any): number => {
+    if (!p) return 0;
+    const isContract = (p.employeeType || '').toLowerCase().includes('contract') || (p.payLevel || '').toLowerCase().includes('consolidated') || (p.employeeId || '').startsWith('CNT') || (p.employeeId || '').startsWith('CT') || (p.employeeId || '').startsWith('CMED');
+    const isDirector = (p.employeeId === 'DIR001') || (p.payLevel && String(p.payLevel).includes('17'));
+
+    const basic = p.basicPay || 0;
+    const da = p.da || 0;
+    const hra = p.hra || 0;
+    const ta = p.ta || 0;
+    const arrears = (p.daArrears || 0) + (p.promotionArrears || 0) + (p.arrears || 0);
+    const otherAllowances = p.otherAllowances || 0;
+    const npsEmpE = p.npsEmployerShare !== undefined && p.npsEmployerShare !== null ? p.npsEmployerShare : ((isContract || isDirector) ? 0 : Math.round((basic + da) * 0.14));
+    const ignorablePension = p.ignorablePension || 0;
+    return Math.max(0, (basic + da + hra + ta + arrears + otherAllowances + npsEmpE) - ignorablePension);
+  };
+
   if (loading) return (
     <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
       <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -75,13 +118,16 @@ const EmployeeDashboard: React.FC = () => {
   return (
     <div className="page-container">
       {/* Page Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-          Welcome back, {userCtx?.username}! 👋
-        </h1>
-        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-          Here is your current payroll overview and quick actions.
-        </p>
+      <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+            Welcome back, {userCtx?.username}! 👋
+          </h1>
+          <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+            Here is your current payroll overview and quick actions.
+          </p>
+        </div>
+        <DashboardContractCard />
       </div>
 
       {/* YTD Summary */}
@@ -185,9 +231,9 @@ const EmployeeDashboard: React.FC = () => {
               </span>
               <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
-                  { label: 'Gross Salary', value: fmt(recentPayslip.grossSalary), color: 'var(--text-main)' },
+                  { label: 'Gross Salary', value: fmt(getCalculatedGross(recentPayslip)), color: 'var(--text-main)' },
                   { label: 'TDS Deducted', value: fmt(recentPayslip.tds || 0), color: '#ef4444' },
-                  { label: 'Net Salary', value: fmt(recentPayslip.netSalary), color: '#22c55e' },
+                  { label: 'Net Salary', value: fmt(getCalculatedNet(recentPayslip)), color: '#22c55e' },
                 ].map((row, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f8fafc', borderRadius: '10px' }}>
                     <span style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>{row.label}</span>

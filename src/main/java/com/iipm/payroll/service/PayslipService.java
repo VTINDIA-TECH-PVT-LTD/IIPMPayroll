@@ -51,7 +51,37 @@ public class PayslipService {
         payslipData.put("designation", user.getDesignation());
         payslipData.put("department", user.getDepartment());
         payslipData.put("panNumber", user.getPan());
+        payslipData.put("pan", user.getPan());
         payslipData.put("aadharNumber", user.getAadhar());
+        payslipData.put("pran", (user.getPranAccountNumber() != null && !user.getPranAccountNumber().isEmpty()) 
+                ? user.getPranAccountNumber() 
+                : (user.getPfAccountNumber() != null ? user.getPfAccountNumber() : "-"));
+        payslipData.put("payLevel", user.getPayLevel() != null ? user.getPayLevel() : "10");
+        payslipData.put("taxRegime", user.getTaxRegime() != null ? user.getTaxRegime() : "Regular Tax Regime");
+        payslipData.put("bankAccount", user.getBankAccountNumber() != null ? maskAccountNumber(user.getBankAccountNumber()) : "-");
+        payslipData.put("dateOfJoining", user.getDateOfJoining() != null ? user.getDateOfJoining() : "-");
+        payslipData.put("dateOfNextIncrement", "01-Jul-" + payroll.getYear());
+
+        // Category (1: Regular - Teaching, 2: Regular - Non Teaching, 3: Contract)
+        String empId = user.getEmployeeId() != null ? user.getEmployeeId().toUpperCase() : "";
+        String empType = user.getEmployeeType() != null ? user.getEmployeeType().toUpperCase() : "";
+        String fn = user.getFunction() != null ? user.getFunction().toUpperCase() : "";
+        String desig = user.getDesignation() != null ? user.getDesignation().toUpperCase() : "";
+        String dept = user.getDepartment() != null ? user.getDepartment().toUpperCase() : "";
+
+        String category;
+        if (empId.startsWith("CNT") || empId.startsWith("CT") || empId.startsWith("CMED") || empType.contains("CONTRACT") || fn.contains("CONTRACT") || desig.contains("CONTRACT")) {
+            category = "Contract";
+        } else if (empId.startsWith("TS")) {
+            category = "Regular - Teaching";
+        } else if (empId.startsWith("NT") || empId.startsWith("NTS") || empId.startsWith("DIR")) {
+            category = "Regular - Non Teaching";
+        } else if (desig.contains("PROFESSOR") || fn.contains("TEACHING")) {
+            category = "Regular - Teaching";
+        } else {
+            category = "Regular - Non Teaching";
+        }
+        payslipData.put("category", category);
 
         // Payroll period
         YearMonth period = YearMonth.of(payroll.getYear(), payroll.getMonth());
@@ -66,18 +96,46 @@ public class PayslipService {
         earnings.put("hra", payroll.getHra());
         earnings.put("ta", payroll.getTa());
         earnings.put("npsEmployerShare", payroll.getNpsEmployerShare());
+        earnings.put("daArrears", payroll.getDaArrears());
+        earnings.put("promotionArrears", payroll.getPromotionArrears());
+        earnings.put("arrears", payroll.getArrears());
+        earnings.put("otherAllowances", payroll.getOtherAllowances());
+        earnings.put("ignorablePension", payroll.getIgnorablePension());
         earnings.put("grossSalary", payroll.getGrossSalary());
         payslipData.put("earnings", earnings);
+        
+        // Flatten earnings to top-level
+        payslipData.put("basicPay", payroll.getBasicPay());
+        payslipData.put("da", payroll.getDa());
+        payslipData.put("hra", payroll.getHra());
+        payslipData.put("ta", payroll.getTa());
+        payslipData.put("npsEmployerShare", payroll.getNpsEmployerShare());
+        payslipData.put("daArrears", payroll.getDaArrears());
+        payslipData.put("promotionArrears", payroll.getPromotionArrears());
+        payslipData.put("arrears", payroll.getArrears());
+        payslipData.put("otherAllowances", payroll.getOtherAllowances());
+        payslipData.put("ignorablePension", payroll.getIgnorablePension());
+        payslipData.put("grossSalary", payroll.getGrossSalary());
 
         // Deductions
         java.util.Map<String, Object> deductions = new java.util.HashMap<>();
         deductions.put("professionalTax", payroll.getProfessionalTax());
         deductions.put("tds", payroll.getTds());
         deductions.put("npsEmployee", payroll.getNpsEmployeeShare());
+        deductions.put("npsEmployeeShare", payroll.getNpsEmployeeShare());
         deductions.put("cghs", payroll.getCghs());
         deductions.put("otherDeductions", payroll.getOtherDeductions());
         deductions.put("totalDeductions", payroll.getTotalDeductions());
         payslipData.put("deductions", deductions);
+        
+        // Flatten deductions to top-level
+        payslipData.put("professionalTax", payroll.getProfessionalTax());
+        payslipData.put("tds", payroll.getTds());
+        payslipData.put("npsEmployee", payroll.getNpsEmployeeShare());
+        payslipData.put("npsEmployeeShare", payroll.getNpsEmployeeShare());
+        payslipData.put("cghs", payroll.getCghs());
+        payslipData.put("otherDeductions", payroll.getOtherDeductions());
+        payslipData.put("totalDeductions", payroll.getTotalDeductions());
 
         // Net salary
         payslipData.put("netSalary", payroll.getNetSalary());

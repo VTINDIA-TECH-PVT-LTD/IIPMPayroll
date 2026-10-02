@@ -39,10 +39,11 @@ public class PayrollCalculator {
     private double taDAPercentage       = 62.0;   // TA DA portion
 
     /* ============================================================
-       MAIN CALCULATION METHOD (with pay level for TA)
+       MAIN CALCULATION METHOD (with pay level for TA & ignorable pension)
        ============================================================ */
     public Map<String, Object> calculateMonthlySalary(double basicPay, String payLevel,
                                                        double tds, double otherDeductions,
+                                                       double ignorablePension,
                                                        Map<String, Double> settings) {
         Map<String, Object> result = new HashMap<>();
         try {
@@ -71,25 +72,25 @@ public class PayrollCalculator {
             double netSalary = 0.0;
 
             if (isContract) {
-                grossSalary = basicPay;
+                grossSalary = Math.max(0, basicPay - ignorablePension);
                 totalDeductions = professionalTax + tds + otherDeductions;
-                netSalary = grossSalary - totalDeductions;
+                netSalary = Math.max(0.0, grossSalary - totalDeductions);
             } else if (isDirector) {
                 da = calculateDA(basicPay);
-                grossSalary = basicPay + da;
+                grossSalary = Math.max(0, (basicPay + da) - ignorablePension);
                 cghs = 1000.0;
                 totalDeductions = professionalTax + tds + cghs + otherDeductions;
-                netSalary = grossSalary - totalDeductions;
+                netSalary = Math.max(0.0, grossSalary - totalDeductions);
             } else {
                 da = calculateDA(basicPay);
                 hra = calculateHRA(basicPay);
                 ta = calculateTA(payLevel);
                 npsEmployeeShare = calculateNPSEmployeeShare(basicPay, da);
                 npsEmployerShare = calculateNPSEmployerShare(basicPay, da);
-                grossSalary = basicPay + da + hra + ta + npsEmployerShare;
+                grossSalary = Math.max(0, (basicPay + da + hra + ta + npsEmployerShare) - ignorablePension);
                 cghs = calculateCGHS(payLevel);
                 totalDeductions = professionalTax + tds + npsEmployeeShare + cghs + otherDeductions + npsEmployerShare;
-                netSalary = grossSalary - totalDeductions;
+                netSalary = Math.max(0.0, grossSalary - totalDeductions);
             }
 
             result.put("basicPay",         roundToScale(basicPay));
@@ -97,6 +98,7 @@ public class PayrollCalculator {
             result.put("hra",              roundToScale(hra));
             result.put("ta",               roundToScale(ta));
             result.put("npsEmployerShare", roundToScale(npsEmployerShare));
+            result.put("ignorablePension", roundToScale(ignorablePension));
             result.put("grossSalary",      roundToScale(grossSalary));
             result.put("professionalTax",  roundToScale(professionalTax));
             result.put("tds",              roundToScale(tds));
@@ -107,8 +109,8 @@ public class PayrollCalculator {
             result.put("netSalary",        roundToScale(netSalary));
             result.put("success",          true);
 
-            log.info("Salary calc: Basic={} DA={} HRA={} TA={} Level={} Gross={} Net={}",
-                     basicPay, da, hra, ta, payLevel, grossSalary, netSalary);
+            log.info("Salary calc: Basic={} DA={} HRA={} TA={} IgnorablePension={} Level={} Gross={} Net={}",
+                     basicPay, da, hra, ta, ignorablePension, payLevel, grossSalary, netSalary);
         } catch (Exception e) {
             log.error("Error calculating salary", e);
             result.put("success", false);
@@ -117,11 +119,18 @@ public class PayrollCalculator {
         return result;
     }
 
+    /** Overload with 4 params (ignorablePension = 0) */
+    public Map<String, Object> calculateMonthlySalary(double basicPay, String payLevel,
+                                                       double tds, double otherDeductions,
+                                                       Map<String, Double> settings) {
+        return calculateMonthlySalary(basicPay, payLevel, tds, otherDeductions, 0.0, settings);
+    }
+
     /** Backward-compatible overload — defaults to Level 10 */
     public Map<String, Object> calculateMonthlySalary(double basicPay, double tds,
                                                        double otherDeductions,
                                                        Map<String, Double> settings) {
-        return calculateMonthlySalary(basicPay, "10", tds, otherDeductions, settings);
+        return calculateMonthlySalary(basicPay, "10", tds, otherDeductions, 0.0, settings);
     }
 
     /* ============================================================

@@ -39,7 +39,7 @@ public class PayrollService {
     @Autowired
     private com.iipm.payroll.util.TaxCalculator taxCalculator;
 
-    public Payroll createPayroll(String userId, int month, int year, double tds, double otherDeductions, String createdBy) {
+    public Payroll createPayroll(String userId, int month, int year, double tds, double otherDeductions, double ignorablePension, String createdBy) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -52,12 +52,13 @@ public class PayrollService {
         // Get all settings
         Map<String, Double> settings = settingService.getAllPayrollSettings();
 
-        // Calculate salary (pass payLevel for level-based TA calculation)
+        // Calculate salary (pass payLevel for level-based TA calculation and ignorablePension)
         Map<String, Object> calculation = payrollCalculator.calculateMonthlySalary(
                 user.getBasicPay() != null ? user.getBasicPay() : 0,
                 user.getPayLevel() != null ? user.getPayLevel() : "10",
                 tds,
                 otherDeductions,
+                ignorablePension,
                 settings
         );
 
@@ -72,6 +73,7 @@ public class PayrollService {
                 .hra(((Number) calculation.get("hra")).doubleValue())
                 .ta(((Number) calculation.get("ta")).doubleValue())
                 .npsEmployerShare(((Number) calculation.get("npsEmployerShare")).doubleValue())
+                .ignorablePension(ignorablePension)
                 .grossSalary(((Number) calculation.get("grossSalary")).doubleValue())
                 .tds(((Number) calculation.get("tds")).doubleValue())
                 .professionalTax(((Number) calculation.get("professionalTax")).doubleValue())
@@ -79,7 +81,7 @@ public class PayrollService {
                 .cghs(((Number) calculation.get("cghs")).doubleValue())
                 .otherDeductions(((Number) calculation.get("otherDeductions")).doubleValue())
                 .totalDeductions(((Number) calculation.get("totalDeductions")).doubleValue())
-                .netSalary(((Number) calculation.get("netSalary")).doubleValue())
+                .netSalary(Math.max(0.0, ((Number) calculation.get("netSalary")).doubleValue()))
                 .status("DRAFT")
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -88,7 +90,7 @@ public class PayrollService {
                 .build();
 
         Payroll saved = payrollRepository.save(payroll);
-        log.info("Payroll created for user {} (Month: {}/{})", user.getUsername(), month, year);
+        log.info("Payroll created for user {} (Month: {}/{}) with IgnorablePension: {}", user.getUsername(), month, year, ignorablePension);
 
         // Notify payroll officer
         notificationService.createNotification(userId, "PAYROLL_READY",
@@ -97,6 +99,12 @@ public class PayrollService {
                 "HIGH");
 
         return saved;
+    }
+
+    public Payroll createPayroll(String userId, int month, int year, double tds, double otherDeductions, String createdBy) {
+        User user = userRepository.findById(userId).orElse(null);
+        double ignorablePension = (user != null && user.getIgnorablePension() != null) ? user.getIgnorablePension() : 0.0;
+        return createPayroll(userId, month, year, tds, otherDeductions, ignorablePension, createdBy);
     }
 
     public Payroll getPayrollById(String id) {
@@ -185,6 +193,20 @@ public class PayrollService {
         return ids.stream().map(id -> approvePayroll(id, approvedBy)).collect(java.util.stream.Collectors.toList());
     }
 
+    public List<Payroll> submitBulkPayroll(List<String> ids, String submittedBy) {
+        List<Payroll> submitted = new java.util.ArrayList<>();
+        for (String id : ids) {
+            Payroll p = getPayrollById(id);
+            if ("DRAFT".equals(p.getStatus()) || "REJECTED".equals(p.getStatus()) || "PENDING".equals(p.getStatus())) {
+                p.setStatus("PENDING");
+                p.setUpdatedAt(LocalDateTime.now());
+                p.setUpdatedBy(submittedBy);
+                submitted.add(payrollRepository.save(p));
+            }
+        }
+        return submitted;
+    }
+
     public List<Payroll> rejectBulkPayroll(List<String> ids, String reason, String updatedBy) {
         return ids.stream().map(id -> rejectPayroll(id, reason, updatedBy, null)).collect(java.util.stream.Collectors.toList());
     }
@@ -221,8 +243,30 @@ public class PayrollService {
     public List<Payroll> createBulkPayroll(String department, String payLevelBand, int month, int year,
                                             Map<String, Double> tdsMap, Map<String, Double> otherDeductionsMap,
                                             Map<String, String> remarksMap, String createdBy) {
+        return createBulkPayroll(department, payLevelBand, month, year, tdsMap, otherDeductionsMap, null, null, remarksMap, createdBy, "PENDING");
+    }
+
+    public List<Payroll> createBulkPayroll(String department, String payLevelBand, int month, int year,
+                                            Map<String, Double> tdsMap, Map<String, Double> otherDeductionsMap,
+                                            Map<String, String> remarksMap, String createdBy, String targetStatus) {
+        return createBulkPayroll(department, payLevelBand, month, year, tdsMap, otherDeductionsMap, null, null, remarksMap, createdBy, targetStatus);
+    }
+
+    public List<Payroll> createBulkPayroll(String department, String payLevelBand, int month, int year,
+                                            Map<String, Double> tdsMap, Map<String, Double> otherDeductionsMap,
+                                            Map<String, Double> deanAllowanceMap,
+                                            Map<String, String> remarksMap, String createdBy, String targetStatus) {
+        return createBulkPayroll(department, payLevelBand, month, year, tdsMap, otherDeductionsMap, deanAllowanceMap, null, remarksMap, createdBy, targetStatus);
+    }
+
+    public List<Payroll> createBulkPayroll(String department, String payLevelBand, int month, int year,
+                                            Map<String, Double> tdsMap, Map<String, Double> otherDeductionsMap,
+                                            Map<String, Double> deanAllowanceMap,
+                                            Map<String, Double> ignorablePensionMap,
+                                            Map<String, String> remarksMap, String createdBy, String targetStatus) {
         List<User> users = userRepository.findAll();
         List<Payroll> created = new java.util.ArrayList<>();
+        String finalStatus = (targetStatus != null && !targetStatus.isEmpty()) ? targetStatus.toUpperCase() : "PENDING";
 
         String financialYear = (month >= 4 ? year + "-" + (year + 1) : (year - 1) + "-" + year);
 
@@ -245,6 +289,15 @@ public class PayrollService {
             if (!Boolean.TRUE.equals(user.getIsActive())) continue;
             if (user.getBasicPay() == null || user.getBasicPay() <= 0) continue;
 
+            double deanAllowance = (deanAllowanceMap != null && deanAllowanceMap.containsKey(user.getId()))
+                    ? deanAllowanceMap.get(user.getId())
+                    : (user.getDeanAllowance() != null ? user.getDeanAllowance()
+                    : (user.getSpecialAllowance() != null ? user.getSpecialAllowance() : 0.0));
+
+            double ignorablePension = (ignorablePensionMap != null && ignorablePensionMap.containsKey(user.getId()))
+                    ? ignorablePensionMap.get(user.getId())
+                    : (user.getIgnorablePension() != null ? user.getIgnorablePension() : 0.0);
+
             // Calculate dynamic TDS if not explicitly provided in the map
             double tds = 0.0;
             if (tdsMap != null && tdsMap.containsKey(user.getId())) {
@@ -257,10 +310,9 @@ public class PayrollService {
                 double da = payrollCalculator.calculateDA(basic);
                 double hra = payrollCalculator.calculateHRA(basic);
                 double ta = payrollCalculator.calculateTA(user.getPayLevel() != null ? user.getPayLevel() : "10");
-                double dean = user.getDeanAllowance() != null ? user.getDeanAllowance()
-                        : (user.getSpecialAllowance() != null ? user.getSpecialAllowance() : 0.0);
+                double dean = deanAllowance;
                 double monthlyNpsEmp = (basic + da) * 0.14;
-                double projectedIncome = (basic + da + hra + ta + dean + monthlyNpsEmp) * 12;
+                double projectedIncome = Math.max(0, (basic + da + hra + ta + dean + monthlyNpsEmp) - ignorablePension) * 12;
                 double annualNpsEmp = monthlyNpsEmp * 12;
                 tds = taxCalculator.calculateMonthlyTds(projectedIncome, annualNpsEmp, decl);
             }
@@ -268,9 +320,6 @@ public class PayrollService {
             double otherDeductions = (otherDeductionsMap != null && otherDeductionsMap.containsKey(user.getId()))
                     ? otherDeductionsMap.get(user.getId())
                     : (user.getOtherDeductions() != null ? user.getOtherDeductions() : 0.0);
-
-            double deanAllowance = user.getDeanAllowance() != null ? user.getDeanAllowance()
-                    : (user.getSpecialAllowance() != null ? user.getSpecialAllowance() : 0.0);
 
             try {
                 // Check if payroll already exists for this month/year
@@ -291,6 +340,7 @@ public class PayrollService {
                         user.getPayLevel() != null ? user.getPayLevel() : "10",
                         tds,
                         otherDeductions,
+                        ignorablePension,
                         settings
                     );
 
@@ -303,6 +353,7 @@ public class PayrollService {
                     existing.setTa(((Number) calculation.get("ta")).doubleValue());
                     existing.setNpsEmployerShare(((Number) calculation.get("npsEmployerShare")).doubleValue());
                     existing.setOtherAllowances(deanAllowance);
+                    existing.setIgnorablePension(ignorablePension);
                     existing.setGrossSalary(gross);
                     existing.setTds(((Number) calculation.get("tds")).doubleValue());
                     existing.setProfessionalTax(((Number) calculation.get("professionalTax")).doubleValue());
@@ -311,7 +362,7 @@ public class PayrollService {
                     existing.setOtherDeductions(((Number) calculation.get("otherDeductions")).doubleValue());
                     existing.setTotalDeductions(((Number) calculation.get("totalDeductions")).doubleValue());
                     existing.setNetSalary(net);
-                    existing.setStatus("PENDING");
+                    existing.setStatus(finalStatus);
                     existing.setUpdatedAt(java.time.LocalDateTime.now());
                     existing.setUpdatedBy(createdBy);
                     existing.setRemark(remarksMap != null ? remarksMap.getOrDefault(user.getId(), "") : "");
@@ -323,21 +374,21 @@ public class PayrollService {
 
                 String remark = remarksMap != null ? remarksMap.getOrDefault(user.getId(), "") : "";
 
-                payroll = createPayroll(user.getId(), month, year, tds, otherDeductions, createdBy);
+                payroll = createPayroll(user.getId(), month, year, tds, otherDeductions, ignorablePension, createdBy);
                 if (deanAllowance > 0) {
                     payroll.setOtherAllowances(deanAllowance);
                     payroll.setGrossSalary(payroll.getGrossSalary() + deanAllowance);
                     payroll.setNetSalary(payroll.getNetSalary() + deanAllowance);
                 }
                 payroll.setRemark(remark);
-                payroll.setStatus("PENDING"); // Submitted for approval
+                payroll.setStatus(finalStatus);
                 payrollRepository.save(payroll);
                 created.add(payroll);
             } catch (Exception e) {
                 log.warn("Skipping user {} during bulk processing: {}", user.getUsername(), e.getMessage());
             }
         }
-        log.info("Bulk payroll: created {} records", created.size());
+        log.info("Bulk payroll: {} records with status {}", created.size(), finalStatus);
         return created;
     }
 
@@ -389,8 +440,9 @@ public class PayrollService {
             double ta = payrollCalculator.calculateTA(user.getPayLevel() != null ? user.getPayLevel() : "10");
             double dean = user.getDeanAllowance() != null ? user.getDeanAllowance()
                     : (user.getSpecialAllowance() != null ? user.getSpecialAllowance() : 0.0);
+            double ignorablePension = user.getIgnorablePension() != null ? user.getIgnorablePension() : 0.0;
             double monthlyNpsEmp = (basic + da) * 0.14;
-            double projectedIncome = (basic + da + hra + ta + dean + monthlyNpsEmp) * 12;
+            double projectedIncome = Math.max(0, (basic + da + hra + ta + dean + monthlyNpsEmp) - ignorablePension) * 12;
             double annualNpsEmp = monthlyNpsEmp * 12;
             double tds = taxCalculator.calculateMonthlyTds(projectedIncome, annualNpsEmp, decl);
             
@@ -398,7 +450,8 @@ public class PayrollService {
                     basic, 
                     user.getPayLevel() != null ? user.getPayLevel() : "10", 
                     tds, 
-                    0.0, 
+                    0.0,
+                    ignorablePension,
                     settings
             );
 
@@ -411,8 +464,9 @@ public class PayrollService {
                 .da(((Number) calculation.get("da")).doubleValue())
                 .hra(((Number) calculation.get("hra")).doubleValue())
                 .ta(((Number) calculation.get("ta")).doubleValue())
-                .otherAllowances(0.0)
-                .grossSalary(((Number) calculation.get("grossSalary")).doubleValue())
+                .otherAllowances(dean)
+                .ignorablePension(ignorablePension)
+                .grossSalary(((Number) calculation.get("grossSalary")).doubleValue() + dean)
                 .tds(((Number) calculation.get("tds")).doubleValue())
                 .npsEmployeeShare(((Number) calculation.get("npsEmployeeShare")).doubleValue())
                 .npsEmployerShare(((Number) calculation.get("npsEmployerShare")).doubleValue())
@@ -420,7 +474,7 @@ public class PayrollService {
                 .cghs(((Number) calculation.get("cghs")).doubleValue())
                 .otherDeductions(0.0)
                 .totalDeductions(((Number) calculation.get("totalDeductions")).doubleValue())
-                .netSalary(((Number) calculation.get("netSalary")).doubleValue())
+                .netSalary(((Number) calculation.get("netSalary")).doubleValue() + dean)
                 .status("DRAFT")
                 .build();
                 

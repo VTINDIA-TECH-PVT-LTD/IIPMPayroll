@@ -546,10 +546,10 @@ const ArrearsCalculator: React.FC = () => {
                   }}
                   style={{ width: '260px', padding: '9px 12px' }}
                 >
-                  <option value="all">🌐 All Staff & Faculty ({users.length > 0 ? users.length : 'All'})</option>
-                  <option value="faculty">🎓 Regular Teaching Faculty</option>
-                  <option value="staff">👔 Regular Non-Teaching</option>
-                  <option value="contract">📋 Contract Employees</option>
+                  <option value="all">🌐 All Personnel ({users.length > 0 ? users.length : 'All'})</option>
+                  <option value="faculty">👨‍🏫 1) Regular - Teaching</option>
+                  <option value="staff">👔 2) Regular - Non Teaching</option>
+                  <option value="contract">📄 3) Contract</option>
                 </select>
                 <button className="btn-iipm" onClick={() => loadAllEmployeesToTable(bulkCategory)} style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '9px 16px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
                   ⚡ Populate Employees ({daRows.length > 0 ? `${daRows.length} Loaded` : 'Click to Load'})

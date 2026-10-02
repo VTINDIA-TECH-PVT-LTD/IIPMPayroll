@@ -34,8 +34,10 @@ public class PayrollController {
             double tds = ((Number) payrollData.get("tds")).doubleValue();
             double otherDeductions = payrollData.containsKey("otherDeductions") ?
                     ((Number) payrollData.get("otherDeductions")).doubleValue() : 0;
+            double ignorablePension = payrollData.containsKey("ignorablePension") ?
+                    ((Number) payrollData.get("ignorablePension")).doubleValue() : 0;
 
-            Payroll payroll = payrollService.createPayroll(userId, month, year, tds, otherDeductions, createdBy);
+            Payroll payroll = payrollService.createPayroll(userId, month, year, tds, otherDeductions, ignorablePension, createdBy);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Payroll created successfully", payroll));
         } catch (Exception e) {
@@ -149,6 +151,18 @@ public class PayrollController {
         }
     }
 
+    @PostMapping("/bulk-submit")
+    public ResponseEntity<ApiResponse<List<Payroll>>> bulkSubmitPayroll(@RequestBody List<String> ids,
+                                                                         @RequestHeader("X-User-Id") String submittedBy) {
+        try {
+            List<Payroll> payrolls = payrollService.submitBulkPayroll(ids, submittedBy);
+            return ResponseEntity.ok(ApiResponse.success("Payrolls submitted for approval successfully", payrolls));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Error submitting payrolls: " + e.getMessage(), null));
+        }
+    }
+
     @PostMapping("/bulk-reject")
     public ResponseEntity<ApiResponse<List<Payroll>>> bulkRejectPayroll(@RequestBody Map<String, Object> payload,
                                                                        @RequestHeader("X-User-Id") String updatedBy) {
@@ -193,6 +207,7 @@ public class PayrollController {
         try {
             String department = (String) bulkData.getOrDefault("department", "");
             String payLevel = (String) bulkData.getOrDefault("payLevel", "");
+            String status = (String) bulkData.getOrDefault("status", "PENDING");
             int month = ((Number) bulkData.get("month")).intValue();
             int year = ((Number) bulkData.get("year")).intValue();
 
@@ -207,13 +222,25 @@ public class PayrollController {
             otherDedRaw.forEach((k, v) -> otherDeductionsMap.put(k, ((Number) v).doubleValue()));
 
             @SuppressWarnings("unchecked")
+            Map<String, Object> deanRaw = (Map<String, Object>) bulkData.getOrDefault("deanAllowanceMap",
+                    bulkData.getOrDefault("otherAllowancesMap", new java.util.HashMap<>()));
+            Map<String, Double> deanAllowanceMap = new java.util.HashMap<>();
+            deanRaw.forEach((k, v) -> deanAllowanceMap.put(k, ((Number) v).doubleValue()));
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> pensionRaw = (Map<String, Object>) bulkData.getOrDefault("ignorablePensionMap", new java.util.HashMap<>());
+            Map<String, Double> ignorablePensionMap = new java.util.HashMap<>();
+            pensionRaw.forEach((k, v) -> ignorablePensionMap.put(k, ((Number) v).doubleValue()));
+
+            @SuppressWarnings("unchecked")
             Map<String, Object> remarksRaw = (Map<String, Object>) bulkData.getOrDefault("remarksMap", new java.util.HashMap<>());
             Map<String, String> remarksMap = new java.util.HashMap<>();
             remarksRaw.forEach((k, v) -> remarksMap.put(k, String.valueOf(v)));
 
-            List<Payroll> payrolls = payrollService.createBulkPayroll(department, payLevel, month, year, tdsMap, otherDeductionsMap, remarksMap, createdBy);
+            List<Payroll> payrolls = payrollService.createBulkPayroll(department, payLevel, month, year, tdsMap, otherDeductionsMap, deanAllowanceMap, ignorablePensionMap, remarksMap, createdBy, status);
+            String actionMsg = "DRAFT".equalsIgnoreCase(status) ? "saved as draft" : "created/submitted for approval";
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success("Bulk payroll created: " + payrolls.size() + " records", payrolls));
+                    .body(ApiResponse.success("Bulk payroll " + actionMsg + ": " + payrolls.size() + " records", payrolls));
         } catch (Exception e) {
             log.error("Error in bulk payroll creation", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

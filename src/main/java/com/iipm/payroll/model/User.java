@@ -55,6 +55,7 @@ public class User {
     // Allowances & Deductions
     private Double deanAllowance;
     private Double specialAllowance;
+    private Double ignorablePension;
     private Double otherDeductions;
     private Double taOverride;
     private Double cghsOverride;

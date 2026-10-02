@@ -8,7 +8,9 @@ import {
   Sun, Calendar, ChevronRight, CreditCard, MoreVertical,
   TrendingUp, TrendingDown, AlertCircle, ChevronDown, Activity
 } from 'lucide-react';
+import { formatEmployeeNameWithTitle } from '../utils/nameUtils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { DashboardContractCard } from '../components/ContractValidity';
 import '../styles/Dashboard.css';
 
 const AdminDashboard: React.FC = () => {
@@ -57,7 +59,7 @@ const AdminDashboard: React.FC = () => {
       
       const uMap: Record<string, string> = {};
       userList.forEach((u: any) => {
-        if (u.employeeId) uMap[u.employeeId] = `${u.firstName} ${u.lastName}`.trim();
+        if (u.employeeId) uMap[u.employeeId] = formatEmployeeNameWithTitle(u);
       });
       setUserMap(uMap);
 
@@ -155,15 +157,19 @@ const AdminDashboard: React.FC = () => {
       <div className="welcome-banner">
         <div className="welcome-banner-left">
           <div className="welcome-title">
-            <h1>{greeting}, {userCtx?.username || 'IIPMAdmin'}!</h1>
+            <h1>{greeting}, {userCtx?.username || 'Admin'}!</h1>
           </div>
           <div className="welcome-subtitle">
             Today is {now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. You have {stats.pendingApprovals} pending tasks.
           </div>
         </div>
-        <div className="next-payroll-card">
-          <div className="next-payroll-label">NEXT PAYROLL</div>
-          <div className="next-payroll-date">28 {monthName}</div>
+
+        <div className="welcome-banner-right-group">
+          <DashboardContractCard />
+          <div className="next-payroll-card">
+            <div className="next-payroll-label">NEXT PAYROLL</div>
+            <div className="next-payroll-date">28 {monthName}</div>
+          </div>
         </div>
       </div>
 
@@ -364,7 +370,7 @@ const AdminDashboard: React.FC = () => {
                     <tr key={u.id}>
                       <td>{u.employeeId}</td>
                       <td>
-                        <div style={{ fontWeight: 600, color: '#334155' }}>{u.firstName} {u.lastName}</div>
+                        <div style={{ fontWeight: 600, color: '#334155' }}>{formatEmployeeNameWithTitle(u)}</div>
                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{u.email}</div>
                       </td>
                       <td>{u.department || '—'}</td>

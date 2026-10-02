@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../App';
 import api from '../services/api';
 import { Menu } from 'lucide-react';
+import { TopbarContractPill } from './ContractValidity';
 import '../styles/Topbar.css';
 
 interface TopbarProps {
@@ -162,6 +163,7 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, onToggleSidebar }) => {
           </button>
         )}
         <div className="topbar-title-mobile">IIPE Payroll</div>
+        <TopbarContractPill />
       </div>
 
       <div className="topbar-right">

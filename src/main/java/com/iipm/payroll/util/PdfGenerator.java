@@ -35,11 +35,11 @@ public class PdfGenerator {
         title.setAlignment(Element.ALIGN_CENTER);
         document.add(title);
 
-        Paragraph subTitle = new Paragraph("(An Institute of National Importance at par with IITs/IIMs)\nMinistry of Petroleum and Natural Gas, Government of India", boldFont);
+        Paragraph subTitle = new Paragraph("(An Institute of National Importance)\nMinistry of Petroleum and Natural Gas, Government of India", boldFont);
         subTitle.setAlignment(Element.ALIGN_CENTER);
         document.add(subTitle);
 
-        Paragraph address = new Paragraph("EAB, Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India\nE-Mail : dr.finance@iipe.ac.in | Website: www.iipe.ac.in", smallFont);
+        Paragraph address = new Paragraph("Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India\nE-Mail : dr.finance@iipe.ac.in | Website: www.iipe.ac.in", smallFont);
         address.setAlignment(Element.ALIGN_CENTER);
         document.add(address);
 
@@ -58,8 +58,26 @@ public class PdfGenerator {
 
         document.add(new Paragraph("\n"));
 
-        String empName = payslipData.get("employeeName") != null ? payslipData.get("employeeName").toString() : "";
-        Paragraph nameHeader = new Paragraph("Mr./Ms. " + empName, boldFont);
+        String empName = payslipData.get("employeeName") != null ? payslipData.get("employeeName").toString().trim() : "";
+        String category = payslipData.get("category") != null ? payslipData.get("category").toString() : "";
+        String employeeId = payslipData.get("employeeId") != null ? payslipData.get("employeeId").toString() : "";
+        String designation = payslipData.get("designation") != null ? payslipData.get("designation").toString().toUpperCase() : "";
+        String dept = payslipData.get("department") != null ? payslipData.get("department").toString().toUpperCase() : "";
+        
+        boolean isAcademic = employeeId.toUpperCase().startsWith("TS") || 
+                             (employeeId.toUpperCase().startsWith("CT") && !employeeId.toUpperCase().startsWith("CNT")) ||
+                             category.toLowerCase().contains("teaching") || 
+                             designation.contains("PROFESSOR") || 
+                             designation.contains("FACULTY") ||
+                             dept.contains("ENGINEERING") || 
+                             dept.contains("SCIENCES") || 
+                             dept.equals("FACULTY") || 
+                             dept.equals("ACADEMIC");
+        
+        String cleanName = empName.replaceAll("(?i)^(dr\\.?|prof\\.?|mr\\.?|ms\\.?|mrs\\.?|shri\\.?|smt\\.?)\\s+", "").trim();
+        String formattedEmpName = (isAcademic ? "Dr. " : "Mr. ") + cleanName;
+
+        Paragraph nameHeader = new Paragraph(formattedEmpName, boldFont);
         nameHeader.setAlignment(Element.ALIGN_CENTER);
         document.add(nameHeader);
         document.add(new Paragraph("\n"));
@@ -74,7 +92,7 @@ public class PdfGenerator {
         addInfoRow(infoTable, "Employee Number", payslipData.get("employeeId"), "Date of Joining", payslipData.get("dateOfJoining"), normalFont);
         addInfoRow(infoTable, "Designation", payslipData.get("designation"), "Date of Next Increment", payslipData.get("dateOfNextIncrement") != null ? payslipData.get("dateOfNextIncrement") : "01-Jul-" + year, normalFont);
         addInfoRow(infoTable, "Department", payslipData.get("department") != null ? payslipData.get("department") : "Finance & Accounts", "PAN Number", payslipData.get("pan"), normalFont);
-        addInfoRow(infoTable, "Category", payslipData.get("category") != null ? payslipData.get("category") : "Non-Teaching Staff", "PRAN / NPS Number", payslipData.get("pran"), normalFont);
+        addInfoRow(infoTable, "Category", payslipData.get("category") != null ? payslipData.get("category") : "Regular - Non Teaching", "PRAN / EPF Number", payslipData.get("pran"), normalFont);
         addInfoRow(infoTable, "Pay Level", "Level-" + payslipData.get("payLevel"), "Tax Regime", payslipData.get("taxRegime") != null ? payslipData.get("taxRegime") : "New Tax Regime", normalFont);
         addInfoRow(infoTable, "Bank Details", payslipData.get("bankAccount"), "Pay Drawn (Days)", "30 / 30 Days", normalFont);
 
@@ -102,16 +120,19 @@ public class PdfGenerator {
         double promotionArrears = getDouble(payslipData, "promotionArrears");
         double arrears = getDouble(payslipData, "arrears");
         double otherAllowances = getDouble(payslipData, "otherAllowances");
-        double totalEarnings = getDouble(payslipData, "grossSalary");
+        double ignorablePension = getDouble(payslipData, "ignorablePension");
+        
+        double totalEarnings = Math.max(0.0, (basic + da + hra + npsEmpShare + ta + daArrears + promotionArrears + arrears + otherAllowances) - ignorablePension);
 
         double cghs = getDouble(payslipData, "cghs");
         double npsEmployee = getDouble(payslipData, "npsEmployeeShare");
-        double npsEmployer = getDouble(payslipData, "npsEmployerShare");
+        double npsEmployer = npsEmpShare;
         double pt = getDouble(payslipData, "professionalTax");
         double tds = getDouble(payslipData, "tds");
         double otherDeductions = getDouble(payslipData, "otherDeductions");
-        double totalDeductions = getDouble(payslipData, "totalDeductions");
-        double netSalary = getDouble(payslipData, "netSalary");
+        
+        double totalDeductions = cghs + npsEmployee + npsEmployer + pt + tds + otherDeductions;
+        double netSalary = Math.max(0.0, totalEarnings - totalDeductions);
 
         DecimalFormat df = new DecimalFormat("#,##0.00");
 
@@ -133,21 +154,28 @@ public class PdfGenerator {
         if (otherAllowances > 0) {
             addSalaryRow(salaryTable, "Special / Dean Allowance", df.format(otherAllowances), "", "", false);
         }
+        if (ignorablePension > 0) {
+            addSalaryRow(salaryTable, "Deductable Pension (Deducted)", "- " + df.format(ignorablePension), "", "", false);
+        }
         if (otherDeductions > 0) {
             addSalaryRow(salaryTable, "", "", "Other Deductions", df.format(otherDeductions), false);
         }
 
-        addSalaryRow(salaryTable, "Total Earnings", df.format(totalEarnings), "Total Deductions", df.format(totalDeductions), true);
+        addSalaryRow(salaryTable, "Total Earnings (Gross)", df.format(totalEarnings), "Total Deductions", df.format(totalDeductions), true);
         
         addSalaryRow(salaryTable, "", "", "Net Amount", "Rs " + df.format(netSalary), true);
 
         document.add(salaryTable);
         document.add(new Paragraph("\n"));
 
-        Paragraph amtInWords = new Paragraph("Amount (in words):\nINR " + numberToWords((int)netSalary) + " Only", smallFont);
-        document.add(amtInWords);
+        if (ignorablePension > 0) {
+            Font warnFont = new Font(Font.FontFamily.HELVETICA, 8, Font.ITALIC, BaseColor.DARK_GRAY);
+            Paragraph warnPara = new Paragraph("* Note: Deductable Pension of Rs. " + df.format(ignorablePension) + " has been adjusted from Gross Salary as per 7th CPC re-employment rules.", warnFont);
+            document.add(warnPara);
+            document.add(new Paragraph("\n"));
+        }
 
-        document.add(new Paragraph("\n\n"));
+        document.add(new Paragraph("\n"));
         Paragraph footer = new Paragraph("This is a Computer Generated Pay Slip", smallFont);
         footer.setAlignment(Element.ALIGN_CENTER);
         document.add(footer);
@@ -191,9 +219,28 @@ public class PdfGenerator {
         table.addCell(c1); table.addCell(c2); table.addCell(c3); table.addCell(c4);
     }
 
+    @SuppressWarnings("unchecked")
     private double getDouble(Map<String, Object> map, String key) {
-        if (!map.containsKey(key) || map.get(key) == null) return 0.0;
-        return ((Number) map.get(key)).doubleValue();
+        if (map == null) return 0.0;
+        if (map.containsKey(key) && map.get(key) != null) {
+            return ((Number) map.get(key)).doubleValue();
+        }
+        if (map.containsKey("earnings") && map.get("earnings") instanceof Map) {
+            Map<String, Object> earn = (Map<String, Object>) map.get("earnings");
+            if (earn.containsKey(key) && earn.get(key) != null) {
+                return ((Number) earn.get(key)).doubleValue();
+            }
+        }
+        if (map.containsKey("deductions") && map.get("deductions") instanceof Map) {
+            Map<String, Object> ded = (Map<String, Object>) map.get("deductions");
+            if (ded.containsKey(key) && ded.get(key) != null) {
+                return ((Number) ded.get(key)).doubleValue();
+            }
+            if (key.equals("npsEmployeeShare") && ded.containsKey("npsEmployee") && ded.get("npsEmployee") != null) {
+                return ((Number) ded.get("npsEmployee")).doubleValue();
+            }
+        }
+        return 0.0;
     }
 
     // Deprecated / Unused based on new layout, returning empty for safety if called elsewhere

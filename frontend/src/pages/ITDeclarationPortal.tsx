@@ -1,18 +1,17 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { UserContext } from '../App';
 import apiService from '../services/api';
-import { CheckCircle, Clock, XCircle, FileText, Send, RotateCcw, Printer, Eye } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, FileText, Send, RotateCcw, Printer, Eye, Upload, Trash2, Download, Paperclip, AlertCircle, FileCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const ITDeclarationPortal = () => {
   const userCtx = useContext(UserContext);
   const userId = userCtx?.userId;
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [declarations, setDeclarations] = useState<any[]>([]);
   const [declaration, setDeclaration] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('ALL');
-  const [viewModal, setViewModal] = useState<any>(null);
   const [form, setForm] = useState({
     taxRegime: 'NEW',
     section80C: '',
@@ -21,9 +20,11 @@ const ITDeclarationPortal = () => {
     homeLoanInterest: '',
     financialYear: '',
   });
+  const [documents, setDocuments] = useState<string[]>([]); // "filename|data:mime;base64,..."
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ name: string; url: string } | null>(null);
 
   const currentFY = (() => {
     const now = new Date();
@@ -53,19 +54,55 @@ const ITDeclarationPortal = () => {
             homeLoanInterest: currentDec.homeLoanInterest || '',
             financialYear: currentDec.financialYear || currentFY,
           });
+          setDocuments(currentDec.documents || []);
         } else {
           setDeclaration(null);
           setForm(f => ({ ...f, financialYear: currentFY }));
+          setDocuments([]);
         }
       } else {
         setDeclarations([]);
         setDeclaration(null);
         setForm(f => ({ ...f, financialYear: currentFY }));
+        setDocuments([]);
       }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    Array.from(files).forEach((file) => {
+      if (file.size > 10 * 1024 * 1024) {
+        setMessage({ text: `File "${file.name}" exceeds 10MB limit.`, type: 'error' });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        setDocuments(prev => [...prev, `${file.name}|${base64}`]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemoveDoc = (index: number) => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleOpenDoc = (docString: string) => {
+    const parts = docString.split('|');
+    const name = parts[0] || 'Document';
+    const dataUrl = parts.slice(1).join('|');
+    if (dataUrl) {
+      setPreviewDoc({ name, url: dataUrl });
     }
   };
 
@@ -86,6 +123,7 @@ const ITDeclarationPortal = () => {
         section80D: Number(form.section80D) || 0,
         hraExemption: Number(form.hraExemption) || 0,
         homeLoanInterest: Number(form.homeLoanInterest) || 0,
+        documents: documents,
         status: 'PENDING',
       };
       // If resubmitting after rejection, carry ID
@@ -93,7 +131,7 @@ const ITDeclarationPortal = () => {
         payload.id = declaration.id;
       }
       await apiService.saveItDeclaration(payload);
-      setMessage({ text: 'IT Declaration submitted successfully! Pending FA Operator review.', type: 'success' });
+      setMessage({ text: 'IT Declaration and investment proofs submitted successfully! Pending FA review.', type: 'success' });
       await loadDeclaration();
     } catch (err) {
       setMessage({ text: 'Error submitting IT Declaration. Please try again.', type: 'error' });
@@ -133,12 +171,27 @@ const ITDeclarationPortal = () => {
       {/* Page Header */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#ffffff', padding: '24px 28px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)', border: '1px solid var(--border)', marginBottom: '24px' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>IT Declaration</h1>
-          <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Submit your tax regime and deductions for TDS calculation.</p>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>IT Declaration & Form 16</h1>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Submit tax regime, declare deductions, attach investment proofs, and access Form 16.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-hover)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Financial Year:</span>
-          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)' }}>{currentFY}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => navigate('/form16')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              background: '#0a3161', color: '#fff', border: 'none',
+              borderRadius: '8px', padding: '10px 18px', fontWeight: 700,
+              fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 4px 10px rgba(10,49,97,0.2)', transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+            onMouseOut={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            <Printer size={16} /> View / Print Form 16
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-hover)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>FY:</span>
+            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)' }}>{currentFY}</span>
+          </div>
         </div>
       </div>
 
@@ -193,7 +246,7 @@ const ITDeclarationPortal = () => {
                   <span style={{ fontWeight: 600 }}>Reason for rejection: </span>
                   <strong>{declaration.rejectionReason || 'No reason provided'}</strong>
                   <br />
-                  <span>Please review the comments, update your declaration accordingly, and resubmit it below.</span>
+                  <span>Please review the comments, update your declaration and investment proof documents accordingly, and resubmit below.</span>
                 </>
               )}
             </div>
@@ -244,13 +297,43 @@ const ITDeclarationPortal = () => {
               Submitted on {fmtDate(declaration.createdAt)}
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '24px' }}>
             <SummaryRow label="Tax Regime" value={declaration.taxRegime === 'OLD' ? '🏛️ Old Regime' : '🆕 New Regime'} highlight={true} />
             <SummaryRow label="Section 80C" value={fmt(declaration.section80C)} />
             <SummaryRow label="Section 80D" value={fmt(declaration.section80D)} />
             <SummaryRow label="HRA Exemption" value={fmt(declaration.hraExemption)} />
             <SummaryRow label="Home Loan Interest" value={fmt(declaration.homeLoanInterest)} />
           </div>
+
+          {/* Attached Documents in Summary */}
+          {declaration.documents && declaration.documents.length > 0 && (
+            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+              <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.95rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Paperclip size={18} color="var(--primary)" />
+                Attached Proof Documents ({declaration.documents.length}):
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+                {declaration.documents.map((docStr: string, idx: number) => {
+                  const parts = docStr.split('|');
+                  const docName = parts[0] || `Proof_${idx + 1}`;
+                  return (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                        <FileCheck size={18} color="#16a34a" />
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{docName}</span>
+                      </div>
+                      <button
+                        onClick={() => handleOpenDoc(docStr)}
+                        style={{ padding: '4px 10px', fontSize: '0.8rem', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Eye size={14} /> View
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -263,7 +346,7 @@ const ITDeclarationPortal = () => {
               {isRejected ? 'Update & Resubmit IT Declaration' : 'New IT Declaration'}
             </h4>
             <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-muted)' }}>
-              Please select your preferred tax regime and provide accurate deduction details.
+              Please select your preferred tax regime, provide deduction details, and upload relevant investment proofs.
             </p>
           </div>
 
@@ -342,10 +425,79 @@ const ITDeclarationPortal = () => {
               </div>
             )}
 
+            {/* Document Upload Section */}
+            <div style={{ marginBottom: '32px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '1rem', color: 'var(--text-main)', marginBottom: '12px' }}>
+                {isOldRegime ? '3.' : '2.'} Attach Investment Proof Documents (Receipts, Policies, Rent Agreements)
+              </label>
+              
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: '2px dashed #cbd5e1',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  textAlign: 'center',
+                  background: '#f8fafc',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  marginBottom: '16px'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = '#eff6ff'; }}
+                onMouseOut={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; }}
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload} 
+                  multiple 
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" 
+                  style={{ display: 'none' }} 
+                />
+                <Upload size={32} color="var(--primary)" style={{ margin: '0 auto 8px' }} />
+                <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.95rem' }}>Click here to upload documents</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>Supports PDF, PNG, JPG, Word files (up to 10MB per file)</div>
+              </div>
+
+              {/* Uploaded files list */}
+              {documents.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                  {documents.map((docStr, idx) => {
+                    const parts = docStr.split('|');
+                    const docName = parts[0] || `File_${idx + 1}`;
+                    return (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                          <Paperclip size={16} color="var(--primary)" />
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{docName}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDoc(docStr)}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '4px', cursor: 'pointer', fontWeight: 700 }}
+                          >
+                            <Eye size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveDoc(idx)}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', fontWeight: 700 }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '16px', paddingTop: '24px', borderTop: '1px solid #f1f5f9' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  Ensure all details are correct before submission.
+                  Ensure all details and attached documents are accurate before submission.
                 </span>
                 <button
                   type="submit"
@@ -372,7 +524,44 @@ const ITDeclarationPortal = () => {
         </div>
       )}
 
-
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{ width: '90%', maxWidth: '850px', maxHeight: '90vh', background: '#fff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>
+            <div style={{ padding: '16px 20px', background: '#0a3161', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Paperclip size={18} /> {previewDoc.name}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <a
+                  href={previewDoc.url}
+                  download={previewDoc.name}
+                  style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', padding: '6px 12px', borderRadius: '6px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Download size={14} /> Download
+                </a>
+                <button
+                  onClick={() => setPreviewDoc(null)}
+                  style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1.2rem', padding: '4px 8px' }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div style={{ flex: 1, padding: '16px', background: '#f1f5f9', overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+              {previewDoc.url.startsWith('data:image/') ? (
+                <img src={previewDoc.url} alt={previewDoc.name} style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }} />
+              ) : (
+                <iframe src={previewDoc.url} title={previewDoc.name} style={{ width: '100%', height: '70vh', border: 'none', borderRadius: '8px', background: '#fff' }} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

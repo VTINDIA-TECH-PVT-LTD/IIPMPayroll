@@ -16,7 +16,7 @@ public class DataSeeder {
     @Bean
     CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            createUserIfNotFound(userRepository, passwordEncoder, "IIPMAdmin", "IIPM@_#2026", UserRole.SUPER_ADMIN, "EMP001", "Super", "Admin");
+            createUserIfNotFound(userRepository, passwordEncoder, "IIPEAdmin", "IIPE@_#2026", UserRole.SUPER_ADMIN, "EMP001", "Super", "Admin");
             createUserIfNotFound(userRepository, passwordEncoder, "FA_Admin", "FA_Admin@=_2026", UserRole.FA_ADMIN, "EMP002", "F&A", "Admin");
             createUserIfNotFound(userRepository, passwordEncoder, "FA_Operator", "FA_Operator@+*2026", UserRole.FA_OPERATOR, "EMP003", "F&A", "Operator");
             createUserIfNotFound(userRepository, passwordEncoder, "Adm_Admin", "Adm_Admin@=_2026", UserRole.ADMIN_ADMIN, "EMP004", "Administration", "Admin");
@@ -25,20 +25,24 @@ public class DataSeeder {
     }
 
     private void createUserIfNotFound(UserRepository userRepository, PasswordEncoder passwordEncoder, String username, String password, UserRole role, String empId, String firstName, String lastName) {
-        if (!userRepository.findByUsername(username).isPresent()) {
-            User user = User.builder()
-                    .username(username)
-                    .password(passwordEncoder.encode(password))
-                    .role(role)
-                    .employeeId(empId)
-                    .firstName(firstName)
-                    .lastName(lastName)
-                    .email(username.toLowerCase() + "@iipm.ac.in")
-                    .isActive(true)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
-            userRepository.save(user);
+        try {
+            if (!userRepository.findByUsername(username).isPresent() && !userRepository.existsByEmployeeId(empId)) {
+                User user = User.builder()
+                        .username(username)
+                        .password(passwordEncoder.encode(password))
+                        .role(role)
+                        .employeeId(empId)
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .email(username.toLowerCase() + "@iipe.ac.in")
+                        .isActive(true)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+                userRepository.save(user);
+            }
+        } catch (Exception e) {
+            // Ignore duplicate key if user already exists
         }
     }
 }

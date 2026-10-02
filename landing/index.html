@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Virtoy Payroll Software | Enterprise 7th CPC Payroll & HRMS by VT INDIA TECH</title>
+  <meta name="description" content="Next-Gen Intelligent Payroll & HRMS Software by VT INDIA TECH (Virtoy Technologies Pvt. Ltd.). Complete 7th CPC Pay Matrix, Tax TDS forecasting, Form 16, and Arrears automation.">
+  <meta name="keywords" content="VT Payroll, Virtoy Payroll, 7th CPC Payroll, Institute Payroll System, Indian Autonomous Body Payroll, University Payroll Software, HRMS Bhubaneswar, Virtoy Technologies">
+  <meta name="theme-color" content="#eb1267">
+
+  <!-- Open Graph / Meta -->
+  <meta property="og:title" content="Virtoy Payroll Software | Enterprise 7th CPC Payroll & HRMS Solutions">
+  <meta property="og:description" content="Automate, calculate, and disburse institute payroll with zero errors. Built by Virtoy Technologies Pvt. Ltd. (VT INDIA).">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vtpayroll.in">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/img/logo.png?v=2.1">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="assets/css/style.css?v=3.2">
+</head>
+<body>
+
+  <!-- MONEY RAIN CANVAS ANIMATION LAYER -->
+  <canvas id="moneyRainCanvas" class="money-rain-canvas"></canvas>
+
+  <!-- INTERACTIVE MONEY RAIN CONTROLLER -->
+  <div class="money-rain-control" id="moneyRainControl" title="Toggle Real-Time Money Rain Animation">
+    <div class="mrain-icon-wrap">
+      <i class="fa-solid fa-money-bill-transfer"></i>
+    </div>
+    <div class="mrain-text-wrap">
+      <span class="mrain-title">Salary Money Rain</span>
+      <span class="mrain-status" id="moneyRainStatus">Active ● Click to Shower</span>
+    </div>
+  </div>
+
+  <!-- TOP ANNOUNCEMENT BAR -->
+  <div class="announcement-bar">
+    <div class="announcement-content">
+      <span class="badge-pill"><i class="fa-solid fa-sparkles"></i> LIVE DEPLOYMENT</span>
+      <span>Powering National Autonomous Institutes with 100% 7th CPC Accuracy</span>
+      <a href="https://iipe.vtpayroll.in" target="_blank" class="announcement-link">
+        Explore IIPE Portal <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#" class="brand" aria-label="Virtoy Payroll Home">
+        <img src="assets/img/logo.png?v=2.4" alt="Virtoy Technologies Logo" class="brand-logo" width="173" height="42">
+        <div class="brand-divider"></div>
+        <div class="brand-info">
+          <span class="brand-title"><span class="text-gradient">PAYROLL</span></span>
+          <span class="brand-subtitle">BY VT INDIA</span>
+        </div>
+      </a>
+
+      <nav class="nav-menu" id="navMenu">
+        <ul class="nav-links">
+          <li><a href="#simulator" class="nav-link">7th CPC Calc</a></li>
+          <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#batch-demo" class="nav-link">Live Engine</a></li>
+          <li><a href="#workflow" class="nav-link">Workflow</a></li>
+          <li><a href="#showcase" class="nav-link">Clients</a></li>
+          <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+        <div class="nav-mobile-actions">
+          <a href="https://iipe.vtpayroll.in" target="_blank" class="btn btn-outline btn-full">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> IIPE Client Login
+          </a>
+          <a href="#contact" class="btn btn-primary btn-full">
+            <i class="fa-solid fa-calendar-check"></i> Book a Live Demo
+          </a>
+        </div>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="https://iipe.vtpayroll.in" target="_blank" class="btn btn-outline nav-btn-desktop">
+          <i class="fa-solid fa-lock"></i> Client Login
+        </a>
+        <a href="#contact" class="btn btn-primary nav-btn-desktop">
+          <i class="fa-solid fa-calendar-check"></i> Book Demo
+        </a>
+        <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle Navigation Menu">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero" id="home">
+    <div class="hero-bg-glow"></div>
+    <div class="bg-grid-pattern"></div>
+
+    <div class="hero-container">
+      <div class="hero-left">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>100% Statutory Compliant & 7th CPC Ready</span>
+        </div>
+
+        <h1 class="hero-title">
+          Automate, Calculate & Disburse Institute Payroll with <span class="text-gradient">Zero Errors.</span>
+        </h1>
+
+        <p class="hero-desc">
+          An enterprise-grade, intelligent payroll and HRMS platform engineered specifically for <b>Central Autonomous Bodies, Premier Educational Institutes (IITs/NITs/IIPEs), and High-Growth Enterprises</b>.
+        </p>
+
+        <div class="hero-buttons">
+          <a href="#contact" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-rocket"></i> Request Institute Demo
+          </a>
+          <a href="https://iipe.vtpayroll.in" target="_blank" class="btn btn-outline btn-lg">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Live IIPE Portal
+          </a>
+        </div>
+
+        <div class="hero-stats-banner">
+          <div class="stat-item">
+            <div class="stat-val">100%</div>
+            <div class="stat-lbl">7th CPC Precision</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-val">&lt; 2s</div>
+            <div class="stat-lbl">Batch Run Speed</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-val">1-Click</div>
+            <div class="stat-lbl">Payslips & Form 16</div>
+          </div>
+        </div>
+
+        <div class="hero-trust-list">
+          <span class="trust-badge"><i class="fa-solid fa-check-circle"></i> Academic Pay Matrix (10 to 14A)</span>
+          <span class="trust-badge"><i class="fa-solid fa-check-circle"></i> Admin Pay Levels (1 to 13)</span>
+          <span class="trust-badge"><i class="fa-solid fa-check-circle"></i> NPS 10% + 14% Govt Share</span>
+          <span class="trust-badge"><i class="fa-solid fa-check-circle"></i> Old & New Tax Regime TDS</span>
+        </div>
+      </div>
+
+      <!-- HERO RIGHT: INTERACTIVE 7th CPC SIMULATOR -->
+      <div class="hero-right" id="simulator">
+        <div class="sim-card glass-panel">
+          <div class="sim-card-top-bar"></div>
+          
+          <div class="sim-header">
+            <div class="sim-title">
+              <div class="sim-icon-box">
+                <i class="fa-solid fa-calculator"></i>
+              </div>
+              <div>
+                <div class="sim-heading">Live 7th CPC Salary Simulator</div>
+                <div class="sim-subheading">Select Pay Scale & Watch Real-Time Recalculation</div>
+              </div>
+            </div>
+            <div class="live-status-pill">
+              <span class="pulse-dot"></span> Real-Time Calc
+            </div>
+          </div>
+
+          <!-- Controls Grid -->
+          <div class="sim-controls-grid">
+            <div class="sim-control-group">
+              <label class="sim-label" for="simLevel">
+                <i class="fa-solid fa-id-badge"></i> Pay Level (7th CPC)
+              </label>
+              <select id="simLevel" class="sim-select">
+                <optgroup label="Academic Faculty Pay Scales">
+                  <option value="10">Level 10 (Asst. Prof Entry - ₹57,700)</option>
+                  <option value="11">Level 11 (Senior Scale - ₹68,900)</option>
+                  <option value="12">Level 12 (Selection Grade - ₹1,01,500)</option>
+                  <option value="13A" selected>Level 13A (Associate Prof - ₹1,31,400)</option>
+                  <option value="14">Level 14 (Professor - ₹1,44,200)</option>
+                  <option value="14A">Level 14A (Senior Prof / Dir - ₹1,59,100)</option>
+                </optgroup>
+                <optgroup label="Administrative & Officer Scales">
+                  <option value="admin_12">Admin Level 12 (Registrar / FO - ₹78,800)</option>
+                  <option value="admin_10">Admin Level 10 (Assistant Registrar - ₹56,100)</option>
+                  <option value="admin_7">Admin Level 7 (Technical Officer - ₹44,900)</option>
+                  <option value="admin_6">Admin Level 6 (Senior Assistant - ₹35,400)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div class="sim-control-group">
+              <label class="sim-label" for="simCity">
+                <i class="fa-solid fa-city"></i> City Classification (HRA)
+              </label>
+              <select id="simCity" class="sim-select">
+                <option value="0.27">Tier X Metro Cities (27% HRA)</option>
+                <option value="0.18" selected>Tier Y Cities - Vizag/IIPE (18% HRA)</option>
+                <option value="0.09">Tier Z Non-Metro (9% HRA)</option>
+              </select>
+            </div>
+
+            <div class="sim-control-group">
+              <label class="sim-label" for="simDa">
+                <i class="fa-solid fa-percent"></i> Dearness Allowance (DA Index)
+              </label>
+              <select id="simDa" class="sim-select">
+                <option value="0.53" selected>53% DA (Current Central Govt Benchmark)</option>
+                <option value="0.50">50% DA Rate</option>
+                <option value="0.55">55% DA Projected</option>
+              </select>
+            </div>
+
+            <div class="sim-control-group">
+              <label class="sim-label" for="simTaxRegime">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Tax Regime (TDS)
+              </label>
+              <select id="simTaxRegime" class="sim-select">
+                <option value="new" selected>New Tax Regime (Slab Optimized)</option>
+                <option value="old">Old Tax Regime (Sec 80C/80D Deductions)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Net Disbursed Display -->
+          <div class="sim-net-card">
+            <div class="sim-net-header">
+              <span class="sim-net-label"><i class="fa-solid fa-money-bill-wave"></i> NET MONTHLY DISBURSED SALARY</span>
+              <span class="sim-net-badge">Direct Bank Transfer</span>
+            </div>
+            <div class="sim-net-val-row">
+              <div class="sim-net-amount" id="simNetAmount">₹1,90,832</div>
+              <button class="btn btn-sm btn-white" id="openSamplePayslipBtn" title="Generate Sample Payslip">
+                <i class="fa-solid fa-file-pdf"></i> View Sample Payslip
+              </button>
+            </div>
+          </div>
+
+          <!-- Breakdown Mini Boxes -->
+          <div class="sim-breakdown-grid">
+            <div class="sim-mini-box">
+              <div class="sim-mini-label"><i class="fa-solid fa-wallet"></i> Basic Pay</div>
+              <div class="sim-mini-val text-white" id="simBasic">₹1,31,400</div>
+            </div>
+            <div class="sim-mini-box">
+              <div class="sim-mini-label"><i class="fa-solid fa-arrow-trend-up"></i> DA (53%)</div>
+              <div class="sim-mini-val text-white" id="simDaVal">₹69,642</div>
+            </div>
+            <div class="sim-mini-box">
+              <div class="sim-mini-label"><i class="fa-solid fa-house-chimney"></i> HRA Amount</div>
+              <div class="sim-mini-val text-white" id="simHraVal">₹23,652</div>
+            </div>
+            <div class="sim-mini-box">
+              <div class="sim-mini-label"><i class="fa-solid fa-car-side"></i> Transport (TA)</div>
+              <div class="sim-mini-val text-white" id="simTaVal">₹5,508</div>
+            </div>
+            <div class="sim-mini-box border-rose">
+              <div class="sim-mini-label text-rose"><i class="fa-solid fa-piggy-bank"></i> NPS (10%)</div>
+              <div class="sim-mini-val text-rose" id="simNpsVal">-₹20,104</div>
+            </div>
+            <div class="sim-mini-box border-rose">
+              <div class="sim-mini-label text-rose"><i class="fa-solid fa-receipt"></i> Monthly TDS</div>
+              <div class="sim-mini-val text-rose" id="simTdsVal">-₹18,416</div>
+            </div>
+          </div>
+
+          <!-- Live Activity Feed Ticker -->
+          <div class="sim-ticker-bar">
+            <div class="ticker-left">
+              <i class="fa-solid fa-circle-notch fa-spin text-brand"></i>
+              <span id="liveActionTicker">DA Indexed to 53% • Fully Compliant</span>
+            </div>
+            <span class="ticker-active-tag">● Automated Sync</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTERACTIVE REAL-TIME BATCH RUNNER ANIMATION SECTION -->
+  <section class="section section-alt" id="batch-demo">
+    <div class="section-header">
+      <span class="section-badge"><i class="fa-solid fa-bolt"></i> Real-Time Processing Engine</span>
+      <h2 class="section-title">Experience the Power of 1-Click Institute Payroll Disbursal</h2>
+      <p class="section-desc">
+        Watch Virtoy's high-speed calculation engine process hundreds of employee records, compute DA arrears, evaluate tax slabs, and prepare bank registers in real-time.
+      </p>
+    </div>
+
+    <div class="batch-runner-card glass-card">
+      <div class="runner-header">
+        <div class="runner-title-wrap">
+          <div class="runner-indicator live"></div>
+          <div>
+            <h3 class="runner-title">Live Institute Payroll Engine Simulator</h3>
+            <p class="runner-subtitle">Target: 450 Faculty & Administrative Staff Profiles</p>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="startBatchSimBtn">
+          <i class="fa-solid fa-play"></i> Run Live Batch Simulation
+        </button>
+      </div>
+
+      <!-- Live Step Progress Tracker -->
+      <div class="batch-steps-grid">
+        <div class="batch-step-box active" id="bStep1">
+          <div class="bstep-icon"><i class="fa-solid fa-fingerprint"></i></div>
+          <div class="bstep-info">
+            <div class="bstep-title">1. Attendance & Leaves</div>
+            <div class="bstep-status" id="bStep1Status">Ready</div>
+          </div>
+        </div>
+
+        <div class="batch-step-box" id="bStep2">
+          <div class="bstep-icon"><i class="fa-solid fa-table-cells"></i></div>
+          <div class="bstep-info">
+            <div class="bstep-title">2. 7th CPC Matrix & DA</div>
+            <div class="bstep-status" id="bStep2Status">Pending</div>
+          </div>
+        </div>
+
+        <div class="batch-step-box" id="bStep3">
+          <div class="bstep-icon"><i class="fa-solid fa-calculator"></i></div>
+          <div class="bstep-info">
+            <div class="bstep-title">3. TDS & NPS Deductions</div>
+            <div class="bstep-status" id="bStep3Status">Pending</div>
+          </div>
+        </div>
+
+        <div class="batch-step-box" id="bStep4">
+          <div class="bstep-icon"><i class="fa-solid fa-file-shield"></i></div>
+          <div class="bstep-info">
+            <div class="bstep-title">4. Form 16 & Payslip PDF</div>
+            <div class="bstep-status" id="bStep4Status">Pending</div>
+          </div>
+        </div>
+
+        <div class="batch-step-box" id="bStep5">
+          <div class="bstep-icon"><i class="fa-solid fa-building-columns"></i></div>
+          <div class="bstep-info">
+            <div class="bstep-title">5. Bank Direct NEFT</div>
+            <div class="bstep-status" id="bStep5Status">Pending</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Progress Bar -->
+      <div class="batch-progress-wrapper">
+        <div class="batch-progress-header">
+          <span class="batch-progress-label" id="batchProgressLabel">Engine Idle - Click 'Run Live Batch Simulation' to start</span>
+          <span class="batch-progress-percent" id="batchProgressPercent">0%</span>
+        </div>
+        <div class="batch-progress-track">
+          <div class="batch-progress-fill" id="batchProgressFill"></div>
+        </div>
+      </div>
+
+      <!-- Live Terminal Output Simulation -->
+      <div class="batch-terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dots">
+            <span class="tdot red"></span>
+            <span class="tdot yellow"></span>
+            <span class="tdot green"></span>
+          </div>
+          <span class="terminal-title">vtpayroll-kernel-worker-01 (7th-CPC-Engine-Live)</span>
+        </div>
+        <div class="terminal-body" id="terminalOutput">
+          <p class="term-line text-muted">[System] Kernel initialized. Ready for payroll batch invocation.</p>
+          <p class="term-line text-brand">[Ready] Connected to MongoDB Atlas Cluster with Multi-tier Security.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5-STEP AUTOMATED WORKFLOW -->
+  <section class="section" id="workflow">
+    <div class="section-header">
+      <span class="section-badge"><i class="fa-solid fa-diagram-project"></i> Operational Excellence</span>
+      <h2 class="section-title">The Complete Automated Monthly Salary Cycle</h2>
+      <p class="section-desc">
+        Eliminate weeks of error-prone spreadsheet calculations. Virtoy Payroll automates the end-to-end salary cycle in 5 seamless steps with strict audit governance.
+      </p>
+    </div>
+
+    <div class="workflow-container">
+      <div class="workflow-pipeline">
+        <div class="workflow-step-card">
+          <div class="step-badge">01</div>
+          <div class="step-icon-wrap">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <h3 class="step-title">Data Ingestion & Increments</h3>
+          <p class="step-desc">
+            Sync employee attendance, new joins, promotions, annual increments, and leave encashments with zero duplicate entries.
+          </p>
+        </div>
+
+        <div class="workflow-step-card">
+          <div class="step-badge">02</div>
+          <div class="step-icon-wrap">
+            <i class="fa-solid fa-microchip"></i>
+          </div>
+          <h3 class="step-title">7th CPC Formula Engine</h3>
+          <p class="step-desc">
+            Instant calculation of Academic/Admin Pay Bands, indexed DA, HRA classification (X/Y/Z), and special academic allowances.
+          </p>
+        </div>
+
+        <div class="workflow-step-card">
+          <div class="step-badge">03</div>
+          <div class="step-icon-wrap">
+            <i class="fa-solid fa-scale-balanced"></i>
+          </div>
+          <h3 class="step-title">Tax & Statutory Processing</h3>
+          <p class="step-desc">
+            Real-time monthly TDS projections, New vs Old tax regime comparison, NPS (10% + 14%), CGHS, and Professional Tax.
+          </p>
+        </div>
+
+        <div class="workflow-step-card">
+          <div class="step-badge">04</div>
+          <div class="step-icon-wrap">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <h3 class="step-title">Maker-Checker Dual Lock</h3>
+          <p class="step-desc">
+            Segregated review and approval between Finance Operators (FA_Operator) and Sanctioning Authorities (FA_Admin) with cryptographic audit locks.
+          </p>
+        </div>
+
+        <div class="workflow-step-card">
+          <div class="step-badge">05</div>
+          <div class="step-icon-wrap">
+            <i class="fa-solid fa-money-check-dollar"></i>
+          </div>
+          <h3 class="step-title">Bank Disbursal & PDF Slips</h3>
+          <p class="step-desc">
+            Direct generation of multi-bank payment registers (SBI/HDFC/ICICI) and instant automated email delivery of password-protected PDF payslips.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPREHENSIVE SUITE OF EVERYTHING WE PROVIDE -->
+  <section class="section section-alt" id="features">
+    <div class="section-header">
+      <span class="section-badge"><i class="fa-solid fa-cubes"></i> Everything We Provide</span>
+      <h2 class="section-title">Engineered to Handle Every Enterprise Payroll Complexity</h2>
+      <p class="section-desc">
+        From complex academic pay matrix formulas to statutory reporting and retrospective arrears, Virtoy Payroll covers the complete compensation lifecycle.
+      </p>
+    </div>
+
+    <div class="modules-grid">
+      <!-- Feature Card 1 -->
+      <div class="module-card">
+        <div class="module-icon-wrap">
+          <i class="fa-solid fa-table-cells"></i>
+        </div>
+        <h3 class="module-title">7th CPC Pay Matrix Engine</h3>
+        <p class="module-desc">
+          Automated support for Central Pay Commission Academic Pay Levels (10 to 14A) and Administrative Levels (1 to 13) with automated annual increments (July / January).
+        </p>
+        <ul class="module-features">
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Academic Levels 10, 11, 12, 13A, 14, 14A</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Administrative Levels 1 through 13</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Dynamic Dearness Allowance (DA) Indexing</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> City Classification HRA Rates (X 27%, Y 18%, Z 9%)</li>
+        </ul>
+      </div>
+
+      <!-- Feature Card 2 -->
+      <div class="module-card">
+        <div class="module-icon-wrap">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+        </div>
+        <h3 class="module-title">Intelligent Tax & TDS Forecaster</h3>
+        <p class="module-desc">
+          Automated comparison between New Tax Regime and Old Tax Regime with live monthly TDS forecasts for employees, avoiding year-end tax shocks.
+        </p>
+        <ul class="module-features">
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Section 80C, 80D, 24(b) deduction tracking</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Online employee IT declaration & proof upload</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Year-To-Date (YTD) salary tax statement</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Auto-switch to most beneficial tax regime</li>
+        </ul>
+      </div>
+
+      <!-- Feature Card 3 -->
+      <div class="module-card">
+        <div class="module-icon-wrap">
+          <i class="fa-solid fa-file-pdf"></i>
+        </div>
+        <h3 class="module-title">1-Click Payslips & Form 16 Engine</h3>
+        <p class="module-desc">
+          Generate institute-branded PDF payslips with security barcodes, granular earnings/deductions breakdown, and automated Form 16 Part A & B downloads.
+        </p>
+        <ul class="module-features">
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Bulk & individual PDF payslip downloads</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Form 16 (Part A & Part B) generation</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Automated password encryption (PAN + DOB)</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Direct email dispatch to registered faculty</li>
+        </ul>
+      </div>
+
+      <!-- Feature Card 4 -->
+      <div class="module-card">
+        <div class="module-icon-wrap">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <h3 class="module-title">Retrospective Arrears Calculator</h3>
+        <p class="module-desc">
+          Eliminate manual spreadsheet headaches. Calculate Dearness Allowance (DA) arrears, promotion backpay, and pay revisions across multiple months in seconds.
+        </p>
+        <ul class="module-features">
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Multi-month retroactive difference computation</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Sanction order & approval sheet generation</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Automated NPS/TDS adjustments on arrears</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> 1-Click integration into active payroll run</li>
+        </ul>
+      </div>
+
+      <!-- Feature Card 5 -->
+      <div class="module-card">
+        <div class="module-icon-wrap">
+          <i class="fa-solid fa-building-columns"></i>
+        </div>
+        <h3 class="module-title">Direct Bank Payout & Disbursal</h3>
+        <p class="module-desc">
+          Instant export of formatted bank direct credit files (NEFT, RTGS, NACH) compliant with major banks (SBI, HDFC, ICICI, PNB, Canara).
+        </p>
+        <ul class="module-features">
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Bank Advice & Payment Register generation</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Corporate Net Banking batch upload files</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Automated account number & IFSC validation</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Rejection reconciliation tracking</li>
+        </ul>
+      </div>
+
+      <!-- Feature Card 6 -->
+      <div class="module-card">
+        <div class="module-icon-wrap">
+          <i class="fa-solid fa-user-lock"></i>
+        </div>
+        <h3 class="module-title">Role-Based Access Control (RBAC)</h3>
+        <p class="module-desc">
+          Strict separation of duties between Finance Officers, Super Admins, Department Approvers, and Employees with immutable audit logging.
+        </p>
+        <ul class="module-features">
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Finance Operator & Finance Admin roles</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Registrar / Director approving authority</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Self-Service Employee Portal (ESS)</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Full timestamped audit trails of all modifications</li>
+        </ul>
+      </div>
+
+      <!-- Feature Card 7 -->
+      <div class="module-card">
+        <div class="module-icon-wrap">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h3 class="module-title">Statutory & Pension Compliances</h3>
+        <p class="module-desc">
+          Complete built-in compliance with Central Govt norms for National Pension System (NPS), Central Govt Health Scheme (CGHS), and Professional Tax.
+        </p>
+        <ul class="module-features">
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> NPS Tier-1 (10% Employee + 14% Govt Share)</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> NSDL / CRA File Export for PRAN uploads</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> State-wise Professional Tax (PT) slabs</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Gratuity & Leave Encashment calculations</li>
+        </ul>
+      </div>
+
+      <!-- Feature Card 8 -->
+      <div class="module-card">
+        <div class="module-icon-wrap">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <h3 class="module-title">Employee Self-Service (ESS)</h3>
+        <p class="module-desc">
+          Empower faculty and staff with a modern web portal to view salary slips, track tax deductions, submit investment proofs, and download annual certificates.
+        </p>
+        <ul class="module-features">
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Mobile-optimized self-service login</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Interactive historical payslip archive</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Tax simulator & deduction calculator</li>
+          <li class="module-feature-item"><i class="fa-solid fa-circle-check"></i> Automated notification & SMS/Email alerts</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON TABLE SECTION -->
+  <section class="section">
+    <div class="section-header">
+      <span class="section-badge"><i class="fa-solid fa-code-compare"></i> The Modern Difference</span>
+      <h2 class="section-title">Why Institutes Choose Virtoy Over Legacy Spreadsheets</h2>
+      <p class="section-desc">
+        See how automating payroll with Virtoy Technologies eliminates risk, saves hundreds of administrative hours, and ensures 100% legal compliance.
+      </p>
+    </div>
+
+    <div class="comparison-container">
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th class="col-feature">Key Capability</th>
+              <th class="col-virtoy">
+                <span class="brand-table-tag"><i class="fa-solid fa-star"></i> Virtoy Payroll</span>
+              </th>
+              <th class="col-legacy">Legacy Excel / Manual Spreadsheets</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="feat-name"><b>7th CPC Pay Matrix Mapping</b></td>
+              <td class="feat-virtoy"><i class="fa-solid fa-circle-check check-icon"></i> 100% Automated with Dynamic DA indexing</td>
+              <td class="feat-legacy"><i class="fa-solid fa-circle-xmark x-icon"></i> Manual formulas prone to broken links</td>
+            </tr>
+            <tr>
+              <td class="feat-name"><b>Monthly Batch Run Time (500+ staff)</b></td>
+              <td class="feat-virtoy"><i class="fa-solid fa-circle-check check-icon"></i> <b>Under 2 Minutes</b></td>
+              <td class="feat-legacy"><i class="fa-solid fa-circle-xmark x-icon"></i> 7 to 14 Days of manual calculation</td>
+            </tr>
+            <tr>
+              <td class="feat-name"><b>Old vs New Tax Regime TDS Forecaster</b></td>
+              <td class="feat-virtoy"><i class="fa-solid fa-circle-check check-icon"></i> Live Automated Comparison & Deductions</td>
+              <td class="feat-legacy"><i class="fa-solid fa-circle-xmark x-icon"></i> Heavy year-end calculations & tax disputes</td>
+            </tr>
+            <tr>
+              <td class="feat-name"><b>Retrospective Arrears Computation</b></td>
+              <td class="feat-virtoy"><i class="fa-solid fa-circle-check check-icon"></i> Instant multi-month delta engine</td>
+              <td class="feat-legacy"><i class="fa-solid fa-circle-xmark x-icon"></i> Highly complex & error-prone manual sheets</td>
+            </tr>
+            <tr>
+              <td class="feat-name"><b>Payslip & Form 16 Distribution</b></td>
+              <td class="feat-virtoy"><i class="fa-solid fa-circle-check check-icon"></i> 1-Click Secure Password Protected PDFs</td>
+              <td class="feat-legacy"><i class="fa-solid fa-circle-xmark x-icon"></i> Manual mail merge & paper printing</td>
+            </tr>
+            <tr>
+              <td class="feat-name"><b>Maker-Checker Approval Security</b></td>
+              <td class="feat-virtoy"><i class="fa-solid fa-circle-check check-icon"></i> Role-Based Cryptographic Lock & Audit Trail</td>
+              <td class="feat-legacy"><i class="fa-solid fa-circle-xmark x-icon"></i> Zero audit logging; risk of tampering</td>
+            </tr>
+            <tr>
+              <td class="feat-name"><b>Direct Bank Payment Register</b></td>
+              <td class="feat-virtoy"><i class="fa-solid fa-circle-check check-icon"></i> Auto-Generated SBI/HDFC/ICICI Direct Files</td>
+              <td class="feat-legacy"><i class="fa-solid fa-circle-xmark x-icon"></i> Manual copy-pasting of account numbers</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE CLIENT SHOWCASE (IIPE VISAKHAPATNAM) -->
+  <section class="client-section" id="showcase">
+    <div class="client-container">
+      <div class="client-left">
+        <span class="client-tag"><i class="fa-solid fa-building-columns"></i> Enterprise Deployment Spotlight</span>
+        <h2 class="client-title">Powering Indian Institute of Petroleum & Energy (IIPE)</h2>
+        <p class="client-desc">
+          Virtoy Technologies successfully architected and deployed the official cloud-native Payroll Management System for <b>Indian Institute of Petroleum and Energy, Visakhapatnam</b> (An Institute of National Importance under Ministry of Petroleum & Natural Gas, Govt. of India).
+        </p>
+
+        <div class="client-metrics-grid">
+          <div class="client-metric-card">
+            <div class="client-metric-val">100%</div>
+            <div class="client-metric-lbl">7th CPC Accuracy</div>
+          </div>
+          <div class="client-metric-card">
+            <div class="client-metric-val">&lt; 90s</div>
+            <div class="client-metric-lbl">Full Disbursal Time</div>
+          </div>
+          <div class="client-metric-card">
+            <div class="client-metric-val">Zero</div>
+            <div class="client-metric-lbl">Calculation Errors</div>
+          </div>
+        </div>
+
+        <div class="client-action-row">
+          <a href="https://iipe.vtpayroll.in" target="_blank" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Live Portal (iipe.vtpayroll.in)
+          </a>
+          <a href="#contact" class="btn btn-outline-white btn-lg">
+            <i class="fa-solid fa-envelope"></i> Request System Case Study
+          </a>
+        </div>
+      </div>
+
+      <div class="client-right">
+        <div class="client-preview-card glass-panel-dark">
+          <div class="client-logo-row">
+            <div class="client-logo-box">
+              <img src="https://iipe.vtpayroll.in/logo.png" alt="IIPE Visakhapatnam Logo" class="client-inst-logo" onerror="this.src='assets/img/logo.png'">
+            </div>
+            <div>
+              <div class="client-inst-title">Indian Institute of Petroleum & Energy</div>
+              <div class="client-inst-sub">Visakhapatnam, Andhra Pradesh | Govt. of India</div>
+            </div>
+          </div>
+
+          <p class="client-quote">
+            "Virtoy Payroll completely digitized our institute's compensation management — from Academic 7th CPC Pay Matrix levels and dynamic DA/HRA indexing to Old vs New tax forecasts and automated PDF payslips."
+          </p>
+
+          <div class="client-tags-wrap">
+            <span class="client-badge-tag"><i class="fa-solid fa-check"></i> Faculty Pay Levels 10 to 14A</span>
+            <span class="client-badge-tag"><i class="fa-solid fa-check"></i> Admin Pay Levels 1 to 13</span>
+            <span class="client-badge-tag"><i class="fa-solid fa-check"></i> NPS Tier-1 10% + 14%</span>
+            <span class="client-badge-tag"><i class="fa-solid fa-check"></i> Automated Arrears</span>
+            <span class="client-badge-tag"><i class="fa-solid fa-check"></i> Form 16 Part A/B</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT & DEMO REQUEST FORM -->
+  <section class="contact-section" id="contact">
+    <div class="contact-container">
+      <div class="contact-info">
+        <span class="section-badge"><i class="fa-solid fa-headset"></i> Get in Touch</span>
+        <h2 class="contact-info-title">Transform Your Organization's Payroll Operations</h2>
+        <p class="contact-info-desc">
+          Schedule a live demonstration tailored to your institute's pay scales or discuss custom integration requirements with our enterprise engineering team at <b>Virtoy Technologies</b>.
+        </p>
+
+        <div class="contact-details-list">
+          <div class="contact-item">
+            <div class="contact-icon-box">
+              <i class="fa-solid fa-building"></i>
+            </div>
+            <div>
+              <div class="contact-item-title">Corporate Headquarters</div>
+              <div class="contact-item-val">
+                <b>Virtoy Technologies Pvt. Ltd. (VT INDIA)</b><br>
+                Tower-A, 4th Floor, Room 409, O-HUB, SEZ Road, Chandaka Industrial Estate, Bhubaneswar, Odisha – 751024
+              </div>
+            </div>
+          </div>
+
+          <div class="contact-item">
+            <div class="contact-icon-box">
+              <i class="fa-solid fa-phone"></i>
+            </div>
+            <div>
+              <div class="contact-item-title">Direct Enterprise Support</div>
+              <div class="contact-item-val">
+                <a href="tel:+919861802325">+91-9861802325</a> &nbsp;|&nbsp; <a href="tel:+917008505418">+91-7008505418</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="contact-item">
+            <div class="contact-icon-box">
+              <i class="fa-solid fa-envelope"></i>
+            </div>
+            <div>
+              <div class="contact-item-title">Official Product Email</div>
+              <div class="contact-item-val">
+                <a href="mailto:info@vtindia.com">info@vtindia.com</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="contact-item">
+            <div class="contact-icon-box">
+              <i class="fa-solid fa-globe"></i>
+            </div>
+            <div>
+              <div class="contact-item-title">Parent Company Website</div>
+              <div class="contact-item-val">
+                <a href="https://www.vtindia.com" target="_blank" class="contact-link">www.vtindia.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORM CARD -->
+      <div class="contact-form-card glass-panel">
+        <h3 class="form-title">Request a Live System Demo</h3>
+        <p class="form-subtitle">Fill in your requirements below and our product lead will reach out within 2 hours.</p>
+
+        <form id="demoForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="fullName">Full Name *</label>
+              <input type="text" id="fullName" class="form-input" placeholder="e.g. Dr. Rajesh Sharma" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="email">Official Email *</label>
+              <input type="email" id="email" class="form-input" placeholder="name@institute.ac.in" required>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone / WhatsApp Number *</label>
+              <input type="tel" id="phone" class="form-input" placeholder="+91 9876543210" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="orgName">Institute / Organization Name *</label>
+              <input type="text" id="orgName" class="form-input" placeholder="e.g. National Institute of Tech" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="empCount">Estimated Employee / Staff Count</label>
+            <select id="empCount" class="form-select">
+              <option value="50-200">50 - 200 Employees</option>
+              <option value="200-500" selected>200 - 500 Employees (Institute)</option>
+              <option value="500-1500">500 - 1,500 Employees</option>
+              <option value="1500+">1,500+ Employees (University / Large Enterprise)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="message">Specific Requirements / Scale Details</label>
+            <textarea id="message" class="form-textarea" placeholder="Describe specific pay scales, statutory rules, or existing ERP integrations..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full btn-lg">
+            <i class="fa-solid fa-paper-plane"></i> Submit Demo Request
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-col-main">
+        <div class="footer-brand-header">
+          <img src="assets/img/logo_footer.png?v=2.4" alt="Virtoy Technologies Logo" class="footer-brand-logo" width="173" height="42">
+          <div class="brand-divider footer-divider"></div>
+          <span class="footer-brand-text"><span class="text-gradient">PAYROLL</span></span>
+        </div>
+        <p class="footer-brand-desc">
+          Virtoy Payroll is engineered and maintained by <b>Virtoy Technologies Pvt. Ltd. (VT INDIA)</b>, leading the digital transformation of educational institutes, autonomous bodies, and enterprises across India.
+        </p>
+        <p class="footer-cin">
+          CIN: U72200OR2020PTC033481 | Registered in Odisha, India.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="footer-col-title">Product Solutions</h4>
+        <ul class="footer-links">
+          <li><a href="#simulator" class="footer-link">7th CPC Pay Matrix</a></li>
+          <li><a href="#features" class="footer-link">Automated TDS & Tax</a></li>
+          <li><a href="#features" class="footer-link">Form 16 & Payslips</a></li>
+          <li><a href="#features" class="footer-link">Arrears Calculator</a></li>
+          <li><a href="#features" class="footer-link">Employee Self-Service</a></li>
+          <li><a href="#batch-demo" class="footer-link">Batch Payout Engine</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="footer-col-title">Client Access</h4>
+        <ul class="footer-links">
+          <li><a href="https://iipe.vtpayroll.in" target="_blank" class="footer-link highlight"><i class="fa-solid fa-arrow-up-right-from-square"></i> IIPE Client Portal</a></li>
+          <li><a href="#contact" class="footer-link"><i class="fa-solid fa-envelope"></i> Request New Portal</a></li>
+          <li><a href="https://www.vtindia.com" target="_blank" class="footer-link"><i class="fa-solid fa-globe"></i> Corporate Website</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="footer-col-title">Offices</h4>
+        <p class="footer-office-text">
+          <b>Bhubaneswar:</b> Tower-A, 4th Floor, O-HUB, SEZ Road, Chandaka Industrial Estate, Bhubaneswar, Odisha – 751024
+        </p>
+        <p class="footer-office-text">
+          <b>Kolkata:</b> 3rd Floor, Jharanalaya, 635 Baishnabghatta, Patuli, Kolkata – 700084
+        </p>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">
+        © 2026 <b>Virtoy Technologies Pvt. Ltd. (VT INDIA)</b>. All Rights Reserved.
+      </div>
+      <div class="footer-bottom-links">
+        <a href="https://www.vtindia.com" target="_blank">vtindia.com</a>
+        <a href="#contact">Support</a>
+        <a href="https://iipe.vtpayroll.in" target="_blank" class="text-brand">IIPE Live Portal</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SAMPLE PAYSLIP MODAL -->
+  <div class="modal-overlay" id="payslipModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="fa-solid fa-file-invoice modal-icon"></i>
+          <div>
+            <h3 class="modal-title">Live Sample Payslip Preview</h3>
+            <p class="modal-subtitle">Auto-generated with active 7th CPC Simulator parameters</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="closePayslipModalBtn" aria-label="Close Preview">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="payslip-preview-sheet" id="printablePayslip">
+          <!-- SUBTLE WATERMARK LOGO -->
+          <div class="ps-watermark">
+            <img src="assets/img/logo.png?v=2.6" alt="Virtoy Technologies Watermark">
+          </div>
+
+          <!-- PAYSLIP HEADER WITH COMPANY LOGO -->
+          <div class="ps-brand-top">
+            <div class="ps-logo-group">
+              <img src="assets/img/logo.png?v=2.6" alt="Virtoy Technologies Logo" class="ps-header-logo">
+              <span class="ps-platform-badge"><i class="fa-solid fa-shield-halved"></i> VT INDIA PAYROLL</span>
+            </div>
+
+            <div class="ps-org-center">
+              <h2 class="ps-org-name">VIRTOY TECHNOLOGIES PVT. LTD.</h2>
+              <p class="ps-org-sub">VT INDIA TECH PVT LTD • Enterprise Payroll & HRMS Solutions</p>
+              <p class="ps-org-address">Tower-A, 4th Floor, O-HUB, SEZ Road, Chandaka Industrial Estate, Bhubaneswar, Odisha – 751024</p>
+            </div>
+
+            <div class="ps-qr-wrap">
+              <div class="ps-qr-box">
+                <i class="fa-solid fa-qrcode"></i>
+              </div>
+              <div class="ps-qr-meta">
+                <span class="ps-qr-title">7th CPC ENGINE</span>
+                <span class="ps-qr-status">AUDIT VERIFIED ✓</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TITLE BANNER -->
+          <div class="ps-title-bar">
+            <span class="ps-title-text"><i class="fa-solid fa-receipt"></i> SALARY DISBURSAL ADVICE • MARCH 2026</span>
+            <span class="ps-confidential-pill">CONFIDENTIAL</span>
+          </div>
+
+          <!-- EMPLOYEE INFO GRID -->
+          <div class="ps-emp-info-grid">
+            <div class="ps-info-cell"><span class="ps-info-lbl">Employee ID:</span><b class="ps-info-val">VT/ENG/2026/108</b></div>
+            <div class="ps-info-cell"><span class="ps-info-lbl">Employee Name:</span><b class="ps-info-val">Dr. Rajesh Sharma</b></div>
+            <div class="ps-info-cell"><span class="ps-info-lbl">Designation:</span><b class="ps-info-val" id="psDesig">Associate Professor</b></div>
+            <div class="ps-info-cell"><span class="ps-info-lbl">Pay Matrix Scale:</span><b class="ps-info-val" id="psPayLevel">Level 13A (₹1,31,400)</b></div>
+            <div class="ps-info-cell"><span class="ps-info-lbl">Bank Account:</span><b class="ps-info-val">State Bank of India (***4821)</b></div>
+            <div class="ps-info-cell"><span class="ps-info-lbl">IFSC Code:</span><b class="ps-info-val">SBIN0000842</b></div>
+            <div class="ps-info-cell"><span class="ps-info-lbl">PAN Number:</span><b class="ps-info-val">ABCDE1234F</b></div>
+            <div class="ps-info-cell"><span class="ps-info-lbl">PRAN / NPS ID:</span><b class="ps-info-val">110023489104</b></div>
+            <div class="ps-info-cell"><span class="ps-info-lbl">Days Worked:</span><b class="ps-info-val">31 / 31 Days (Paid)</b></div>
+            <div class="ps-info-cell"><span class="ps-info-lbl">Tax Regime:</span><b class="ps-info-val" id="psTaxRegimeDisplay">New Tax Regime (Sec 115BAC)</b></div>
+          </div>
+
+          <!-- EARNINGS & DEDUCTIONS TABLES -->
+          <div class="ps-tables-row">
+            <!-- EARNINGS COLUMN -->
+            <div class="ps-col">
+              <div class="ps-col-title green">
+                <span><i class="fa-solid fa-plus-circle"></i> EARNINGS & ALLOWANCES</span>
+                <span>AMOUNT (₹)</span>
+              </div>
+              <div class="ps-row"><span>Basic Pay (7th CPC Matrix)</span><b id="psBasic">₹1,31,400</b></div>
+              <div class="ps-row"><span>Dearness Allowance (DA 53%)</span><b id="psDa">₹69,642</b></div>
+              <div class="ps-row"><span>House Rent Allowance (HRA)</span><b id="psHra">₹23,652</b></div>
+              <div class="ps-row"><span>Transport Allowance (TA)</span><b id="psTa">₹3,600</b></div>
+              <div class="ps-row"><span>DA on Transport Allowance</span><b id="psDaTa">₹1,908</b></div>
+              <div class="ps-row"><span>Academic Research Grant</span><b>₹0</b></div>
+              <div class="ps-row ps-total green-total">
+                <span>TOTAL GROSS EARNINGS</span>
+                <b id="psGross">₹2,30,202</b>
+              </div>
+            </div>
+
+            <!-- DEDUCTIONS COLUMN -->
+            <div class="ps-col">
+              <div class="ps-col-title red">
+                <span><i class="fa-solid fa-minus-circle"></i> STATUTORY DEDUCTIONS</span>
+                <span>AMOUNT (₹)</span>
+              </div>
+              <div class="ps-row"><span>NPS Tier-1 (10% Basic + DA)</span><b id="psNps">₹20,104</b></div>
+              <div class="ps-row"><span>Income Tax TDS (Monthly)</span><b id="psTds">₹18,416</b></div>
+              <div class="ps-row"><span>CGHS Health Scheme</span><b>₹650</b></div>
+              <div class="ps-row"><span>Professional Tax (PT)</span><b>₹200</b></div>
+              <div class="ps-row"><span>Institute Benevolent Fund</span><b>₹0</b></div>
+              <div class="ps-row"><span>Festival Advance Recovery</span><b>₹0</b></div>
+              <div class="ps-row ps-total red-total">
+                <span>TOTAL DEDUCTIONS</span>
+                <b id="psDeductions">₹39,370</b>
+              </div>
+            </div>
+          </div>
+
+          <!-- NET SALARY DISBURSAL BANNER -->
+          <div class="ps-net-banner">
+            <div class="ps-net-left">
+              <div class="ps-net-lbl">NET DISBURSED SALARY (TAKE-HOME)</div>
+              <div class="ps-net-words" id="psNetWords">One Lakh Ninety Thousand Eight Hundred Thirty Two Rupees Only</div>
+              <div class="ps-net-mode"><i class="fa-solid fa-circle-check text-brand"></i> Disbursal Mode: Direct Electronic NEFT Transfer</div>
+            </div>
+            <div class="ps-net-right">
+              <div class="ps-net-amount-title">NET AMOUNT PAID</div>
+              <div class="ps-net-num" id="psNetFinal">₹1,90,832</div>
+            </div>
+          </div>
+
+          <!-- FOOTER SIGNATURE & VERIFICATION -->
+          <div class="ps-doc-footer">
+            <div class="ps-doc-footnote">
+              <p><b>Note:</b> This is a computer-generated salary slip processed securely via <b>Virtoy Payroll (VT INDIA TECH PVT LTD)</b> and does not require a physical signature.</p>
+              <p>For inquiries or enterprise HRMS demonstrations, contact <a href="mailto:info@vtindia.com" style="color: var(--brand-primary); text-decoration: underline;">info@vtindia.com</a> | <a href="https://vtpayroll.in" target="_blank" style="color: var(--brand-primary); text-decoration: underline;">vtpayroll.in</a></p>
+            </div>
+            <div class="ps-sign-block">
+              <div class="ps-sign-box">
+                <i class="fa-solid fa-file-signature ps-sign-icon"></i>
+                <div class="ps-sign-text">DIGITALLY SIGNED</div>
+                <div class="ps-sign-role">Finance Controller / HR Operations</div>
+                <div class="ps-sign-inst">Virtoy Technologies Pvt. Ltd.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="closePayslipModalBtn2">Close Preview</button>
+        <button class="btn btn-primary" onclick="window.print()">
+          <i class="fa-solid fa-print"></i> Print Sample Slip
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPECIAL TRIBUTE & GRATITUDE MODAL FOR PIYALI MAM -->
+  <div class="modal-overlay tribute-modal-overlay" id="piyaliTributeModal">
+    <div class="modal-card tribute-modal-card">
+      <div class="tribute-glow-orb"></div>
+      <div class="tribute-glow-orb-2"></div>
+      
+      <button class="modal-close-btn tribute-close-btn" id="closeTributeModalBtn" aria-label="Close Tribute">&times;</button>
+
+      <div class="tribute-content">
+        <!-- Floating Animated Crown & Badge -->
+        <div class="tribute-badge-wrap">
+          <div class="tribute-icon-circle">
+            <i class="fa-solid fa-crown tribute-crown-icon"></i>
+            <span class="tribute-sparkle-dot s1">✨</span>
+            <span class="tribute-sparkle-dot s2">💖</span>
+            <span class="tribute-sparkle-dot s3">⭐</span>
+          </div>
+          <div class="tribute-pill">
+            <i class="fa-solid fa-award"></i> SPECIAL LEADERSHIP TRIBUTE
+          </div>
+        </div>
+
+        <!-- Main Heading -->
+        <h2 class="tribute-main-title">
+          Thank You, <span class="tribute-name-gradient">Piyali Mam!</span>
+        </h2>
+        <p class="tribute-sub-title">
+          Honouring Inspiring Leadership, Visionary Direction & Constant Guidance
+        </p>
+
+        <!-- Message Body Card -->
+        <div class="tribute-message-card">
+          <div class="tribute-quote-mark">“</div>
+          <p class="tribute-body-text">
+            On behalf of the entire <b>Virtoy Technologies</b> engineering & product team, we express our heartfelt gratitude and highest regards to you, <b>Piyali Mam</b>.
+          </p>
+          <p class="tribute-body-text secondary">
+            Your continuous encouragement, strategic insight, and dedication inspire us every day to build ground-breaking enterprise innovations like <b>Virtoy Payroll</b>. We are immensely grateful for your empowering leadership!
+          </p>
+        </div>
+
+        <!-- 3 Pillars of Excellence -->
+        <div class="tribute-pillars-grid">
+          <div class="tribute-pillar">
+            <div class="tribute-pillar-icon"><i class="fa-solid fa-gem"></i></div>
+            <div class="tribute-pillar-title">Inspiring Leadership</div>
+            <div class="tribute-pillar-desc">Guiding with vision and excellence</div>
+          </div>
+          <div class="tribute-pillar">
+            <div class="tribute-pillar-icon"><i class="fa-solid fa-heart"></i></div>
+            <div class="tribute-pillar-title">Constant Support</div>
+            <div class="tribute-pillar-desc">Empowering the team always</div>
+          </div>
+          <div class="tribute-pillar">
+            <div class="tribute-pillar-icon"><i class="fa-solid fa-rocket"></i></div>
+            <div class="tribute-pillar-title">Innovation Catalyst</div>
+            <div class="tribute-pillar-desc">Driving digital transformation</div>
+          </div>
+        </div>
+
+        <!-- Company Seal / Footer Signature -->
+        <div class="tribute-signature-box">
+          <div class="tribute-team-label">With Highest Respect & Best Wishes,</div>
+          <div class="tribute-team-name">Team Virtoy Technologies Pvt. Ltd.</div>
+          <div class="tribute-org-tag">VT INDIA TECH • Enterprise Cloud Solutions</div>
+        </div>
+
+        <!-- Playful Call to Action for Piyali Mam -->
+        <div class="tribute-click-banner" id="tributeClickBanner">
+          <div class="tribute-click-text">
+            <span class="pulse-hand-icon">👉</span> <b>Please click once more Mam, shower more Salary Rain! 💸✨</b> <span class="pulse-hand-icon">👈</span>
+          </div>
+          <div class="tribute-click-counter" id="tributeClickCounter">Mam's Rain Shower Count: <b>0</b> 💖</div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="tribute-actions">
+          <button class="btn btn-primary tribute-burst-btn" id="tributeBurstBtn">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="tributeBurstBtnText">Please Click Once More Mam! Shower Salary Rain 💸✨</span>
+          </button>
+          <button class="btn btn-outline tribute-close-action" id="closeTributeModalBtn2">
+            Close Tribute
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="assets/js/main.js?v=3.2"></script>
+</body>
+</html>

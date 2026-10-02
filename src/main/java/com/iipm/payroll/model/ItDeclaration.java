@@ -25,6 +25,8 @@ public class ItDeclaration {
 
     private String taxRegime; // OLD or NEW
 
+    private java.util.List<String> documents; // Attached investment proofs/documents
+
     // Rejection details
     private String rejectionReason;
     private String reviewedBy;

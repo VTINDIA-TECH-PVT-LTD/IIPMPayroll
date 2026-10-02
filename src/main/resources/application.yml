@@ -1,11 +1,11 @@
 spring:
   application:
-    name: IIPM Payroll Management System
+    name: IIPE Payroll Management System
 
   data:
     mongodb:
-      uri: mongodb://seed_vtindia:Vtindia%40Ocac@ac-nx6iox9-shard-00-00.czqvi1e.mongodb.net:27017,ac-nx6iox9-shard-00-01.czqvi1e.mongodb.net:27017,ac-nx6iox9-shard-00-02.czqvi1e.mongodb.net:27017/IIPM?ssl=true&replicaSet=atlas-qym3de-shard-0&authSource=admin&retryWrites=true&w=majority
-      database: IIPM
+      uri: mongodb://seed_vtindia:Vtindia%40Ocac@ac-nx6iox9-shard-00-00.czqvi1e.mongodb.net:27017,ac-nx6iox9-shard-00-01.czqvi1e.mongodb.net:27017,ac-nx6iox9-shard-00-02.czqvi1e.mongodb.net:27017/IIPE?ssl=true&replicaSet=atlas-qym3de-shard-0&authSource=admin&retryWrites=true&w=majority
+      database: IIPE
       auto-index-creation: true
 
   jpa:
@@ -22,8 +22,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:your-email@gmail.com}
-    password: ${MAIL_PASSWORD:your-password}
+    username: ${MAIL_USERNAME:noreply3@iipe.ac.in}
+    password: ${MAIL_PASSWORD:rlejlzaznmyzdrcl}
     properties:
       mail:
         smtp:

@@ -99,6 +99,7 @@ class ApiService {
   async getPayrollsByMonth(month: number, year: number): Promise<any[]> { return (await this.api.get(`/payroll/month/${month}/year/${year}`)).data.data; }
   async getPayrollsByStatus(status: string): Promise<any[]> { return (await this.api.get(`/payroll/status/${status}`)).data.data; }
   async getPayrollsByYear(userId: string, year: number): Promise<any[]> { return (await this.api.get(`/payroll/user/${userId}/year/${year}`)).data.data; }
+  async bulkSubmitPayroll(ids: string[]): Promise<any> { return (await this.api.post('/payroll/bulk-submit', ids)).data.data; }
   async approvePayroll(id: string): Promise<any> { return (await this.api.put(`/payroll/${id}/approve`, {})).data.data; }
   async rejectPayroll(id: string, reason: string): Promise<any> { return (await this.api.put(`/payroll/${id}/reject`, { reason })).data.data; }
   async lockPayroll(id: string): Promise<any> { return (await this.api.put(`/payroll/${id}/lock`, {})).data.data; }
