@@ -233,11 +233,20 @@ public class PayrollController {
             pensionRaw.forEach((k, v) -> ignorablePensionMap.put(k, ((Number) v).doubleValue()));
 
             @SuppressWarnings("unchecked")
+            Map<String, Object> payableDaysRaw = (Map<String, Object>) bulkData.getOrDefault("payableDaysMap", new java.util.HashMap<>());
+            Map<String, Integer> payableDaysMap = new java.util.HashMap<>();
+            payableDaysRaw.forEach((k, v) -> {
+                if (v != null) {
+                    payableDaysMap.put(k, ((Number) v).intValue());
+                }
+            });
+
+            @SuppressWarnings("unchecked")
             Map<String, Object> remarksRaw = (Map<String, Object>) bulkData.getOrDefault("remarksMap", new java.util.HashMap<>());
             Map<String, String> remarksMap = new java.util.HashMap<>();
             remarksRaw.forEach((k, v) -> remarksMap.put(k, String.valueOf(v)));
 
-            List<Payroll> payrolls = payrollService.createBulkPayroll(department, payLevel, month, year, tdsMap, otherDeductionsMap, deanAllowanceMap, ignorablePensionMap, remarksMap, createdBy, status);
+            List<Payroll> payrolls = payrollService.createBulkPayroll(department, payLevel, month, year, tdsMap, otherDeductionsMap, deanAllowanceMap, ignorablePensionMap, payableDaysMap, remarksMap, createdBy, status);
             String actionMsg = "DRAFT".equalsIgnoreCase(status) ? "saved as draft" : "created/submitted for approval";
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Bulk payroll " + actionMsg + ": " + payrolls.size() + " records", payrolls));

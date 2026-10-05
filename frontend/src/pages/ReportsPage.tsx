@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import apiService from '../services/api';
 import { UserContext } from '../App';
 import { formatEmployeeNameWithTitle } from '../utils/nameUtils';
+import { printForm16Document } from '../utils/form16Print';
 
 const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -361,42 +362,53 @@ const ReportsPage: React.FC = () => {
 
     // 3. Generate Contract Sheet
     if (contractPayrolls.length > 0) {
-      const contractData = contractPayrolls.map((p: any, i: number) => ({
-        'Sl.no': i + 1,
-        'Emp ID': p.employeeId,
-        'Name of the Employee': p.employeeName || p.employeeId,
-        'Designation': p.designation || 'Contract Staff',
-        'Pay Scale': 'Consolidated',
-        'Consolidated Pay': p.basicPay || 0,
-        'Other Allowances': p.otherAllowances || 0,
-        'Deductable Pension': p.ignorablePension || 0,
-        'Gross Salary': p.grossSalary || 0,
-        'PT': p.professionalTax || 0,
-        'TDS': p.tds || 0,
-        'Other Deductions': p.otherDeductions || 0,
-        'Total Deductions': p.totalDeductions || 0,
-        'Net Salary': p.netSalary || 0
-      }));
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const contractData = contractPayrolls.map((p: any, i: number) => {
+        const emp = employees.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
+        const payableDays = (p.payableDays !== undefined && p.payableDays !== null) ? p.payableDays : (p.totalDaysInMonth || daysInMonth);
+        const baseMonthly = (emp?.basicPay && emp.basicPay > 0) ? emp.basicPay : (p.basicPay || 0);
+        const contractPeriod = emp?.contractPeriod || emp?.contractEndDate || '-';
+
+        return {
+          'Sl.no': i + 1,
+          'Emp ID': p.employeeId,
+          'Name of the Employee': p.employeeName || p.employeeId,
+          'Designation': p.designation || 'Contract Staff',
+          'Monthly Salary': baseMonthly,
+          'Dean / Warden Allowance': p.otherAllowances || 0,
+          'No.of Days Salary Payable': payableDays,
+          'Gross Salary': p.grossSalary || 0,
+          'PT': p.professionalTax || 0,
+          'TDS': p.tds || 0,
+          'PF': (p.otherDeductions && p.otherDeductions >= 1800) ? p.otherDeductions : 0,
+          'Other deductions': (p.otherDeductions && p.otherDeductions < 1800) ? p.otherDeductions : 0,
+          'Total Deductions': p.totalDeductions || 0,
+          'Net Salary': p.netSalary || 0,
+          'Contract Period': contractPeriod
+        };
+      });
 
       const cTotals = contractData.reduce((acc: any, curr: any) => {
         Object.keys(curr).forEach(key => {
-          if (!['Sl.no', 'Emp ID', 'Name of the Employee', 'Designation', 'Pay Scale'].includes(key)) {
+          if (!['Sl.no', 'Emp ID', 'Name of the Employee', 'Designation', 'Contract Period', 'No.of Days Salary Payable'].includes(key)) {
             acc[key] = (acc[key] || 0) + (curr[key] || 0);
           }
         });
         return acc;
-      }, { 'Sl.no': 'TOTAL', 'Emp ID': '', 'Name of the Employee': '', 'Designation': '', 'Pay Scale': '' });
+      }, { 'Sl.no': 'TOTAL', 'Emp ID': '', 'Name of the Employee': '', 'Designation': '', 'Contract Period': '', 'No.of Days Salary Payable': '' });
       contractData.push(cTotals);
 
-      appendSignatureRows(contractData, 'Sl.no', 'Consolidated Pay', 'Gross Salary', 'Total Deductions');
+      appendSignatureRows(contractData, 'Sl.no', 'Monthly Salary', 'Gross Salary', 'Total Deductions');
       const wsContract = XLSX.utils.json_to_sheet(contractData);
       XLSX.utils.book_append_sheet(wb, wsContract, "Contract");
     }
 
     // 4. Generate Consolidated Summary Sheet
+    const daysInMonthSummary = new Date(year, month, 0).getDate();
     const summaryData = targetPayrolls.map((p: any, i: number) => {
       const cat = getEmployeeCategory(p);
       const catLabel = cat === 'teaching' ? 'Regular - Teaching' : cat === 'non_teaching' ? 'Regular - Non Teaching' : 'Contract';
+      const payableDays = (p.payableDays !== undefined && p.payableDays !== null) ? p.payableDays : (p.totalDaysInMonth || daysInMonthSummary);
       return {
         'Sl.no': i + 1,
         'Emp ID': p.employeeId,
@@ -405,6 +417,7 @@ const ReportsPage: React.FC = () => {
         'Designation': p.designation || '-',
         'Pay Scale': p.payLevel ? `Level-${p.payLevel}` : 'Consolidated',
         'Basic / Fixed Pay': p.basicPay || 0,
+        'Days Paid': payableDays,
         'DA': p.da || 0,
         'TA': p.ta || 0,
         'HRA': p.hra || 0,
@@ -1501,267 +1514,7 @@ const ReportsPage: React.FC = () => {
           
           try {
             const data = await apiService.getForm16(selectedUserId, selectedYear);
-            const html = `
-              <html><head><title>Form 16 - TRACES Format</title>
-              <style>
-                body { font-family: 'Times New Roman', serif; font-size: 11px; margin: 20px; color: #000; }
-                .container { max-width: 1000px; margin: 0 auto; }
-                .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
-                .title { text-align: center; }
-                .title h1 { margin: 0; font-size: 16px; font-weight: bold; }
-                .title h2 { margin: 5px 0 0 0; font-size: 14px; font-weight: bold; }
-                .title h3 { margin: 5px 0 0 0; font-size: 12px; font-weight: normal; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-                th, td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
-                .bg-light { background-color: #f5f5f5; font-weight: bold; }
-                .text-center { text-align: center; }
-                .text-right { text-align: right; }
-                .bold { font-weight: bold; }
-                .section-title { font-weight: bold; background: #e0e0e0; text-align: center; font-size: 12px; padding: 4px; }
-                .page-break { page-break-after: always; }
-                .small-text { font-size: 9px; }
-              </style>
-              </head><body>
-              <div class="container">
-                <!-- PART A -->
-                <div class="header-row">
-                  <div><h2 style="color:#00a65a; margin:0;">TDS</h2><span style="font-size:10px;">Centralized Processing Cell</span></div>
-                  <div class="title">
-                    <h1 style="color:#00509e;">TRACES</h1>
-                    <span style="font-size:10px;">TDS Reconciliation Analysis and Correction Enabling System</span>
-                  </div>
-                  <div style="text-align:right;"><span style="font-size:10px;">Government of India<br/>Income Tax Department</span></div>
-                </div>
-                
-                <table>
-                  <tr><td class="section-title">FORM NO. 16</td></tr>
-                  <tr><td class="text-center">[See rule 31(1)(a)]</td></tr>
-                  <tr><td class="section-title" style="font-size:14px;">PART A</td></tr>
-                  <tr><td class="text-center small-text">Certificate under Section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P</td></tr>
-                </table>
-
-                <table>
-                  <tr>
-                    <td colspan="2"><span class="bold">Certificate No.</span> ACORZOA</td>
-                    <td colspan="2" class="text-right"><span class="bold">Last updated on</span> 10-Jul-2026</td>
-                  </tr>
-                  <tr class="bg-light">
-                    <td colspan="2">Name and address of the Employer/Specified Bank</td>
-                    <td colspan="2">Name and address of the Employee/Specified senior citizen</td>
-                  </tr>
-                  <tr>
-                    <td colspan="2" style="height: 60px;">${data.employerName}<br/>${data.employerAddress}</td>
-                    <td colspan="2">${data.employeeName}<br/>${data.employeeAddress}</td>
-                  </tr>
-                  <tr class="bg-light text-center">
-                    <td>PAN of the Deductor</td>
-                    <td>TAN of the Deductor</td>
-                    <td>PAN of the Employee</td>
-                    <td>Employee Reference No.</td>
-                  </tr>
-                  <tr class="text-center">
-                    <td>${data.employerPAN}</td>
-                    <td>${data.employerTAN}</td>
-                    <td>${data.employeePAN}</td>
-                    <td>${data.employeeId}</td>
-                  </tr>
-                  <tr class="bg-light text-center">
-                    <td colspan="2">CIT (TDS)</td>
-                    <td>Assessment Year</td>
-                    <td>Period with the Employer</td>
-                  </tr>
-                  <tr class="text-center">
-                    <td colspan="2">The Commissioner of Income Tax (TDS)<br/>Hyderabad - 500004</td>
-                    <td>${data.assessmentYear}</td>
-                    <td><span class="bold">From:</span> 01-Apr-${year - 1} <br/> <span class="bold">To:</span> 31-Mar-${year}</td>
-                  </tr>
-                </table>
-
-                <table class="text-center">
-                  <tr><td colspan="5" class="bg-light">Summary of amount paid/credited and tax deducted at source thereon in respect of the employee</td></tr>
-                  <tr class="bg-light">
-                    <td>Quarter(s)</td>
-                    <td>Receipt Numbers of original quarterly statements</td>
-                    <td>Amount paid/credited</td>
-                    <td>Amount of tax deducted (Rs.)</td>
-                    <td>Amount of tax deposited / remitted (Rs.)</td>
-                  </tr>
-                  ${data.quarterlyTdsList.map((q: any) => `
-                    <tr>
-                      <td>${q.quarter}</td>
-                      <td>${q.receiptNumber}</td>
-                      <td class="text-right">${q.amountPaid.toFixed(2)}</td>
-                      <td class="text-right">${q.taxDeducted.toFixed(2)}</td>
-                      <td class="text-right">${q.taxDeposited.toFixed(2)}</td>
-                    </tr>
-                  `).join('')}
-                  <tr class="bold">
-                    <td colspan="2">Total (Rs.)</td>
-                    <td class="text-right">${data.grossSalary.toFixed(2)}</td>
-                    <td class="text-right">${data.totalTdsDeposited.toFixed(2)}</td>
-                    <td class="text-right">${data.totalTdsDeposited.toFixed(2)}</td>
-                  </tr>
-                </table>
-
-                <table>
-                  <tr><td class="section-title">II. DETAILS OF TAX DEDUCTED AND DEPOSITED IN THE CENTRAL GOVERNMENT ACCOUNT THROUGH CHALLAN</td></tr>
-                </table>
-                <table class="text-center">
-                  <tr class="bg-light">
-                    <td rowspan="2">Sl. No.</td>
-                    <td rowspan="2">Tax Deposited in respect of the deductee (Rs.)</td>
-                    <td colspan="4">Challan Identification Number (CIN)</td>
-                  </tr>
-                  <tr class="bg-light">
-                    <td>BSR Code of the Bank Branch</td>
-                    <td>Date on which Tax deposited</td>
-                    <td>Challan Serial Number</td>
-                    <td>Status of matching with OLTAS*</td>
-                  </tr>
-                  ${data.challanDetails.map((c: any, i: number) => `
-                    <tr>
-                      <td>${i + 1}</td>
-                      <td class="text-right">${c.amount.toFixed(2)}</td>
-                      <td>${c.bsrCode}</td>
-                      <td>${c.dateOfDeposit}</td>
-                      <td>${c.challanSerialNumber}</td>
-                      <td>F</td>
-                    </tr>
-                  `).join('')}
-                </table>
-
-                <div class="page-break"></div>
-
-                <!-- PART B -->
-                <table style="margin-top:20px;">
-                  <tr><td class="section-title">FORM NO. 16</td></tr>
-                  <tr><td class="section-title" style="font-size:14px;">PART B</td></tr>
-                  <tr><td class="section-title">Annexure - I</td></tr>
-                </table>
-
-                <table>
-                  <tr class="bg-light">
-                    <td colspan="4">Details of Salary Paid and any other income and tax deducted</td>
-                  </tr>
-                  <tr>
-                    <td width="5%">A</td>
-                    <td width="55%">Whether opting out of taxation u/s 115BAC(1A)?</td>
-                    <td colspan="2" class="text-center bold">${data.standardDeduction === 75000 ? 'No' : 'Yes'}</td>
-                  </tr>
-                  <tr>
-                    <td>1.</td><td>Gross Salary</td><td class="text-center">Rs.</td><td class="text-center">Rs.</td>
-                  </tr>
-                  <tr>
-                    <td>(a)</td><td>Salary as per provisions contained in section 17(1)</td>
-                    <td class="text-right"></td><td class="text-right">${data.grossSalary.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>(d)</td><td class="bold">Total</td>
-                    <td class="text-right"></td><td class="text-right bold">${data.grossSalary.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>2.</td><td colspan="3">Less: Allowances to the extent exempt under section 10</td>
-                  </tr>
-                  <tr>
-                    <td>(e)</td><td>House rent allowance under section 10(13A)</td>
-                    <td class="text-right"></td><td class="text-right">${data.allowancesExemptUpto10.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>3.</td><td class="bold">Total amount of salary received from current employer [1(d)-2(i)]</td>
-                    <td class="text-right"></td><td class="text-right bold">${data.balance.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>4.</td><td colspan="3">Less: Deductions under section 16</td>
-                  </tr>
-                  <tr>
-                    <td>(a)</td><td>Standard deduction under section 16(ia)</td>
-                    <td class="text-right"></td><td class="text-right">${data.standardDeduction.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>(c)</td><td>Tax on employment under section 16(iii)</td>
-                    <td class="text-right"></td><td class="text-right">${data.professionalTax.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>5.</td><td>Total amount of deductions under section 16 [4(a)+4(b)+4(c)]</td>
-                    <td class="text-right"></td><td class="text-right">${(data.standardDeduction + data.professionalTax).toFixed(2)}</td>
-                  </tr>
-                  <tr class="bg-light">
-                    <td>6.</td><td class="bold">Income chargeable under the head "Salaries" [(3+1(e)-5]</td>
-                    <td class="text-right"></td><td class="text-right bold">${data.incomeChargeableUnderSalaries.toFixed(2)}</td>
-                  </tr>
-                  <tr class="bg-light">
-                    <td>9.</td><td class="bold">Gross total income (6+8)</td>
-                    <td class="text-right"></td><td class="text-right bold">${data.grossTotalIncome.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>10.</td><td class="bold">Deductions under Chapter VI-A</td>
-                    <td class="text-center bold">Gross Amount</td><td class="text-center bold">Deductible Amount</td>
-                  </tr>
-                  <tr>
-                    <td>(a)</td><td>Deduction in respect of life insurance premia, contributions to provident fund etc. under section 80C</td>
-                    <td class="text-right">${data.deduction80C.toFixed(2)}</td><td class="text-right">${data.deduction80C.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>(f)</td><td>Deduction in respect of contribution by Employer to pension scheme under section 80CCD (2)</td>
-                    <td class="text-right">${(data.deduction80CCD2 || data.deduction80CCD || 0).toFixed(2)}</td><td class="text-right">${(data.deduction80CCD2 || data.deduction80CCD || 0).toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>(g)</td><td>Deduction in respect of health insurance premia under section 80D</td>
-                    <td class="text-right">${data.deduction80D.toFixed(2)}</td><td class="text-right">${data.deduction80D.toFixed(2)}</td>
-                  </tr>
-                  <tr class="bg-light">
-                    <td>11.</td><td class="bold">Aggregate of deductible amount under Chapter VI-A</td>
-                    <td class="text-right"></td><td class="text-right bold">${data.totalChapterVIADeductions.toFixed(2)}</td>
-                  </tr>
-                  <tr class="bg-light">
-                    <td>12.</td><td class="bold">Total taxable income (9-11)</td>
-                    <td class="text-right"></td><td class="text-right bold">${data.totalTaxableIncome.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>13.</td><td>Tax on total income</td>
-                    <td class="text-right"></td><td class="text-right">${data.taxOnTotalIncome.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>14.</td><td>Rebate under section 87A, if applicable</td>
-                    <td class="text-right"></td><td class="text-right">${data.rebate87A.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>16.</td><td>Health and education cess</td>
-                    <td class="text-right"></td><td class="text-right">${data.healthAndEducationCess.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>17.</td><td class="bold">Tax payable (13+15+16-14)</td>
-                    <td class="text-right"></td><td class="text-right bold">${data.totalTaxPayable.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>19.</td><td>Less: Tax deducted at source</td>
-                    <td class="text-right"></td><td class="text-right">${data.taxDeductedAtSource.toFixed(2)}</td>
-                  </tr>
-                  <tr class="bg-light">
-                    <td>21.</td><td class="bold">Net tax payable (17-18-19-20)</td>
-                    <td class="text-right"></td><td class="text-right bold">${Math.max(0, data.taxPayableOrRefundable).toFixed(2)}</td>
-                  </tr>
-                </table>
-
-                <div style="border: 1px solid #000; padding: 10px; margin-top: 15px;">
-                  <p class="text-center bold" style="margin: 0 0 10px 0;">Verification</p>
-                  <p style="margin: 0;">I, <span class="bold">SHALIVAHAN</span>, son/daughter of SURESH PANDEY KUMAR SINHA working in the capacity of <span class="bold">AUTHORISED SIGNATORY</span> do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, TDS statements, and other available records.</p>
-                  <br/>
-                  <table style="border: none; margin: 0;">
-                    <tr>
-                      <td style="border: none; width: 50%;">Place: Visakhapatnam<br/>Date: 13-Jul-${year}</td>
-                      <td style="border: none; text-align: right; vertical-align: bottom;">
-                        (Signature of person responsible for deduction of tax)<br/><br/>
-                        <span class="bold">SHALIVAHAN</span>
-                      </td>
-                    </tr>
-                  </table>
-                </div>
-              </div>
-              </body></html>
-            `;
-            const win = window.open('', '_blank');
-            if (win) { win.document.write(html); win.document.close(); win.print(); }
+            printForm16Document(data);
           } catch(e: any) {
             alert('Failed to fetch Form 16. ' + e.message);
           }

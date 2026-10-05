@@ -10,8 +10,9 @@ import com.iipm.payroll.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 public class Form16Service {
@@ -25,8 +26,21 @@ public class Form16Service {
     @Autowired
     private ItDeclarationRepository itDeclarationRepository;
 
+    @Autowired
+    private SettingService settingService;
+
     private static final double STANDARD_DEDUCTION_OLD = 50000.0;
     private static final double STANDARD_DEDUCTION_NEW = 75000.0;
+
+    private String getSettingOrDefault(String key, String defaultValue) {
+        if (settingService != null) {
+            String val = settingService.getSettingValueByKey(key);
+            if (val != null && !val.trim().isEmpty()) {
+                return val.trim();
+            }
+        }
+        return defaultValue;
+    }
 
     public Form16DTO generateForm16(String userId, int year) {
         User user = userRepository.findById(userId)
@@ -36,28 +50,61 @@ public class Form16Service {
         // FY and AY logic
         String financialYear = year + "-" + (year + 1);
         String assessmentYear = (year + 1) + "-" + (year + 2);
+        String periodFrom = "01-Apr-" + year;
+        String periodTo = "31-Mar-" + (year + 1);
 
-        List<Payroll> payrolls = payrollRepository.findByUserIdOrEmployeeIdAndYear(user.getId(), user.getEmployeeId(), year);
-        if (payrolls == null || payrolls.isEmpty()) {
-            payrolls = payrollRepository.findByUserIdOrEmployeeIdAndYear(user.getId(), user.getEmployeeId(), 2026);
+        List<Payroll> payrolls = new ArrayList<>();
+        List<Payroll> p1 = payrollRepository.findByUserIdOrEmployeeIdAndYear(user.getId(), user.getEmployeeId(), year);
+        if (p1 != null) payrolls.addAll(p1);
+        
+        List<Payroll> p2 = payrollRepository.findByUserIdOrEmployeeIdAndYear(user.getId(), user.getEmployeeId(), year + 1);
+        if (p2 != null) {
+            for (Payroll p : p2) {
+                if (p.getMonth() >= 1 && p.getMonth() <= 3) {
+                    payrolls.add(p);
+                }
+            }
         }
+
+        if (payrolls.isEmpty()) {
+            payrolls = payrollRepository.findByUserIdOrderByYearDescMonthDesc(user.getId());
+        }
+
         ItDeclaration declaration = itDeclarationRepository.findByUserIdAndFinancialYear(userId, financialYear).orElse(null);
 
         Form16DTO dto = new Form16DTO();
         
-        // Employer details
-        dto.setEmployerName("INDIAN INSTITUTE OF PETROLEUM & ENERGY");
-        dto.setEmployerAddress("2nd Floor, AU Engg College, Andhra University, Visakhapatnam - 530003, Andhra Pradesh");
-        dto.setEmployerPAN("AABAI0046C");
-        dto.setEmployerTAN("VPNI00723C");
+        // Dynamic Employer details from MongoDB settings
+        dto.setEmployerName(getSettingOrDefault("FORM16_EMPLOYER_NAME", "INDIAN INSTITUTE OF PETROLEUM & ENERGY"));
+        dto.setEmployerAddress(getSettingOrDefault("FORM16_EMPLOYER_ADDRESS", "Tech-Horizon Building, Andhra University Campus, Visakhapatnam - 530003, Andhra Pradesh, India"));
+        dto.setEmployerEmail(getSettingOrDefault("FORM16_EMPLOYER_EMAIL", "fo@iipe.ac.in"));
+        dto.setEmployerPAN(getSettingOrDefault("FORM16_EMPLOYER_PAN", "AABAI0046C"));
+        dto.setEmployerTAN(getSettingOrDefault("FORM16_EMPLOYER_TAN", "VPNI00723C"));
+        dto.setCitTds(getSettingOrDefault("FORM16_CIT_TDS", "The Commissioner of Income Tax (TDS)\nRoom No. 411, Income Tax Towers, 10-2-3 A.C. Guard,\nHyderabad - 500004"));
+
+        // Certificate metadata
+        dto.setCertificateNo(getSettingOrDefault("FORM16_CERTIFICATE_NO", "ACORZOA"));
+        
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH);
+        String currentDateStr = LocalDate.now().format(dtf);
+        dto.setLastUpdatedOn(getSettingOrDefault("FORM16_LAST_UPDATED", currentDateStr));
+        dto.setIssueDate(getSettingOrDefault("FORM16_ISSUE_DATE", currentDateStr));
 
         // Employee details
         dto.setEmployeeName(user.getFirstName() + " " + user.getLastName());
         dto.setEmployeePAN(user.getPan() != null && !user.getPan().isEmpty() ? user.getPan() : "ASKPY8597N");
-        dto.setEmployeeId(user.getEmployeeId());
-        dto.setEmployeeAddress(user.getLocation() != null ? user.getLocation() : "AU College of Engineering Campus, Visakhapatnam - 530003");
+        dto.setEmployeeId(user.getEmployeeId() != null ? user.getEmployeeId() : "NT1005");
+        dto.setEmployeeAddress(user.getLocation() != null && !user.getLocation().isEmpty() ? user.getLocation() : "Visakhapatnam");
         dto.setAssessmentYear(assessmentYear);
         dto.setFinancialYear(financialYear);
+        dto.setPeriodFrom(periodFrom);
+        dto.setPeriodTo(periodTo);
+
+        // Signatory details from settings
+        dto.setSignatoryName(getSettingOrDefault("FORM16_SIGNATORY_NAME", "Dr. Ram Phal Dwivedi"));
+        dto.setSignatoryFatherName(getSettingOrDefault("FORM16_SIGNATORY_FATHER_NAME", ""));
+        dto.setSignatoryDesignation(getSettingOrDefault("FORM16_SIGNATORY_DESIGNATION", "Registrar / Authorised Signatory"));
+        dto.setPlace(getSettingOrDefault("FORM16_PLACE", "Visakhapatnam"));
 
         // Compute payroll sums and actual quarterly values
         double grossSalary = 0;
@@ -98,18 +145,40 @@ public class Form16Service {
             totalNpsEmployer = (user.getBasicPay() + da) * 0.14 * (payrolls.isEmpty() ? 12 : payrolls.size());
         }
 
+        // Receipt Numbers from settings (default blank/- if not configured)
+        String q1Receipt = getSettingOrDefault("FORM16_Q1_RECEIPT", "");
+        String q2Receipt = getSettingOrDefault("FORM16_Q2_RECEIPT", "");
+        String q3Receipt = getSettingOrDefault("FORM16_Q3_RECEIPT", "");
+        String q4Receipt = getSettingOrDefault("FORM16_Q4_RECEIPT", "");
+
         dto.setQuarterlyTdsList(Arrays.asList(
-                new Form16DTO.QuarterlyTds("Q1", "FXCMZZQR", q1Gross, q1Tds, q1Tds),
-                new Form16DTO.QuarterlyTds("Q2", "FXDPPTAA", q2Gross, q2Tds, q2Tds),
-                new Form16DTO.QuarterlyTds("Q3", "FXDUSMWB", q3Gross, q3Tds, q3Tds),
-                new Form16DTO.QuarterlyTds("Q4", "FXDXTLGX", q4Gross, q4Tds, q4Tds)
+                new Form16DTO.QuarterlyTds("Q1", q1Receipt, q1Gross, q1Tds, q1Tds),
+                new Form16DTO.QuarterlyTds("Q2", q2Receipt, q2Gross, q2Tds, q2Tds),
+                new Form16DTO.QuarterlyTds("Q3", q3Receipt, q3Gross, q3Tds, q3Tds),
+                new Form16DTO.QuarterlyTds("Q4", q4Receipt, q4Gross, q4Tds, q4Tds)
         ));
 
+        // Challan Details from settings
+        String q1Bsr = getSettingOrDefault("FORM16_Q1_BSR", "");
+        String q2Bsr = getSettingOrDefault("FORM16_Q2_BSR", "");
+        String q3Bsr = getSettingOrDefault("FORM16_Q3_BSR", "");
+        String q4Bsr = getSettingOrDefault("FORM16_Q4_BSR", "");
+
+        String q1Date = getSettingOrDefault("FORM16_Q1_CHALLAN_DATE", "");
+        String q2Date = getSettingOrDefault("FORM16_Q2_CHALLAN_DATE", "");
+        String q3Date = getSettingOrDefault("FORM16_Q3_CHALLAN_DATE", "");
+        String q4Date = getSettingOrDefault("FORM16_Q4_CHALLAN_DATE", "");
+
+        String q1Serial = getSettingOrDefault("FORM16_Q1_CHALLAN_SERIAL", "");
+        String q2Serial = getSettingOrDefault("FORM16_Q2_CHALLAN_SERIAL", "");
+        String q3Serial = getSettingOrDefault("FORM16_Q3_CHALLAN_SERIAL", "");
+        String q4Serial = getSettingOrDefault("FORM16_Q4_CHALLAN_SERIAL", "");
+
         dto.setChallanDetails(Arrays.asList(
-                new Form16DTO.ChallanDetail("CH-Q1-001", "07-07-" + year, "F", q1Tds),
-                new Form16DTO.ChallanDetail("CH-Q2-002", "07-10-" + year, "F", q2Tds),
-                new Form16DTO.ChallanDetail("CH-Q3-003", "07-01-" + (year + 1), "F", q3Tds),
-                new Form16DTO.ChallanDetail("CH-Q4-004", "30-04-" + (year + 1), "F", q4Tds)
+                new Form16DTO.ChallanDetail(q1Bsr, q1Date, q1Serial, q1Tds, "F"),
+                new Form16DTO.ChallanDetail(q2Bsr, q2Date, q2Serial, q2Tds, "F"),
+                new Form16DTO.ChallanDetail(q3Bsr, q3Date, q3Serial, q3Tds, "F"),
+                new Form16DTO.ChallanDetail(q4Bsr, q4Date, q4Serial, q4Tds, "F")
         ));
         dto.setTotalTdsDeposited(totalTds);
 

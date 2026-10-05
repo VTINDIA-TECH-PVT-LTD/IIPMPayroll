@@ -40,17 +40,30 @@ public class SettingService {
 
     public Setting updateSetting(String key, String newValue, String updatedBy) {
         Optional<Setting> settingOpt = settingRepository.findByKey(key);
+        Setting setting;
         if (settingOpt.isEmpty()) {
-            throw new RuntimeException("Setting not found: " + key);
+            String cat = key.startsWith("FORM16_") ? "FORM16" : "PAYROLL";
+            setting = Setting.builder()
+                    .key(key)
+                    .value(newValue)
+                    .dataType("STRING")
+                    .category(cat)
+                    .description("Setting for " + key)
+                    .isActive(true)
+                    .effectiveFrom(LocalDateTime.now())
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .updatedBy(updatedBy != null ? updatedBy : "SYSTEM")
+                    .build();
+        } else {
+            setting = settingOpt.get();
+            setting.setValue(newValue);
+            setting.setUpdatedAt(LocalDateTime.now());
+            setting.setUpdatedBy(updatedBy != null ? updatedBy : "SYSTEM");
         }
 
-        Setting setting = settingOpt.get();
-        setting.setValue(newValue);
-        setting.setUpdatedAt(LocalDateTime.now());
-        setting.setUpdatedBy(updatedBy);
-
         Setting updated = settingRepository.save(setting);
-        log.info("Setting updated: {} = {}", key, newValue);
+        log.info("Setting updated/saved: {} = {}", key, newValue);
         return updated;
     }
 
@@ -141,13 +154,41 @@ public class SettingService {
                 Map.entry("DEFAULT_TAX_REGIME", "NEW"),
                 Map.entry("STANDARD_DEDUCTION_NEW", "75000"),
                 Map.entry("STANDARD_DEDUCTION_OLD", "50000"),
-                Map.entry("MAX_80C_DEDUCTION", "150000")
+                Map.entry("MAX_80C_DEDUCTION", "150000"),
+                Map.entry("FORM16_EMPLOYER_NAME", "INDIAN INSTITUTE OF PETROLEUM & ENERGY"),
+                Map.entry("FORM16_EMPLOYER_ADDRESS", "Tech-Horizon Building, Andhra University Campus, Visakhapatnam - 530003, Andhra Pradesh, India"),
+                Map.entry("FORM16_EMPLOYER_PAN", "AABAI0046C"),
+                Map.entry("FORM16_EMPLOYER_TAN", "VPNI00723C"),
+                Map.entry("FORM16_EMPLOYER_EMAIL", "fo@iipe.ac.in"),
+                Map.entry("FORM16_CIT_TDS", "The Commissioner of Income Tax (TDS), Hyderabad - 500004"),
+                Map.entry("FORM16_SIGNATORY_NAME", "Dr. Ram Phal Dwivedi"),
+                Map.entry("FORM16_SIGNATORY_FATHER_NAME", ""),
+                Map.entry("FORM16_SIGNATORY_DESIGNATION", "Registrar / Authorised Signatory"),
+                Map.entry("FORM16_PLACE", "Visakhapatnam"),
+                Map.entry("FORM16_CERTIFICATE_NO", "ACORZOA"),
+                Map.entry("FORM16_Q1_RECEIPT", ""),
+                Map.entry("FORM16_Q2_RECEIPT", ""),
+                Map.entry("FORM16_Q3_RECEIPT", ""),
+                Map.entry("FORM16_Q4_RECEIPT", ""),
+                Map.entry("FORM16_Q1_BSR", ""),
+                Map.entry("FORM16_Q2_BSR", ""),
+                Map.entry("FORM16_Q3_BSR", ""),
+                Map.entry("FORM16_Q4_BSR", ""),
+                Map.entry("FORM16_Q1_CHALLAN_DATE", ""),
+                Map.entry("FORM16_Q2_CHALLAN_DATE", ""),
+                Map.entry("FORM16_Q3_CHALLAN_DATE", ""),
+                Map.entry("FORM16_Q4_CHALLAN_DATE", ""),
+                Map.entry("FORM16_Q1_CHALLAN_SERIAL", ""),
+                Map.entry("FORM16_Q2_CHALLAN_SERIAL", ""),
+                Map.entry("FORM16_Q3_CHALLAN_SERIAL", ""),
+                Map.entry("FORM16_Q4_CHALLAN_SERIAL", "")
         );
 
         for (Map.Entry<String, String> entry : defaults.entrySet()) {
             Optional<Setting> existing = settingRepository.findByKey(entry.getKey());
             if (existing.isEmpty()) {
-                createSetting(entry.getKey(), entry.getValue(), "DOUBLE", "PAYROLL", "Default setting for " + entry.getKey());
+                String cat = entry.getKey().startsWith("FORM16_") ? "FORM16" : "PAYROLL";
+                createSetting(entry.getKey(), entry.getValue(), "STRING", cat, "Default setting for " + entry.getKey());
             } else if (entry.getKey().equals("NPS_EMPLOYER_PERCENTAGE") && 
                       ("10".equals(existing.get().getValue()) || "10.0".equals(existing.get().getValue()))) {
                 Setting setting = existing.get();

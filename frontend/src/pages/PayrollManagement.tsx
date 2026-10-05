@@ -25,6 +25,7 @@ interface Employee {
 
 interface PayrollRow {
   user: Employee;
+  payableDays: number | string;
   deanAllowance: number | string;
   ignorablePension: number | string;
   tds: number | string;
@@ -92,13 +93,21 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
 
   const isContractUser = (u: any) => getEmployeeCategory(u) === 'contract';
 
-  const calculateRowComponents = (row: PayrollRow, currentSettings: Record<string, number>) => {
+  const calculateRowComponents = (row: PayrollRow, currentSettings: Record<string, number>, currentMonth: number = month, currentYear: number = year) => {
     const u = row.user;
     const isContract = isContractUser(u);
     const isDirector = (u.employeeId === 'DIR001') || (u.payLevel && String(u.payLevel).includes('17')) || (u.designation && u.designation.toLowerCase().includes('director'));
     const isRegistrar = u.employeeId === 'NT1022';
     
-    const bp = (isDirector && (!u.basicPay || u.basicPay <= 0)) ? 225000 : (u.basicPay || 0);
+    const baseMonthly = (isDirector && (!u.basicPay || u.basicPay <= 0)) ? 225000 : (u.basicPay || 0);
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const payableDays = (row.payableDays !== undefined && row.payableDays !== '') ? Number(row.payableDays) : daysInMonth;
+
+    let bp = baseMonthly;
+    if (isContract && payableDays > 0 && payableDays < daysInMonth) {
+      bp = Math.round((baseMonthly * payableDays) / daysInMonth);
+    }
+
     const daPct = (currentSettings.DA_PERCENTAGE || 60) / 100;
     const hraPct = (currentSettings.HRA_PERCENTAGE || 20) / 100;
     const npsEmpPct = (currentSettings.NPS_EMPLOYEE_PERCENTAGE || 10) / 100;
@@ -131,7 +140,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
       ? Math.max(0, (bp + deanAllowance) - ignorablePension) 
       : Math.max(0, (bp + da + hra + ta + npsEmployer + deanAllowance) - ignorablePension); 
     
-    const pt = currentSettings.PT_AMOUNT || 200;
+    const pt = (isContract && bp < 20000) ? 0 : (currentSettings.PT_AMOUNT || 200);
     const cghs = isContract ? 0 : (level >= 12 ? 1000 : (level >= 7 ? 650 : (level === 6 ? 450 : 250)));
     
     const tdsVal = row.tds === '' ? 0 : Number(row.tds);
@@ -140,7 +149,10 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     const net = Math.max(0, gross - totalDed);
 
     return {
+      baseMonthly,
       bp,
+      payableDays,
+      daysInMonth,
       da,
       ta,
       hra,
@@ -526,8 +538,12 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
         if (p.employeeId) payrollMap[p.employeeId] = p;
       });
 
+      const daysInMonth = new Date(year, month, 0).getDate();
       setRows(filtered.map((u: any) => {
         const existingP = payrollMap[u.id] || payrollMap[u.employeeId];
+        const defaultPayableDays = (existingP && existingP.payableDays !== undefined && existingP.payableDays !== null)
+          ? existingP.payableDays
+          : daysInMonth;
         const defaultDean = (existingP && existingP.otherAllowances !== undefined && existingP.otherAllowances !== null)
           ? existingP.otherAllowances
           : (u.deanAllowance !== undefined && u.deanAllowance !== null ? u.deanAllowance : (u.specialAllowance || getOfficialDeanAllowance(u) || 0));
@@ -536,6 +552,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
           : (u.ignorablePension !== undefined && u.ignorablePension !== null ? u.ignorablePension : 0);
         return {
           user: u,
+          payableDays: defaultPayableDays,
           deanAllowance: defaultDean,
           ignorablePension: defaultPension,
           tds: (existingP && existingP.tds !== undefined && existingP.tds !== null) ? existingP.tds : calculateAutoTds(u),
@@ -587,6 +604,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     setSavingDraft(true);
     setMsg(null);
     try {
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const payableDaysMap: Record<string, number> = {};
       const deanAllowanceMap: Record<string, number> = {};
       const ignorablePensionMap: Record<string, number> = {};
       const tdsMap: Record<string, number> = {};
@@ -594,6 +613,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
       const remarksMap: Record<string, string> = {};
       
       rows.forEach(r => { 
+        const pDays = (r.payableDays !== undefined && r.payableDays !== '') ? Number(r.payableDays) : daysInMonth;
+        payableDaysMap[r.user.id] = pDays;
         const deanVal = (r.deanAllowance !== undefined && r.deanAllowance !== '') ? Number(r.deanAllowance) : (r.user.deanAllowance || r.user.specialAllowance || 0);
         deanAllowanceMap[r.user.id] = deanVal;
         const pensionVal = (r.ignorablePension !== undefined && r.ignorablePension !== '') ? Number(r.ignorablePension) : (r.user.ignorablePension || 0);
@@ -609,6 +630,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
         month,
         year,
         status: 'DRAFT',
+        payableDaysMap,
         deanAllowanceMap,
         otherAllowancesMap: deanAllowanceMap,
         ignorablePensionMap,
@@ -634,6 +656,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
     setSubmittingBulk(true);
     setMsg(null);
     try {
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const payableDaysMap: Record<string, number> = {};
       const deanAllowanceMap: Record<string, number> = {};
       const ignorablePensionMap: Record<string, number> = {};
       const tdsMap: Record<string, number> = {};
@@ -641,6 +665,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
       const remarksMap: Record<string, string> = {};
       
       rows.forEach(r => { 
+        const pDays = (r.payableDays !== undefined && r.payableDays !== '') ? Number(r.payableDays) : daysInMonth;
+        payableDaysMap[r.user.id] = pDays;
         const deanVal = (r.deanAllowance !== undefined && r.deanAllowance !== '') ? Number(r.deanAllowance) : (r.user.deanAllowance || r.user.specialAllowance || 0);
         deanAllowanceMap[r.user.id] = deanVal;
         const pensionVal = (r.ignorablePension !== undefined && r.ignorablePension !== '') ? Number(r.ignorablePension) : (r.user.ignorablePension || 0);
@@ -656,6 +682,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
         month,
         year,
         status: 'PENDING',
+        payableDaysMap,
         deanAllowanceMap,
         otherAllowancesMap: deanAllowanceMap,
         ignorablePensionMap,
@@ -1478,6 +1505,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                 });
 
                 const processTotals = calculatedRows.reduce((acc, { calc }) => ({
+                  baseMonthly: acc.baseMonthly + calc.baseMonthly,
                   bp: acc.bp + calc.bp,
                   da: acc.da + calc.da,
                   ta: acc.ta + calc.ta,
@@ -1494,13 +1522,13 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                   totalDed: acc.totalDed + calc.totalDed,
                   net: acc.net + calc.net
                 }), {
-                  bp: 0, da: 0, ta: 0, hra: 0, deanAllowance: 0, npsEmployer: 0, ignorablePension: 0, gross: 0,
+                  baseMonthly: 0, bp: 0, da: 0, ta: 0, hra: 0, deanAllowance: 0, npsEmployer: 0, ignorablePension: 0, gross: 0,
                   pt: 0, tds: 0, npsEmp: 0, cghs: 0, otherDed: 0, totalDed: 0, net: 0
                 });
 
                 return (
                   <div style={{ overflowX: 'auto', maxHeight: '600px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                    <table className={`table-iipm table-sticky-freeze ${expandedColumns ? 'table-expanded' : ''}`} style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', width: '100%', minWidth: expandedColumns ? '2400px' : '2200px' }}>
+                    <table className={`table-iipm table-sticky-freeze ${expandedColumns ? 'table-expanded' : ''}`} style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', width: '100%', minWidth: expandedColumns ? '2500px' : '2300px' }}>
                       <thead style={{ position: 'sticky', top: 0, zIndex: 40, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                         <tr style={{ background: '#f8fafc' }}>
                           <th className="sticky-col sticky-col-check" style={{ padding: '12px 6px', textAlign: 'center' }}>
@@ -1528,7 +1556,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                             </div>
                           </th>
                           <th style={{ padding: '12px 16px' }}>Pay Scale</th>
-                          <th style={{ padding: '12px 16px' }}>Basic</th>
+                          <th style={{ padding: '12px 16px' }}>Basic / Monthly</th>
+                          <th style={{ padding: '12px 16px', background: '#f0fdf4', color: '#166534' }}>Days Payable</th>
                           <th style={{ padding: '12px 16px' }}>DA {settings.DA_PERCENTAGE || 60}%</th>
                           <th style={{ padding: '12px 16px' }}>TA</th>
                           <th style={{ padding: '12px 16px' }}>HRA {settings.HRA_PERCENTAGE || 20}%</th>
@@ -1592,7 +1621,39 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                                 </div>
                               </td>
                               <td style={{ padding: '10px 16px' }}>Level-{u.payLevel}</td>
-                              <td style={{ padding: '10px 16px' }}>{fmt(calc.bp)}</td>
+                              <td style={{ padding: '10px 16px' }}>
+                                <div>{fmt(calc.baseMonthly)}</div>
+                                {calc.bp !== calc.baseMonthly && (
+                                  <div style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 600 }}>
+                                    Pro-rated: {fmt(calc.bp)}
+                                  </div>
+                                )}
+                              </td>
+                              <td style={{ padding: '10px 16px', background: '#f0fdf4' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <input 
+                                    type="number"
+                                    value={row.payableDays}
+                                    min="0"
+                                    max={calc.daysInMonth}
+                                    placeholder={String(calc.daysInMonth)}
+                                    onChange={e => updateRow(u.id, 'payableDays', e.target.value === '' ? '' : (isNaN(+e.target.value) ? '' : Math.min(calc.daysInMonth, Math.max(0, +e.target.value))))}
+                                    style={{
+                                      width: '60px',
+                                      padding: '6px 8px',
+                                      fontSize: '0.85rem',
+                                      borderRadius: '4px',
+                                      border: (Number(row.payableDays) < calc.daysInMonth) ? '1.5px solid #16a34a' : '1px solid var(--border)',
+                                      fontWeight: (Number(row.payableDays) < calc.daysInMonth) ? 700 : 500,
+                                      color: (Number(row.payableDays) < calc.daysInMonth) ? '#166534' : 'inherit',
+                                      backgroundColor: (Number(row.payableDays) < calc.daysInMonth) ? '#dcfce7' : '#ffffff',
+                                      textAlign: 'center'
+                                    }}
+                                    title={`Payable days out of ${calc.daysInMonth} days`}
+                                  />
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>/ {calc.daysInMonth}</span>
+                                </div>
+                              </td>
                               <td style={{ padding: '10px 16px' }}>{fmt(calc.da)}</td>
                               <td style={{ padding: '10px 16px' }}>{fmt(calc.ta)}</td>
                               <td style={{ padding: '10px 16px' }}>{fmt(calc.hra)}</td>
@@ -1672,6 +1733,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                           <td className="sticky-col sticky-col-5" style={{ textAlign: 'right', padding: '14px 10px', borderTop: '2px solid #cbd5e1', fontWeight: 700 }}>Total ({filteredRows.length})</td>
                           <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>-</td>
                           <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(processTotals.bp)}</td>
+                          <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1', background: '#dcfce7' }}>-</td>
                           <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(processTotals.da)}</td>
                           <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(processTotals.ta)}</td>
                           <td style={{ padding: '14px 16px', borderTop: '2px solid #cbd5e1' }}>{fmt(processTotals.hra)}</td>
@@ -1906,6 +1968,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                       <th className="sticky-col sticky-view-col-3" style={{ padding: '12px 10px', fontWeight: 600, color: 'var(--text-secondary)' }}>Category</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Level</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Basic</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: '#166534', background: '#f0fdf4' }}>Days Paid</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Gross</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>TDS</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Deductions</th>
@@ -1955,6 +2018,7 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                           </td>
                           <td style={{ padding: '12px 16px' }}>{payLevel ? `Level-${payLevel}` : '-'}</td>
                           <td style={{ padding: '12px 16px' }}>{fmt(p.basicPay)}</td>
+                          <td style={{ padding: '12px 16px', background: '#f0fdf4', color: '#166534', fontWeight: 600 }}>{p.payableDays || (p.totalDaysInMonth || 30)} / {p.totalDaysInMonth || 30}</td>
                           <td style={{ padding: '12px 16px', fontWeight: 600, background: '#f8fafc' }}>{fmt(p.grossSalary)}</td>
                           <td style={{ padding: '12px 16px', color: '#b45309', fontWeight: 600 }}>{fmt(p.tds)}</td>
                           <td style={{ padding: '12px 16px', color: '#ef4444', background: '#fef2f2' }}>{fmt(p.totalDeductions)}</td>
@@ -2194,6 +2258,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                       <th className="sticky-col sticky-view-col-2" style={{ padding: '12px 12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Employee Name</th>
                       <th className="sticky-col sticky-view-col-3" style={{ padding: '12px 10px', fontWeight: 600, color: 'var(--text-secondary)' }}>Category</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Level</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Basic</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: '#166534', background: '#f0fdf4' }}>Days Paid</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Gross</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Net Salary</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Status</th>
@@ -2241,6 +2307,8 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                           </span>
                         </td>
                         <td style={{ padding: '12px 16px' }}>{payLevel ? `Level-${payLevel}` : '-'}</td>
+                        <td style={{ padding: '12px 16px' }}>{fmt(p.basicPay)}</td>
+                        <td style={{ padding: '12px 16px', background: '#f0fdf4', color: '#166534', fontWeight: 600 }}>{p.payableDays || (p.totalDaysInMonth || 30)} / {p.totalDaysInMonth || 30}</td>
                         <td style={{ padding: '12px 16px', fontWeight: 600, background: '#f8fafc' }}>{fmt(p.grossSalary)}</td>
                         <td style={{ padding: '12px 16px', color: 'var(--success)', fontWeight: 700, background: '#f0fdf4', fontSize: '0.9rem' }}>{fmt(p.netSalary)}</td>
                         <td style={{ padding: '12px 16px' }}>

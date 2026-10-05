@@ -38,6 +38,10 @@ public class Payroll {
     private double arrears;
     private double grossSalary;
 
+    // Working days tracking
+    private Integer payableDays;
+    private Integer totalDaysInMonth;
+
     // Deductions
     private double tds;
     private double professionalTax;

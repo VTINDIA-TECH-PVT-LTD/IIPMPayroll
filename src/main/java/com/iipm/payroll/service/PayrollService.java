@@ -48,17 +48,29 @@ public class PayrollService {
         if (existing.isPresent()) {
             throw new RuntimeException("Payroll already exists for " + month + "/" + year);
         }
+        int totalDays = java.time.YearMonth.of(year, month).lengthOfMonth();
+        return createPayroll(userId, month, year, tds, otherDeductions, ignorablePension, totalDays, createdBy);
+    }
+
+    public Payroll createPayroll(String userId, int month, int year, double tds, double otherDeductions, double ignorablePension, Integer payableDays, String createdBy) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        int totalDays = java.time.YearMonth.of(year, month).lengthOfMonth();
+        int daysPaid = (payableDays != null && payableDays > 0) ? payableDays : totalDays;
 
         // Get all settings
         Map<String, Double> settings = settingService.getAllPayrollSettings();
 
-        // Calculate salary (pass payLevel for level-based TA calculation and ignorablePension)
+        // Calculate salary (pass payLevel for level-based TA calculation, ignorablePension and payableDays)
         Map<String, Object> calculation = payrollCalculator.calculateMonthlySalary(
                 user.getBasicPay() != null ? user.getBasicPay() : 0,
                 user.getPayLevel() != null ? user.getPayLevel() : "10",
                 tds,
                 otherDeductions,
                 ignorablePension,
+                daysPaid,
+                totalDays,
                 settings
         );
 
@@ -69,6 +81,8 @@ public class PayrollService {
                 .month(month)
                 .year(year)
                 .basicPay(((Number) calculation.get("basicPay")).doubleValue())
+                .payableDays(daysPaid)
+                .totalDaysInMonth(totalDays)
                 .da(((Number) calculation.get("da")).doubleValue())
                 .hra(((Number) calculation.get("hra")).doubleValue())
                 .ta(((Number) calculation.get("ta")).doubleValue())
@@ -90,7 +104,7 @@ public class PayrollService {
                 .build();
 
         Payroll saved = payrollRepository.save(payroll);
-        log.info("Payroll created for user {} (Month: {}/{}) with IgnorablePension: {}", user.getUsername(), month, year, ignorablePension);
+        log.info("Payroll created for user {} (Month: {}/{}) PaidDays: {}/{}", user.getUsername(), month, year, daysPaid, totalDays);
 
         // Notify payroll officer
         notificationService.createNotification(userId, "PAYROLL_READY",
@@ -104,7 +118,8 @@ public class PayrollService {
     public Payroll createPayroll(String userId, int month, int year, double tds, double otherDeductions, String createdBy) {
         User user = userRepository.findById(userId).orElse(null);
         double ignorablePension = (user != null && user.getIgnorablePension() != null) ? user.getIgnorablePension() : 0.0;
-        return createPayroll(userId, month, year, tds, otherDeductions, ignorablePension, createdBy);
+        int totalDays = java.time.YearMonth.of(year, month).lengthOfMonth();
+        return createPayroll(userId, month, year, tds, otherDeductions, ignorablePension, totalDays, createdBy);
     }
 
     public Payroll getPayrollById(String id) {
@@ -243,20 +258,20 @@ public class PayrollService {
     public List<Payroll> createBulkPayroll(String department, String payLevelBand, int month, int year,
                                             Map<String, Double> tdsMap, Map<String, Double> otherDeductionsMap,
                                             Map<String, String> remarksMap, String createdBy) {
-        return createBulkPayroll(department, payLevelBand, month, year, tdsMap, otherDeductionsMap, null, null, remarksMap, createdBy, "PENDING");
+        return createBulkPayroll(department, payLevelBand, month, year, tdsMap, otherDeductionsMap, null, null, null, remarksMap, createdBy, "PENDING");
     }
 
     public List<Payroll> createBulkPayroll(String department, String payLevelBand, int month, int year,
                                             Map<String, Double> tdsMap, Map<String, Double> otherDeductionsMap,
                                             Map<String, String> remarksMap, String createdBy, String targetStatus) {
-        return createBulkPayroll(department, payLevelBand, month, year, tdsMap, otherDeductionsMap, null, null, remarksMap, createdBy, targetStatus);
+        return createBulkPayroll(department, payLevelBand, month, year, tdsMap, otherDeductionsMap, null, null, null, remarksMap, createdBy, targetStatus);
     }
 
     public List<Payroll> createBulkPayroll(String department, String payLevelBand, int month, int year,
                                             Map<String, Double> tdsMap, Map<String, Double> otherDeductionsMap,
                                             Map<String, Double> deanAllowanceMap,
                                             Map<String, String> remarksMap, String createdBy, String targetStatus) {
-        return createBulkPayroll(department, payLevelBand, month, year, tdsMap, otherDeductionsMap, deanAllowanceMap, null, remarksMap, createdBy, targetStatus);
+        return createBulkPayroll(department, payLevelBand, month, year, tdsMap, otherDeductionsMap, deanAllowanceMap, null, null, remarksMap, createdBy, targetStatus);
     }
 
     public List<Payroll> createBulkPayroll(String department, String payLevelBand, int month, int year,
@@ -264,9 +279,19 @@ public class PayrollService {
                                             Map<String, Double> deanAllowanceMap,
                                             Map<String, Double> ignorablePensionMap,
                                             Map<String, String> remarksMap, String createdBy, String targetStatus) {
+        return createBulkPayroll(department, payLevelBand, month, year, tdsMap, otherDeductionsMap, deanAllowanceMap, ignorablePensionMap, null, remarksMap, createdBy, targetStatus);
+    }
+
+    public List<Payroll> createBulkPayroll(String department, String payLevelBand, int month, int year,
+                                            Map<String, Double> tdsMap, Map<String, Double> otherDeductionsMap,
+                                            Map<String, Double> deanAllowanceMap,
+                                            Map<String, Double> ignorablePensionMap,
+                                            Map<String, Integer> payableDaysMap,
+                                            Map<String, String> remarksMap, String createdBy, String targetStatus) {
         List<User> users = userRepository.findAll();
         List<Payroll> created = new java.util.ArrayList<>();
         String finalStatus = (targetStatus != null && !targetStatus.isEmpty()) ? targetStatus.toUpperCase() : "PENDING";
+        int totalDays = java.time.YearMonth.of(year, month).lengthOfMonth();
 
         String financialYear = (month >= 4 ? year + "-" + (year + 1) : (year - 1) + "-" + year);
 
@@ -288,6 +313,10 @@ public class PayrollService {
             if (!deptMatch || !levelMatch) continue;
             if (!Boolean.TRUE.equals(user.getIsActive())) continue;
             if (user.getBasicPay() == null || user.getBasicPay() <= 0) continue;
+
+            int daysPaid = (payableDaysMap != null && payableDaysMap.containsKey(user.getId()))
+                    ? payableDaysMap.get(user.getId())
+                    : totalDays;
 
             double deanAllowance = (deanAllowanceMap != null && deanAllowanceMap.containsKey(user.getId()))
                     ? deanAllowanceMap.get(user.getId())
@@ -341,6 +370,8 @@ public class PayrollService {
                         tds,
                         otherDeductions,
                         ignorablePension,
+                        daysPaid,
+                        totalDays,
                         settings
                     );
 
@@ -348,6 +379,8 @@ public class PayrollService {
                     double net = ((Number) calculation.get("netSalary")).doubleValue() + deanAllowance;
 
                     existing.setBasicPay(((Number) calculation.get("basicPay")).doubleValue());
+                    existing.setPayableDays(daysPaid);
+                    existing.setTotalDaysInMonth(totalDays);
                     existing.setDa(((Number) calculation.get("da")).doubleValue());
                     existing.setHra(((Number) calculation.get("hra")).doubleValue());
                     existing.setTa(((Number) calculation.get("ta")).doubleValue());
@@ -374,7 +407,7 @@ public class PayrollService {
 
                 String remark = remarksMap != null ? remarksMap.getOrDefault(user.getId(), "") : "";
 
-                payroll = createPayroll(user.getId(), month, year, tds, otherDeductions, ignorablePension, createdBy);
+                payroll = createPayroll(user.getId(), month, year, tds, otherDeductions, ignorablePension, daysPaid, createdBy);
                 if (deanAllowance > 0) {
                     payroll.setOtherAllowances(deanAllowance);
                     payroll.setGrossSalary(payroll.getGrossSalary() + deanAllowance);

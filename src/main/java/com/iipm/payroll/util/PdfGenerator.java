@@ -94,7 +94,10 @@ public class PdfGenerator {
         addInfoRow(infoTable, "Department", payslipData.get("department") != null ? payslipData.get("department") : "Finance & Accounts", "PAN Number", payslipData.get("pan"), normalFont);
         addInfoRow(infoTable, "Category", payslipData.get("category") != null ? payslipData.get("category") : "Regular - Non Teaching", "PRAN / EPF Number", payslipData.get("pran"), normalFont);
         addInfoRow(infoTable, "Pay Level", "Level-" + payslipData.get("payLevel"), "Tax Regime", payslipData.get("taxRegime") != null ? payslipData.get("taxRegime") : "New Tax Regime", normalFont);
-        addInfoRow(infoTable, "Bank Details", payslipData.get("bankAccount"), "Pay Drawn (Days)", "30 / 30 Days", normalFont);
+        
+        int pDays = payslipData.get("payableDays") != null ? ((Number) payslipData.get("payableDays")).intValue() : 30;
+        int tDays = payslipData.get("totalDaysInMonth") != null ? ((Number) payslipData.get("totalDaysInMonth")).intValue() : 30;
+        addInfoRow(infoTable, "Bank Details", payslipData.get("bankAccount"), "Pay Drawn (Days)", pDays + " / " + tDays + " Days", normalFont);
 
         document.add(infoTable);
         document.add(new Paragraph("\n"));

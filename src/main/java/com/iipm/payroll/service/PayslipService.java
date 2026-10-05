@@ -88,6 +88,10 @@ public class PayslipService {
         payslipData.put("payrollPeriod", period.toString());
         payslipData.put("month", getMonthName(payroll.getMonth()));
         payslipData.put("year", payroll.getYear());
+        int totalDays = payroll.getTotalDaysInMonth() != null && payroll.getTotalDaysInMonth() > 0 ? payroll.getTotalDaysInMonth() : period.lengthOfMonth();
+        int payableDays = payroll.getPayableDays() != null && payroll.getPayableDays() > 0 ? payroll.getPayableDays() : totalDays;
+        payslipData.put("payableDays", payableDays);
+        payslipData.put("totalDaysInMonth", totalDays);
 
         // Earnings
         java.util.Map<String, Object> earnings = new java.util.HashMap<>();

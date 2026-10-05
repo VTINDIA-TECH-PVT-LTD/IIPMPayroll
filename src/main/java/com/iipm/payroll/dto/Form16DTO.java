@@ -8,8 +8,15 @@ public class Form16DTO {
     // Part A: Employer Details
     private String employerName;
     private String employerAddress;
+    private String employerEmail;
     private String employerPAN;
     private String employerTAN;
+    private String citTds;
+
+    // Certificate metadata
+    private String certificateNo;
+    private String lastUpdatedOn;
+    private String issueDate;
 
     // Part A: Employee Details
     private String employeeName;
@@ -19,8 +26,10 @@ public class Form16DTO {
 
     private String assessmentYear;
     private String financialYear;
+    private String periodFrom;
+    private String periodTo;
 
-    // Part A: Quarter-wise TDS summary
+    // Part A: Quarter-wise TDS summary & Challans
     private List<QuarterlyTds> quarterlyTdsList;
     private List<ChallanDetail> challanDetails;
     private double totalTdsDeposited;
@@ -55,6 +64,12 @@ public class Form16DTO {
     private double taxDeductedAtSource;
     private double taxPayableOrRefundable;
 
+    // Signatory / Verification details
+    private String signatoryName;
+    private String signatoryFatherName;
+    private String signatoryDesignation;
+    private String place;
+
     @Data
     public static class QuarterlyTds {
         private String quarter;
@@ -62,6 +77,8 @@ public class Form16DTO {
         private double amountPaid;
         private double taxDeducted;
         private double taxDeposited;
+
+        public QuarterlyTds() {}
 
         public QuarterlyTds(String quarter, String receiptNumber, double amountPaid, double taxDeducted, double taxDeposited) {
             this.quarter = quarter;
@@ -78,12 +95,17 @@ public class Form16DTO {
         private String dateOfDeposit;
         private String challanSerialNumber;
         private double amount;
+        private String statusMatching;
 
-        public ChallanDetail(String bsrCode, String dateOfDeposit, String challanSerialNumber, double amount) {
+        public ChallanDetail() {}
+
+        public ChallanDetail(String bsrCode, String dateOfDeposit, String challanSerialNumber, double amount, String statusMatching) {
             this.bsrCode = bsrCode;
             this.dateOfDeposit = dateOfDeposit;
             this.challanSerialNumber = challanSerialNumber;
             this.amount = amount;
+            this.statusMatching = statusMatching;
         }
     }
 }
+

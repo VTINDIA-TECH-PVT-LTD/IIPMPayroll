@@ -77,7 +77,7 @@ public class SettingController {
     @PutMapping("/{key}")
     public ResponseEntity<ApiResponse<Setting>> updateSetting(@PathVariable String key,
                                                              @RequestBody Map<String, String> updateData,
-                                                             @RequestHeader("X-User-Id") String updatedBy) {
+                                                             @RequestHeader(value = "X-User-Id", required = false) String updatedBy) {
         try {
             String newValue = updateData.get("value");
             Setting setting = settingService.updateSetting(key, newValue, updatedBy);
