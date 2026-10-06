@@ -317,7 +317,7 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
 }
 
 const payslipSharedCss = `
-  @page { size: A4 portrait; margin: 6mm 10mm; }
+  @page { size: A4 portrait; margin: 1.5cm 1.0cm 1.5cm 1.5cm; }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
   body { font-size: 10px; color: #1e293b; background:#f4f6f8; position:relative; }
   
@@ -331,7 +331,7 @@ const payslipSharedCss = `
     max-width: 800px;
     margin: 10px auto;
     background: #fff;
-    padding: 16px 20px;
+    padding: 1.5cm 1.0cm 1.5cm 1.5cm;
     box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     border-radius: 8px;
     position: relative;
@@ -450,7 +450,7 @@ const payslipSharedCss = `
     html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .payslip-page-wrapper { page-break-after: always !important; page-break-inside: avoid !important; margin: 0 !important; padding: 0 !important; }
     .payslip-page-wrapper:last-child { page-break-after: auto !important; }
-    .page { margin: 0 auto !important; padding: 8px 14px !important; box-shadow: none !important; max-width: 100% !important; min-height: auto !important; border-radius: 0 !important; }
+    .page { margin: 0 !important; padding: 0 !important; box-shadow: none !important; max-width: 100% !important; min-height: auto !important; border-radius: 0 !important; }
   }
 `;
 

@@ -276,7 +276,7 @@ const EmployeePortal: React.FC = () => {
 <title>Pay Slip - ${monthLabel} ${p.year} - ${p.employeeId}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  @page { size: A4 portrait; margin: 6mm 10mm; }
+  @page { size: A4 portrait; margin: 1.5cm 1.0cm 1.5cm 1.5cm; }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
   body { font-size: 10px; color: #1e293b; background:#f4f6f8; position:relative; }
   
@@ -284,7 +284,7 @@ const EmployeePortal: React.FC = () => {
     max-width: 800px;
     margin: 10px auto;
     background: #fff;
-    padding: 16px 20px;
+    padding: 1.5cm 1.0cm 1.5cm 1.5cm;
     box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     border-radius: 8px;
     position: relative;
@@ -401,7 +401,7 @@ const EmployeePortal: React.FC = () => {
 
   @media print {
     html, body { background: #fff; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .page { margin: 0 !important; padding: 8px 14px !important; box-shadow: none !important; max-width: 100% !important; min-height: auto !important; border-radius: 0 !important; page-break-after: avoid !important; page-break-inside: avoid !important; }
+    .page { margin: 0 !important; padding: 0 !important; box-shadow: none !important; max-width: 100% !important; min-height: auto !important; border-radius: 0 !important; page-break-after: avoid !important; page-break-inside: avoid !important; }
   }
 </style></head>
 <body>

@@ -20,7 +20,8 @@ public class PdfGenerator {
 
     public byte[] generatePayslipPDF(Map<String, Object> payslipData) throws DocumentException, IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Document document = new Document(PageSize.A4, 40, 40, 40, 40);
+        // Left: 1.5cm (42.5f), Right: 1.0cm (28.35f), Top: 1.5cm (42.5f), Bottom: 1.5cm (42.5f)
+        Document document = new Document(PageSize.A4, 42.5f, 28.35f, 42.5f, 42.5f);
         PdfWriter.getInstance(document, baos);
 
         document.open();
@@ -31,7 +32,8 @@ public class PdfGenerator {
 
     public byte[] generateCombinedPayslipsPDF(List<Map<String, Object>> payslipsList) throws DocumentException, IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Document document = new Document(PageSize.A4, 40, 40, 40, 40);
+        // Left: 1.5cm (42.5f), Right: 1.0cm (28.35f), Top: 1.5cm (42.5f), Bottom: 1.5cm (42.5f)
+        Document document = new Document(PageSize.A4, 42.5f, 28.35f, 42.5f, 42.5f);
         PdfWriter.getInstance(document, baos);
 
         document.open();
