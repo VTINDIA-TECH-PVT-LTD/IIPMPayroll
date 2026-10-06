@@ -1217,10 +1217,11 @@ const ReportsPage: React.FC = () => {
                 </button>
                 <button
                   className="btn-outline-iipm"
-                  onClick={handleDownloadCombinedServerPdf}
+                  onClick={() => handlePrintCombinedPayslips(filteredApproved.length > 0 ? filteredApproved : filteredList)}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                  title="Generate Combined Official PDF for all records"
                 >
-                  📥 Server Combined PDF
+                  📥 Combined PDF ({filteredApproved.length > 0 ? filteredApproved.length : filteredList.length})
                 </button>
                 <button
                   className="btn-success-iipm"
@@ -1341,9 +1342,9 @@ const ReportsPage: React.FC = () => {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleDownloadSingleServerPdf(p)}
+                                  onClick={() => handleQuickPrintSinglePayslip(p)}
                                   style={{ padding: '3px 8px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
-                                  title="Download Official PDF from Server"
+                                  title="Download / Print Official PDF"
                                 >
                                   📥 PDF
                                 </button>
@@ -1905,11 +1906,11 @@ const ReportsPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDownloadSingleServerPdf(previewPayslipModal.payroll)}
+                  onClick={() => printPayslipHtml(activePayslipHtml)}
                   className="btn-outline-iipm"
                   style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📥 Download PDF
+                  📥 Download / Save PDF
                 </button>
                 <button
                   type="button"

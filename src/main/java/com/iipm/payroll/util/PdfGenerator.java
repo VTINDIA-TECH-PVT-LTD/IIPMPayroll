@@ -21,13 +21,59 @@ public class PdfGenerator {
 
     private synchronized byte[] loadLogoBytes() {
         if (cachedLogoBytes != null) return cachedLogoBytes;
+        // 1. Try class resource stream
+        try (java.io.InputStream is = getClass().getResourceAsStream("/logo.png")) {
+            if (is != null) {
+                cachedLogoBytes = StreamUtils.copyToByteArray(is);
+                log.info("Loaded logo.png via getResourceAsStream(/logo.png), size={}", cachedLogoBytes.length);
+                return cachedLogoBytes;
+            }
+        } catch (Exception e) {
+            log.warn("getResourceAsStream(/logo.png) failed: {}", e.getMessage());
+        }
+
+        // 2. Try class loader resource stream
+        try (java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("logo.png")) {
+            if (is != null) {
+                cachedLogoBytes = StreamUtils.copyToByteArray(is);
+                log.info("Loaded logo.png via getClassLoader().getResourceAsStream(logo.png), size={}", cachedLogoBytes.length);
+                return cachedLogoBytes;
+            }
+        } catch (Exception e) {
+            log.warn("getClassLoader().getResourceAsStream(logo.png) failed: {}", e.getMessage());
+        }
+
+        // 3. Try Spring ClassPathResource
         try {
             ClassPathResource res = new ClassPathResource("logo.png");
             if (res.exists()) {
                 cachedLogoBytes = StreamUtils.copyToByteArray(res.getInputStream());
+                log.info("Loaded logo.png via ClassPathResource, size={}", cachedLogoBytes.length);
+                return cachedLogoBytes;
             }
         } catch (Exception e) {
-            log.warn("Could not load logo.png from classpath: {}", e.getMessage());
+            log.warn("ClassPathResource failed: {}", e.getMessage());
+        }
+
+        // 4. Try absolute server file paths
+        String[] diskPaths = {
+            "/var/www/html/iipe-frontend/logo.png",
+            "/var/www/html/iipm-payroll/logo.png",
+            "src/main/resources/logo.png",
+            "frontend/public/logo.png",
+            "logo.png"
+        };
+        for (String p : diskPaths) {
+            java.io.File f = new java.io.File(p);
+            if (f.exists() && f.isFile() && f.length() > 0) {
+                try {
+                    cachedLogoBytes = java.nio.file.Files.readAllBytes(f.toPath());
+                    log.info("Loaded logo.png from disk path {}, size={}", p, cachedLogoBytes.length);
+                    return cachedLogoBytes;
+                } catch (Exception e) {
+                    log.warn("Reading logo from disk path {} failed: {}", p, e.getMessage());
+                }
+            }
         }
         return cachedLogoBytes;
     }
