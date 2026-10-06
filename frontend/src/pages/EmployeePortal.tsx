@@ -293,12 +293,14 @@ const EmployeePortal: React.FC = () => {
 
   .watermark {
     position: absolute;
-    top: 53%;
+    top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 500px;
-    max-width: 85%;
-    opacity: 0.34;
+    width: 250px;
+    max-width: 45%;
+    height: auto;
+    object-fit: contain;
+    opacity: 0.12;
     pointer-events: none;
     z-index: 0;
   }
