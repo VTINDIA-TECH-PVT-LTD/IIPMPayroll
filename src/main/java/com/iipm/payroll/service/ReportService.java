@@ -313,4 +313,80 @@ public class ReportService {
                 "monthlyCosts", monthlyCosts
         );
     }
+
+    @Autowired
+    private com.iipm.payroll.util.PdfGenerator pdfGenerator;
+
+    @Autowired
+    private PayslipService payslipService;
+
+    public byte[] exportCombinedPayslipsPdf(int month, int year, String category) throws Exception {
+        List<Payroll> payrolls = payrollRepository.findByMonthAndYear(month, year);
+        List<Payroll> approvedPayrolls = payrolls.stream()
+                .filter(p -> "APPROVED".equalsIgnoreCase(p.getStatus()))
+                .collect(Collectors.toList());
+
+        List<Map<String, Object>> payslipDataList = new ArrayList<>();
+        for (Payroll p : approvedPayrolls) {
+            User u = userRepository.findById(p.getUserId()).orElse(null);
+            Map<String, Object> data = payslipService.generatePayslipData(p, u);
+            if (category != null && !category.trim().isEmpty() && !"all".equalsIgnoreCase(category)) {
+                String cat = (String) data.get("category");
+                if (cat != null && !cat.toLowerCase().contains(category.toLowerCase())) {
+                    continue;
+                }
+            }
+            payslipDataList.add(data);
+        }
+
+        if (payslipDataList.isEmpty()) {
+            throw new RuntimeException("No approved payroll records found for " + month + "/" + year);
+        }
+
+        return pdfGenerator.generateCombinedPayslipsPDF(payslipDataList);
+    }
+
+    public byte[] exportPayslipsZip(int month, int year, String category) throws Exception {
+        List<Payroll> payrolls = payrollRepository.findByMonthAndYear(month, year);
+        List<Payroll> approvedPayrolls = payrolls.stream()
+                .filter(p -> "APPROVED".equalsIgnoreCase(p.getStatus()))
+                .collect(Collectors.toList());
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(baos)) {
+            int count = 0;
+            for (Payroll p : approvedPayrolls) {
+                User u = userRepository.findById(p.getUserId()).orElse(null);
+                Map<String, Object> data = payslipService.generatePayslipData(p, u);
+                if (category != null && !category.trim().isEmpty() && !"all".equalsIgnoreCase(category)) {
+                    String cat = (String) data.get("category");
+                    if (cat != null && !cat.toLowerCase().contains(category.toLowerCase())) {
+                        continue;
+                    }
+                }
+                byte[] pdfBytes = pdfGenerator.generatePayslipPDF(data);
+                String empId = (String) data.getOrDefault("employeeId", p.getUserId());
+                String empName = ((String) data.getOrDefault("employeeName", "Employee")).replaceAll("[^a-zA-Z0-9_-]", "_");
+                String entryName = "Payslip_" + empId + "_" + empName + "_" + month + "_" + year + ".pdf";
+                
+                java.util.zip.ZipEntry entry = new java.util.zip.ZipEntry(entryName);
+                zos.putNextEntry(entry);
+                zos.write(pdfBytes);
+                zos.closeEntry();
+                count++;
+            }
+            if (count == 0) {
+                throw new RuntimeException("No approved payroll records found to export ZIP for " + month + "/" + year);
+            }
+        }
+        return baos.toByteArray();
+    }
+
+    public byte[] exportSinglePayslipPdf(String payrollId) throws Exception {
+        Payroll payroll = payrollRepository.findById(payrollId)
+                .orElseThrow(() -> new RuntimeException("Payroll not found: " + payrollId));
+        User user = userRepository.findById(payroll.getUserId()).orElse(null);
+        Map<String, Object> data = payslipService.generatePayslipData(payroll, user);
+        return pdfGenerator.generatePayslipPDF(data);
+    }
 }

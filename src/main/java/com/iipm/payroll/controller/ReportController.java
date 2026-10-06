@@ -134,4 +134,55 @@ public class ReportController {
                     .body(ApiResponse.error("Error generating report", null));
         }
     }
+
+    @GetMapping("/payslips/combined")
+    public ResponseEntity<byte[]> getCombinedPayslipsPdf(
+            @RequestParam int month,
+            @RequestParam int year,
+            @RequestParam(required = false) String category) {
+        try {
+            byte[] pdfData = reportService.exportCombinedPayslipsPdf(month, year, category);
+            String filename = "Payslips_Combined_" + month + "_" + year + ".pdf";
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "application/pdf")
+                    .body(pdfData);
+        } catch (Exception e) {
+            log.error("Error generating combined payslips PDF", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/payslips/zip")
+    public ResponseEntity<byte[]> getPayslipsZip(
+            @RequestParam int month,
+            @RequestParam int year,
+            @RequestParam(required = false) String category) {
+        try {
+            byte[] zipData = reportService.exportPayslipsZip(month, year, category);
+            String filename = "Payslips_Batch_" + month + "_" + year + ".zip";
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "application/zip")
+                    .body(zipData);
+        } catch (Exception e) {
+            log.error("Error generating payslips ZIP archive", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/payslip/{payrollId}/pdf")
+    public ResponseEntity<byte[]> getSinglePayslipPdf(@PathVariable String payrollId) {
+        try {
+            byte[] pdfData = reportService.exportSinglePayslipPdf(payrollId);
+            String filename = "Payslip_" + payrollId + ".pdf";
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "application/pdf")
+                    .body(pdfData);
+        } catch (Exception e) {
+            log.error("Error generating single payslip PDF for payroll: {}", payrollId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

@@ -4,6 +4,7 @@ import apiService from '../services/api';
 import { UserContext } from '../App';
 import { formatEmployeeNameWithTitle } from '../utils/nameUtils';
 import { printForm16Document } from '../utils/form16Print';
+import { generateSinglePayslipHtml, generateCombinedPayslipsHtml, printPayslipHtml } from '../utils/payslipPrint';
 
 const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const shortMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -52,7 +53,7 @@ const numberToWordsINR = (num: number): string => {
 
 const ReportsPage: React.FC = () => {
   const userCtx = useContext(UserContext);
-  const [tab, setTab] = useState<'register' | 'bank' | 'projection' | 'nps' | 'tds' | 'dept' | 'ytd' | 'comparison'>('register');
+  const [tab, setTab] = useState<'register' | 'payslips' | 'bank' | 'projection' | 'nps' | 'tds' | 'dept' | 'ytd' | 'comparison'>('register');
   const [bankCategoryFilter, setBankCategoryFilter] = useState<'all' | 'teaching' | 'non_teaching' | 'contract'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'draft'>('all');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -62,6 +63,12 @@ const ReportsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
   const [msg, setMsg] = useState<string | null>(null);
+
+  // Payslip bulk and preview state
+  const [selectedPayslipIds, setSelectedPayslipIds] = useState<string[]>([]);
+  const [payslipSearch, setPayslipSearch] = useState<string>('');
+  const [previewPayslipModal, setPreviewPayslipModal] = useState<{ payroll: any, user: any } | null>(null);
+  const [activePayslipHtml, setActivePayslipHtml] = useState<string>('');
 
   const getEmployeeCategory = (p: any): 'teaching' | 'non_teaching' | 'contract' => {
     const eid = (p.employeeId || '').toUpperCase().trim();
@@ -109,6 +116,7 @@ const ReportsPage: React.FC = () => {
 
   const tabList = [
     { key: 'register', label: '📋 Salary Register' },
+    { key: 'payslips', label: '📑 Payslips (Bulk Download)' },
     { key: 'bank', label: '💳 Bank Payment Sheet' },
     { key: 'projection', label: '📊 TDS Projection Statement' },
     { key: 'nps', label: '🏛️ NPS Schedule' },
@@ -151,7 +159,7 @@ const ReportsPage: React.FC = () => {
       }
 
       let result: any;
-      if (tab === 'register' || tab === 'bank') result = await apiService.getSalaryRegister(month, year);
+      if (tab === 'register' || tab === 'bank' || tab === 'payslips') result = await apiService.getSalaryRegister(month, year);
       else if (tab === 'projection') result = await apiService.getAllTdsProjections(year);
       else if (tab === 'nps')  result = await apiService.getNPSReport(year);
       else if (tab === 'tds')  result = await apiService.getTDSReport(year);
@@ -161,8 +169,8 @@ const ReportsPage: React.FC = () => {
         if (!userId) { setLoading(false); return; }
         result = await apiService.getSalaryComparison(userId);
       }
-      // For register and bank, attach user details to payroll data
-      if ((tab === 'register' || tab === 'bank') && (result?.data || result)) {
+      // For register, bank, and payslips, attach user details to payroll data
+      if ((tab === 'register' || tab === 'bank' || tab === 'payslips') && (result?.data || result)) {
         const payload = result.data || result;
         payload.payrolls = payload.payrolls?.map((p: any) => {
           const emp = userList?.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
@@ -239,6 +247,82 @@ const ReportsPage: React.FC = () => {
         {status || 'PROCESSED'}
       </span>
     );
+  };
+
+  const handleOpenSinglePayslip = (p: any) => {
+    const emp = employees.find(e => e.employeeId === p.employeeId || e.id === p.userId);
+    const html = generateSinglePayslipHtml(p, emp);
+    setActivePayslipHtml(html);
+    setPreviewPayslipModal({ payroll: p, user: emp });
+  };
+
+  const handleQuickPrintSinglePayslip = (p: any) => {
+    const emp = employees.find(e => e.employeeId === p.employeeId || e.id === p.userId);
+    const html = generateSinglePayslipHtml(p, emp);
+    printPayslipHtml(html);
+  };
+
+  const handlePrintCombinedPayslips = (targetPayrolls: any[]) => {
+    if (!targetPayrolls || targetPayrolls.length === 0) {
+      alert('No payroll records available to print.');
+      return;
+    }
+    const html = generateCombinedPayslipsHtml(targetPayrolls, employees);
+    printPayslipHtml(html);
+  };
+
+  const handleDownloadCombinedServerPdf = async () => {
+    try {
+      setLoading(true);
+      const blob = await apiService.exportCombinedPayslips(month, year, bankCategoryFilter !== 'all' ? bankCategoryFilter : undefined);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Payslips_Combined_${months[month - 1]}_${year}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Failed to download server combined payslip PDF: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadZipServer = async () => {
+    try {
+      setLoading(true);
+      const blob = await apiService.exportPayslipsZip(month, year, bankCategoryFilter !== 'all' ? bankCategoryFilter : undefined);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/zip' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Payslips_Batch_${months[month - 1]}_${year}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Failed to download payslips ZIP archive: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadSingleServerPdf = async (p: any) => {
+    try {
+      const blob = await apiService.exportSinglePayslipPdf(p.id);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Payslip_${p.employeeId || p.id}_${months[(p.month || month) - 1]}_${p.year || year}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Failed to download payslip PDF: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   const exportSalaryRegisterToExcel = () => {
@@ -691,6 +775,16 @@ const ReportsPage: React.FC = () => {
               📊 Export to Excel
             </button>
           )}
+          {tab === 'payslips' && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn-success-iipm" onClick={handleDownloadZipServer}>
+                📦 Batch ZIP Archive
+              </button>
+              <button className="btn-outline-iipm" onClick={handleDownloadCombinedServerPdf}>
+                📥 Combined PDF
+              </button>
+            </div>
+          )}
           {tab === 'bank' && (
             <button className="btn-success-iipm" onClick={exportBankPaymentSheetToExcel}>
               📊 Export Bank Excel
@@ -725,7 +819,7 @@ const ReportsPage: React.FC = () => {
       {/* Filters */}
       <div className="card-iipm" style={{ padding: '16px 20px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          {(tab === 'register' || tab === 'bank' || tab === 'dept') && (
+          {(tab === 'register' || tab === 'bank' || tab === 'dept' || tab === 'payslips') && (
             <div>
               <label className="form-label-iipm">Month</label>
               <select className="form-control-iipm" value={month} onChange={e => setMonth(+e.target.value)} style={{ width: '150px' }}>
@@ -757,7 +851,7 @@ const ReportsPage: React.FC = () => {
               <input type="number" className="form-control-iipm" value={year} onChange={e => setYear(+e.target.value)} style={{ width: '100px' }} />
             </div>
           )}
-          {(tab === 'register' || tab === 'bank') && (
+          {(tab === 'register' || tab === 'bank' || tab === 'payslips') && (
             <div>
               <label className="form-label-iipm">Approval Status</label>
               <select 
@@ -1004,6 +1098,236 @@ const ReportsPage: React.FC = () => {
               </div>
             </div>
           </>
+        );
+      })()}
+
+      {/* ===== PAYSLIPS (BULK DOWNLOAD & PREVIEW) ===== */}
+      {tab === 'payslips' && data && (() => {
+        const allList: any[] = data.payrolls || [];
+        
+        // Filter by category, status and search
+        const filteredList = allList.filter((p: any) => {
+          const matchCat = bankCategoryFilter === 'all' || getEmployeeCategory(p) === bankCategoryFilter;
+          const matchStatus = isStatusMatch(p.status, statusFilter);
+          const emp = employees.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
+          const empName = formatEmployeeNameWithTitle(p, emp).toLowerCase();
+          const empId = (p.employeeId || '').toLowerCase();
+          const desig = (p.designation || '').toLowerCase();
+          const matchSearch = !payslipSearch || empName.includes(payslipSearch.toLowerCase()) || empId.includes(payslipSearch.toLowerCase()) || desig.includes(payslipSearch.toLowerCase());
+          return matchCat && matchStatus && matchSearch;
+        });
+
+        const filteredApproved = filteredList.filter((p: any) => p.status === 'APPROVED' || p.status === 'RELEASED');
+
+        const isAllSelected = filteredList.length > 0 && filteredList.every((p: any) => selectedPayslipIds.includes(p.id));
+        const handleToggleSelectAll = () => {
+          if (isAllSelected) {
+            setSelectedPayslipIds([]);
+          } else {
+            setSelectedPayslipIds(filteredList.map((p: any) => p.id));
+          }
+        };
+
+        const handleToggleSelectOne = (id: string) => {
+          setSelectedPayslipIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+        };
+
+        const selectedPayrollsList = filteredList.filter((p: any) => selectedPayslipIds.includes(p.id));
+
+        return (
+          <div>
+            {/* Category Filter & Quick Actions */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {(['all', 'teaching', 'non_teaching', 'contract'] as const).map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setBankCategoryFilter(cat)}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: '20px',
+                      border: `1.5px solid ${bankCategoryFilter === cat ? '#0a3161' : '#cbd5e1'}`,
+                      background: bankCategoryFilter === cat ? '#0a3161' : '#ffffff',
+                      color: bankCategoryFilter === cat ? '#ffffff' : '#334155',
+                      fontWeight: bankCategoryFilter === cat ? 700 : 600,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      boxShadow: bankCategoryFilter === cat ? '0 2px 4px rgba(10,49,97,0.2)' : 'none'
+                    }}
+                  >
+                    {cat === 'teaching' ? '👨‍🏫 1) Teaching' : cat === 'non_teaching' ? '👔 2) Non Teaching' : cat === 'contract' ? '📄 3) Contract' : '🌐 All Categories'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {selectedPayrollsList.length > 0 && (
+                  <button
+                    className="btn-primary-iipm"
+                    onClick={() => handlePrintCombinedPayslips(selectedPayrollsList)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                  >
+                    🖨️ Print Selected ({selectedPayrollsList.length})
+                  </button>
+                )}
+                <button
+                  className="btn-accent-iipm"
+                  onClick={() => handlePrintCombinedPayslips(filteredApproved.length > 0 ? filteredApproved : filteredList)}
+                  disabled={filteredList.length === 0}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                >
+                  📄 Print All Combined PDF ({filteredApproved.length > 0 ? filteredApproved.length : filteredList.length})
+                </button>
+                <button
+                  className="btn-outline-iipm"
+                  onClick={handleDownloadCombinedServerPdf}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                >
+                  📥 Server Combined PDF
+                </button>
+                <button
+                  className="btn-success-iipm"
+                  onClick={handleDownloadZipServer}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                >
+                  📦 Batch ZIP Archive
+                </button>
+              </div>
+            </div>
+
+            {/* Search and Selection Summary */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Search employee by name, ID, designation..."
+                  value={payslipSearch}
+                  onChange={e => setPayslipSearch(e.target.value)}
+                  className="form-control-iipm"
+                  style={{ width: '320px', fontSize: '0.85rem' }}
+                />
+                {payslipSearch && (
+                  <button
+                    onClick={() => setPayslipSearch('')}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.85rem' }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Showing <strong>{filteredList.length}</strong> records (<strong>{filteredApproved.length}</strong> Approved) • <strong>{selectedPayslipIds.length}</strong> Selected
+              </div>
+            </div>
+
+            {/* Table Container */}
+            <div className="card-iipm" style={{ padding: '0', overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table-iipm" style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ background: '#f1f5f9' }}>
+                      <th style={{ width: '40px', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={isAllSelected}
+                          onChange={handleToggleSelectAll}
+                          title="Select / Deselect All"
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </th>
+                      <th style={{ width: '50px', textAlign: 'center' }}>Sl. No.</th>
+                      <th>Emp ID</th>
+                      <th>Employee Name</th>
+                      <th>Designation & Category</th>
+                      <th>Pay Scale</th>
+                      <th style={{ textAlign: 'right' }}>Gross Pay (₹)</th>
+                      <th style={{ textAlign: 'right', color: '#b91c1c' }}>Deductions (₹)</th>
+                      <th style={{ textAlign: 'right', color: '#15803d' }}>Net Salary (₹)</th>
+                      <th style={{ textAlign: 'center' }}>Status</th>
+                      <th style={{ textAlign: 'center' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredList.length > 0 ? (
+                      filteredList.map((p: any, idx: number) => {
+                        const emp = employees.find((e: any) => e.employeeId === p.employeeId || e.id === p.userId);
+                        const isApproved = p.status === 'APPROVED' || p.status === 'RELEASED';
+                        const isSelected = selectedPayslipIds.includes(p.id);
+
+                        return (
+                          <tr key={p.id || idx} style={{ borderBottom: '1px solid #f1f5f9', background: isSelected ? 'rgba(10,49,97,0.04)' : undefined }}>
+                            <td style={{ textAlign: 'center' }}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleToggleSelectOne(p.id)}
+                                style={{ cursor: 'pointer' }}
+                              />
+                            </td>
+                            <td style={{ textAlign: 'center' }}>{idx + 1}</td>
+                            <td><strong style={{ color: '#0a3161' }}>{p.employeeId}</strong></td>
+                            <td>
+                              <div style={{ fontWeight: 600 }}>{p.employeeName || formatEmployeeNameWithTitle(p, emp)}</div>
+                            </td>
+                            <td>
+                              <div style={{ fontSize: '0.8rem', color: '#475569' }}>
+                                {p.designation || emp?.designation || '-'}
+                                <span style={{ marginLeft: '6px', fontSize: '0.72rem', padding: '1px 6px', borderRadius: '4px', background: '#e2e8f0', color: '#334155' }}>
+                                  {getEmployeeCategory(p) === 'teaching' ? 'Teaching' : getEmployeeCategory(p) === 'non_teaching' ? 'Non-Teaching' : 'Contract'}
+                                </span>
+                              </div>
+                            </td>
+                            <td>{p.payLevel ? `Level-${p.payLevel}` : '-'}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(p.grossSalary)}</td>
+                            <td style={{ textAlign: 'right', color: '#b91c1c' }}>{fmt(p.totalDeductions)}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 700, color: '#15803d' }}>{fmt(p.netSalary)}</td>
+                            <td style={{ textAlign: 'center' }}>{getStatusBadge(p.status)}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenSinglePayslip(p)}
+                                  className="btn-outline-iipm"
+                                  style={{ padding: '3px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                  title="Preview Payslip"
+                                >
+                                  👁️ Preview
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickPrintSinglePayslip(p)}
+                                  className="btn-accent-iipm"
+                                  style={{ padding: '3px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                  title="Quick Print"
+                                >
+                                  🖨️ Print
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadSingleServerPdf(p)}
+                                  style={{ padding: '3px 8px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                  title="Download Official PDF from Server"
+                                >
+                                  📥 PDF
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={11} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                          No payroll records found for the selected criteria in {months[month - 1]} {year}.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         );
       })()}
 
@@ -1522,6 +1846,54 @@ const ReportsPage: React.FC = () => {
           Download Form 16
         </button>
       </div>
+
+      {/* Interactive Payslip Preview Modal */}
+      {previewPayslipModal && (
+        <div className="modal-iipm-overlay" onClick={() => setPreviewPayslipModal(null)} style={{ zIndex: 1000 }}>
+          <div className="modal-iipm" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', width: '95%', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="modal-header-iipm" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.2rem' }}>📄</span>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-primary)' }}>
+                  Payslip Preview — {months[(previewPayslipModal.payroll.month || month) - 1]} {previewPayslipModal.payroll.year || year} ({previewPayslipModal.payroll.employeeId})
+                </h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => printPayslipHtml(activePayslipHtml)}
+                  className="btn-accent-iipm"
+                  style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  🖨️ Print / Save PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadSingleServerPdf(previewPayslipModal.payroll)}
+                  className="btn-outline-iipm"
+                  style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📥 Download PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewPayslipModal(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.2rem', padding: '4px 8px' }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="modal-body-iipm" style={{ padding: '0', flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+              <iframe
+                title="Payslip Preview"
+                srcDoc={activePayslipHtml}
+                style={{ width: '100%', height: '650px', border: 'none', background: '#fff' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

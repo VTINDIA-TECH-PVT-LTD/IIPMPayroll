@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import apiService from '../services/api';
 import { UserContext } from '../App';
 import { formatEmployeeNameWithTitle } from '../utils/nameUtils';
+import { generateSinglePayslipHtml, generateCombinedPayslipsHtml, printPayslipHtml } from '../utils/payslipPrint';
 
 interface Employee {
   id: string;
@@ -184,6 +185,9 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showDraftExportMenu, setShowDraftExportMenu] = useState(false);
   const [showSentExportMenu, setShowSentExportMenu] = useState(false);
+  const [showPayslipBatchMenu, setShowPayslipBatchMenu] = useState(false);
+  const [previewPayslipModal, setPreviewPayslipModal] = useState<{ payroll: any, user: any } | null>(null);
+  const [activePayslipHtml, setActivePayslipHtml] = useState<string>('');
   const [employeeFilter, setEmployeeFilter] = useState<'all' | 'pending' | 'processed'>('all');
   const [expandedColumns, setExpandedColumns] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -1180,6 +1184,73 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
       loadPayrolls();
     } catch (err: any) {
       setMsg({ type: 'error', text: 'Bulk reject failed: ' + (err.response?.data?.message || err.message) });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenSinglePayslip = (p: any) => {
+    const u = userMap[p.employeeId] || userMap[p.userId] || {};
+    const html = generateSinglePayslipHtml(p, u);
+    setActivePayslipHtml(html);
+    setPreviewPayslipModal({ payroll: p, user: u });
+  };
+
+  const handlePrintCombinedPayslips = (selectedOnly: boolean = false) => {
+    let targetPayrolls = filteredSentPayrolls.filter((p: any) => p.status === 'APPROVED');
+    if (selectedOnly && selectedPayrolls.length > 0) {
+      targetPayrolls = targetPayrolls.filter((p: any) => selectedPayrolls.includes(p.id));
+    }
+    if (targetPayrolls.length === 0) {
+      setMsg({ type: 'error', text: selectedOnly ? 'No approved payroll selected to print payslips.' : 'No approved payroll records found for this month.' });
+      return;
+    }
+
+    const records = targetPayrolls.map((p: any) => ({
+      payroll: p,
+      user: userMap[p.employeeId] || userMap[p.userId] || {}
+    }));
+
+    const title = `IIPE Payslips — ${months[month - 1]} ${year} (${records.length} Employees)`;
+    const html = generateCombinedPayslipsHtml(records, title);
+    printPayslipHtml(html);
+  };
+
+  const handleDownloadCombinedServerPdf = async () => {
+    try {
+      setLoading(true);
+      const blob = await apiService.exportCombinedPayslips(month, year, categoryFilter !== 'all' ? categoryFilter : undefined);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Payslips_Combined_${months[month - 1]}_${year}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      setMsg({ type: 'success', text: '✓ Combined Payslips PDF downloaded successfully!' });
+    } catch (err: any) {
+      setMsg({ type: 'error', text: 'Error downloading combined payslips PDF. Please ensure records are approved.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadZipServer = async () => {
+    try {
+      setLoading(true);
+      const blob = await apiService.exportPayslipsZip(month, year, categoryFilter !== 'all' ? categoryFilter : undefined);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/zip' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Payslips_Batch_${months[month - 1]}_${year}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      setMsg({ type: 'success', text: '✓ Payslips ZIP archive downloaded successfully!' });
+    } catch (err: any) {
+      setMsg({ type: 'error', text: 'Error downloading payslips ZIP archive. Please ensure records are approved.' });
     } finally {
       setLoading(false);
     }
@@ -2234,6 +2305,77 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                     </div>
                   )}
                 </div>
+
+                {/* Payslip Batch Download Menu for Approved Records */}
+                <div style={{ position: 'relative', display: 'inline-block' }} onClick={e => e.stopPropagation()}>
+                  <button 
+                    type="button"
+                    className="btn-outline-iipm" 
+                    onClick={() => setShowPayslipBatchMenu(!showPayslipBatchMenu)} 
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 16px', fontSize: '0.85rem', fontWeight: 600, background: '#f0fdf4', borderColor: '#86efac', color: '#166534' }}
+                    title="Download / Print Payslips for Approved Employees"
+                  >
+                    <span>📑 Download Payslips</span>
+                    <span style={{ fontSize: '0.7rem' }}>▼</span>
+                  </button>
+                  {showPayslipBatchMenu && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 4px)',
+                      right: 0,
+                      background: '#ffffff',
+                      borderRadius: '8px',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                      border: '1px solid var(--border)',
+                      zIndex: 100,
+                      minWidth: '250px',
+                      overflow: 'hidden',
+                      padding: '4px 0'
+                    }}>
+                      <div style={{ padding: '6px 12px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', borderBottom: '1px solid #f1f5f9' }}>
+                        APPROVED PAYSLIPS ({filteredSentPayrolls.filter((p: any) => p.status === 'APPROVED').length} AVAILABLE)
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setShowPayslipBatchMenu(false); handlePrintCombinedPayslips(false); }}
+                        style={{ width: '100%', padding: '8px 14px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1e293b' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                      >
+                        <span style={{ color: '#0a3161', fontWeight: 'bold' }}>🖨️</span> Print / Save All (Combined PDF)
+                      </button>
+                      {selectedPayrolls.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => { setShowPayslipBatchMenu(false); handlePrintCombinedPayslips(true); }}
+                          style={{ width: '100%', padding: '8px 14px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1e293b' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                        >
+                          <span style={{ color: '#0284c7', fontWeight: 'bold' }}>📄</span> Print Selected ({selectedPayrolls.length}) PDF
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => { setShowPayslipBatchMenu(false); handleDownloadCombinedServerPdf(); }}
+                        style={{ width: '100%', padding: '8px 14px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1e293b' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                      >
+                        <span style={{ color: '#dc2626', fontWeight: 'bold' }}>📥</span> Download Server Combined PDF
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowPayslipBatchMenu(false); handleDownloadZipServer(); }}
+                        style={{ width: '100%', padding: '8px 14px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1e293b' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                      >
+                        <span style={{ color: '#d97706', fontWeight: 'bold' }}>📦</span> Download Batch ZIP Archive
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             {filteredSentPayrolls.length === 0 ? (
@@ -2333,7 +2475,6 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                                 const handleDownload = (e: React.MouseEvent) => {
                                   e.preventDefault();
                                   try {
-                                    // Extract mime type and base64 string
                                     const match = data.match(/^data:(.*?);base64,(.*)$/);
                                     if (match && match.length === 3) {
                                       const mime = match[1];
@@ -2355,7 +2496,6 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                                       document.body.removeChild(a);
                                       URL.revokeObjectURL(blobUrl);
                                     } else {
-                                      // Fallback for simple data urls
                                       const a = document.createElement('a');
                                       a.href = data;
                                       a.download = filename;
@@ -2388,7 +2528,33 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
                               </button>
                             </div>
                           )}
-                          {p.status === 'APPROVED' && <span style={{ color: '#198754', fontSize: '0.85rem', fontWeight: 600 }}><i className="fas fa-check-circle"></i> Released</span>}
+                          {p.status === 'APPROVED' && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ color: '#198754', fontSize: '0.82rem', fontWeight: 600 }}>
+                                <i className="fas fa-check-circle"></i> Released
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenSinglePayslip(p)}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '5px',
+                                  border: '1px solid #0284c7',
+                                  background: '#f0f9ff',
+                                  color: '#0284c7',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                                title="View and Download Employee Payslip"
+                              >
+                                📄 Payslip
+                              </button>
+                            </div>
+                          )}
                           {p.status === 'REJECTED' && isAdmin && (
                             <button onClick={() => handleApprove(p.id)} style={{ padding: '5px 12px', borderRadius: '4px', border: '1px solid #198754', background: '#198754', color: '#ffffff', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <i className="fas fa-redo"></i> Re-Approve
@@ -2469,6 +2635,46 @@ const PayrollManagement: React.FC<PayrollManagementProps> = ({ mode = 'process' 
               <button onClick={handleReject} disabled={!rejectReason || attachments.length === 0} style={{ padding: '8px 20px', background: (!rejectReason || attachments.length === 0) ? '#e2e8f0' : 'var(--accent)', border: 'none', color: (!rejectReason || attachments.length === 0) ? '#94a3b8' : 'white', borderRadius: '8px', cursor: (!rejectReason || attachments.length === 0) ? 'not-allowed' : 'pointer', fontWeight: 600, fontFamily: 'var(--font)' }}>
                 Forward to Operator
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Payslip Preview Modal */}
+      {previewPayslipModal && (
+        <div className="modal-iipm-overlay" onClick={() => setPreviewPayslipModal(null)} style={{ zIndex: 1000 }}>
+          <div className="modal-iipm" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', width: '95%', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="modal-header-iipm" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.2rem' }}>📄</span>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-primary)' }}>
+                  Payslip Preview — {months[(previewPayslipModal.payroll.month || 1) - 1]} {previewPayslipModal.payroll.year} ({previewPayslipModal.payroll.employeeId})
+                </h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => printPayslipHtml(activePayslipHtml)}
+                  className="btn-accent-iipm"
+                  style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  🖨️ Print / Save PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewPayslipModal(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.2rem', padding: '4px 8px' }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="modal-body-iipm" style={{ padding: '0', flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+              <iframe
+                title="Payslip Preview"
+                srcDoc={activePayslipHtml}
+                style={{ width: '100%', height: '650px', border: 'none', background: '#fff' }}
+              />
             </div>
           </div>
         </div>

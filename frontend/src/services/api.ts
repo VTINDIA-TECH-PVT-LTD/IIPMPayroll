@@ -118,6 +118,21 @@ class ApiService {
   async getMonthlyTrend(userId: string, year: number): Promise<any> { return (await this.api.get(`/reports/trend/${userId}/${year}`)).data.data; }
   async getDepartmentReport(month: number, year: number): Promise<any> { return (await this.api.get(`/reports/department/${month}/${year}`)).data.data; }
   async getPayrollStatistics(year: number): Promise<any> { return (await this.api.get(`/reports/statistics/${year}`)).data.data; }
+  async exportCombinedPayslips(month: number, year: number, category?: string): Promise<any> {
+    const url = category && category !== 'all'
+      ? `/reports/payslips/combined?month=${month}&year=${year}&category=${encodeURIComponent(category)}`
+      : `/reports/payslips/combined?month=${month}&year=${year}`;
+    return (await this.api.get(url, { responseType: 'blob' })).data;
+  }
+  async exportPayslipsZip(month: number, year: number, category?: string): Promise<any> {
+    const url = category && category !== 'all'
+      ? `/reports/payslips/zip?month=${month}&year=${year}&category=${encodeURIComponent(category)}`
+      : `/reports/payslips/zip?month=${month}&year=${year}`;
+    return (await this.api.get(url, { responseType: 'blob' })).data;
+  }
+  async exportSinglePayslipPdf(payrollId: string): Promise<any> {
+    return (await this.api.get(`/reports/payslip/${payrollId}/pdf`, { responseType: 'blob' })).data;
+  }
 
   // ============ SETTINGS ============
   async getAllSettings(): Promise<any[]> { return (await this.api.get('/settings')).data.data; }

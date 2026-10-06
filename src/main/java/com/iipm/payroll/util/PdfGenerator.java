@@ -24,7 +24,28 @@ public class PdfGenerator {
         PdfWriter.getInstance(document, baos);
 
         document.open();
+        renderSinglePayslip(document, payslipData);
+        document.close();
+        return baos.toByteArray();
+    }
 
+    public byte[] generateCombinedPayslipsPDF(List<Map<String, Object>> payslipsList) throws DocumentException, IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document(PageSize.A4, 40, 40, 40, 40);
+        PdfWriter.getInstance(document, baos);
+
+        document.open();
+        for (int i = 0; i < payslipsList.size(); i++) {
+            if (i > 0) {
+                document.newPage();
+            }
+            renderSinglePayslip(document, payslipsList.get(i));
+        }
+        document.close();
+        return baos.toByteArray();
+    }
+
+    private void renderSinglePayslip(Document document, Map<String, Object> payslipData) throws DocumentException {
         Font boldFont = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD);
         Font normalFont = new Font(Font.FontFamily.HELVETICA, 10, Font.NORMAL);
         Font smallFont = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL);
@@ -46,6 +67,9 @@ public class PdfGenerator {
         document.add(new Paragraph("\n"));
         
         String monthName = payslipData.get("monthName") != null ? payslipData.get("monthName").toString() : "";
+        if (monthName.isEmpty() && payslipData.get("month") != null) {
+            monthName = payslipData.get("month").toString();
+        }
         String year = payslipData.get("year") != null ? payslipData.get("year").toString() : "";
 
         Paragraph paySlipTitle = new Paragraph("Pay Slip", boldFont);
@@ -182,9 +206,6 @@ public class PdfGenerator {
         Paragraph footer = new Paragraph("This is a Computer Generated Pay Slip", smallFont);
         footer.setAlignment(Element.ALIGN_CENTER);
         document.add(footer);
-
-        document.close();
-        return baos.toByteArray();
     }
 
     private void addInfoRow(PdfPTable table, String col1, Object val1, String col2, Object val2, Font font) {

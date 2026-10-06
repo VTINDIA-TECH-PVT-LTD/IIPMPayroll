@@ -33,11 +33,24 @@ public class PayslipService {
         User user = userRepository.findById(payroll.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!payroll.getStatus().equals("APPROVED")) {
+        if (!"APPROVED".equalsIgnoreCase(payroll.getStatus())) {
             throw new RuntimeException("Only approved payroll can be used for payslip generation");
         }
 
-        // Generate payslip data
+        Map<String, Object> payslipData = generatePayslipData(payroll, user);
+
+        log.info("Payslip generated for employee {}", user.getEmployeeId());
+
+        // Notify employee
+        notificationService.createNotification(payroll.getUserId(), "PAYSLIP_GENERATED",
+                "Payslip Generated",
+                "Your payslip for " + getMonthName(payroll.getMonth()) + " " + payroll.getYear() + " is ready for download",
+                "HIGH");
+
+        return payslipData;
+    }
+
+    public Map<String, Object> generatePayslipData(Payroll payroll, User user) {
         java.util.Map<String, Object> payslipData = new java.util.HashMap<>();
 
         // Company details
@@ -46,28 +59,44 @@ public class PayslipService {
         payslipData.put("companyLogo", "logo.png");
 
         // Employee details
-        payslipData.put("employeeName", user.getFirstName() + " " + user.getLastName());
-        payslipData.put("employeeId", user.getEmployeeId());
-        payslipData.put("designation", user.getDesignation());
-        payslipData.put("department", user.getDepartment());
-        payslipData.put("panNumber", user.getPan());
-        payslipData.put("pan", user.getPan());
-        payslipData.put("aadharNumber", user.getAadhar());
-        payslipData.put("pran", (user.getPranAccountNumber() != null && !user.getPranAccountNumber().isEmpty()) 
-                ? user.getPranAccountNumber() 
-                : (user.getPfAccountNumber() != null ? user.getPfAccountNumber() : "-"));
-        payslipData.put("payLevel", user.getPayLevel() != null ? user.getPayLevel() : "10");
-        payslipData.put("taxRegime", user.getTaxRegime() != null ? user.getTaxRegime() : "Regular Tax Regime");
-        payslipData.put("bankAccount", user.getBankAccountNumber() != null ? maskAccountNumber(user.getBankAccountNumber()) : "-");
-        payslipData.put("dateOfJoining", user.getDateOfJoining() != null ? user.getDateOfJoining() : "-");
+        if (user != null) {
+            payslipData.put("employeeName", user.getFirstName() + " " + user.getLastName());
+            payslipData.put("employeeId", user.getEmployeeId());
+            payslipData.put("designation", user.getDesignation());
+            payslipData.put("department", user.getDepartment());
+            payslipData.put("panNumber", user.getPan());
+            payslipData.put("pan", user.getPan());
+            payslipData.put("aadharNumber", user.getAadhar());
+            payslipData.put("pran", (user.getPranAccountNumber() != null && !user.getPranAccountNumber().isEmpty()) 
+                    ? user.getPranAccountNumber() 
+                    : (user.getPfAccountNumber() != null ? user.getPfAccountNumber() : "-"));
+            payslipData.put("payLevel", user.getPayLevel() != null ? user.getPayLevel() : "10");
+            payslipData.put("taxRegime", user.getTaxRegime() != null ? user.getTaxRegime() : "Regular Tax Regime");
+            payslipData.put("bankAccount", user.getBankAccountNumber() != null ? maskAccountNumber(user.getBankAccountNumber()) : "-");
+            payslipData.put("dateOfJoining", user.getDateOfJoining() != null ? user.getDateOfJoining() : "-");
+            payslipData.put("bankName", user.getBankName());
+            payslipData.put("bankAccountNumber", maskAccountNumber(user.getBankAccountNumber()));
+            payslipData.put("ifscCode", user.getIfscCode());
+        } else {
+            payslipData.put("employeeName", payroll.getUserId());
+            payslipData.put("employeeId", payroll.getUserId());
+            payslipData.put("designation", "-");
+            payslipData.put("department", "-");
+            payslipData.put("panNumber", "-");
+            payslipData.put("pan", "-");
+            payslipData.put("pran", "-");
+            payslipData.put("payLevel", "10");
+            payslipData.put("taxRegime", "New Tax Regime");
+            payslipData.put("bankAccount", "-");
+            payslipData.put("dateOfJoining", "-");
+        }
         payslipData.put("dateOfNextIncrement", "01-Jul-" + payroll.getYear());
 
         // Category (1: Regular - Teaching, 2: Regular - Non Teaching, 3: Contract)
-        String empId = user.getEmployeeId() != null ? user.getEmployeeId().toUpperCase() : "";
-        String empType = user.getEmployeeType() != null ? user.getEmployeeType().toUpperCase() : "";
-        String fn = user.getFunction() != null ? user.getFunction().toUpperCase() : "";
-        String desig = user.getDesignation() != null ? user.getDesignation().toUpperCase() : "";
-        String dept = user.getDepartment() != null ? user.getDepartment().toUpperCase() : "";
+        String empId = (user != null && user.getEmployeeId() != null) ? user.getEmployeeId().toUpperCase() : "";
+        String empType = (user != null && user.getEmployeeType() != null) ? user.getEmployeeType().toUpperCase() : "";
+        String fn = (user != null && user.getFunction() != null) ? user.getFunction().toUpperCase() : "";
+        String desig = (user != null && user.getDesignation() != null) ? user.getDesignation().toUpperCase() : "";
 
         String category;
         if (empId.startsWith("CNT") || empId.startsWith("CT") || empId.startsWith("CMED") || empType.contains("CONTRACT") || fn.contains("CONTRACT") || desig.contains("CONTRACT")) {
@@ -87,6 +116,7 @@ public class PayslipService {
         YearMonth period = YearMonth.of(payroll.getYear(), payroll.getMonth());
         payslipData.put("payrollPeriod", period.toString());
         payslipData.put("month", getMonthName(payroll.getMonth()));
+        payslipData.put("monthName", getMonthName(payroll.getMonth()));
         payslipData.put("year", payroll.getYear());
         int totalDays = payroll.getTotalDaysInMonth() != null && payroll.getTotalDaysInMonth() > 0 ? payroll.getTotalDaysInMonth() : period.lengthOfMonth();
         int payableDays = payroll.getPayableDays() != null && payroll.getPayableDays() > 0 ? payroll.getPayableDays() : totalDays;
@@ -144,23 +174,10 @@ public class PayslipService {
         // Net salary
         payslipData.put("netSalary", payroll.getNetSalary());
 
-        // Bank details
-        payslipData.put("bankName", user.getBankName());
-        payslipData.put("bankAccountNumber", maskAccountNumber(user.getBankAccountNumber()));
-        payslipData.put("ifscCode", user.getIfscCode());
-
         // Approval details
         payslipData.put("approvedBy", payroll.getApprovedBy());
         payslipData.put("approvedDate", payroll.getApprovedAt());
         payslipData.put("generatedDate", java.time.LocalDate.now());
-
-        log.info("Payslip generated for employee {}", user.getEmployeeId());
-
-        // Notify employee
-        notificationService.createNotification(payroll.getUserId(), "PAYSLIP_GENERATED",
-                "Payslip Generated",
-                "Your payslip for " + getMonthName(payroll.getMonth()) + " " + payroll.getYear() + " is ready for download",
-                "HIGH");
 
         return payslipData;
     }
@@ -168,7 +185,6 @@ public class PayslipService {
     public String generatePayslipPDF(String payrollId) {
         java.util.Map<String, Object> payslipData = generatePayslip(payrollId);
         log.info("PDF generation for payslip: {}", payrollId);
-        // PDF generation will be handled by PdfGenerator utility
         return "payslip_" + payrollId + ".pdf";
     }
 
@@ -194,9 +210,9 @@ public class PayslipService {
         return "****" + accountNumber.substring(accountNumber.length() - 4);
     }
 
-    private String getMonthName(int month) {
+    public String getMonthName(int month) {
         String[] months = {"", "January", "February", "March", "April", "May", "June",
                 "July", "August", "September", "October", "November", "December"};
-        return months[month];
+        return (month >= 1 && month <= 12) ? months[month] : "";
     }
 }
