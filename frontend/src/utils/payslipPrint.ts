@@ -88,10 +88,10 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
   // Earnings Items List
   const earningsList: { label: string; amount: string }[] = [];
   earningsList.push({ label: 'Basic Pay', amount: fmt(basicPay) });
-  if (da > 0 || !isContract) earningsList.push({ label: 'Dearness Allowance', amount: fmt(da) });
-  if (hra > 0 || !isContract) earningsList.push({ label: 'HRA', amount: fmt(hra) });
-  if (npsEmpE > 0) earningsList.push({ label: 'NPS Employer Share E', amount: fmt(npsEmpE) });
-  if (ta > 0 || !isContract) earningsList.push({ label: 'Transport Allowance', amount: fmt(ta) });
+  if (da > 0 || !isContract) earningsList.push({ label: 'Dearness Allowance (DA)', amount: fmt(da) });
+  if (hra > 0 || !isContract) earningsList.push({ label: 'House Rent Allowance (HRA)', amount: fmt(hra) });
+  if (npsEmpE > 0) earningsList.push({ label: 'NPS Employer Share (14%)', amount: fmt(npsEmpE) });
+  if (ta > 0 || !isContract) earningsList.push({ label: 'Transport Allowance (TA)', amount: fmt(ta) });
   if (otherAllowances > 0) earningsList.push({ label: 'Special / Dean Allowance', amount: fmt(otherAllowances) });
   if (daArrears > 0) earningsList.push({ label: 'DA&TA Arrears', amount: fmt(daArrears) });
   if (promotionArrears > 0) earningsList.push({ label: 'Promotional Arrears', amount: fmt(promotionArrears) });
@@ -100,10 +100,10 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
 
   // Deductions Items List
   const deductionsList: { label: string; amount: string }[] = [];
-  deductionsList.push({ label: 'CGHS', amount: fmt(cghs) });
-  deductionsList.push({ label: 'NPS Employee Share', amount: fmt(npsEmployeeShare) });
-  deductionsList.push({ label: 'NPS Employer Share D', amount: fmt(npsEmpD) });
-  deductionsList.push({ label: 'Professional Tax', amount: fmt(professionalTax) });
+  deductionsList.push({ label: 'CGHS Contribution', amount: fmt(cghs) });
+  deductionsList.push({ label: 'NPS Employee Share (10%)', amount: fmt(npsEmployeeShare) });
+  deductionsList.push({ label: 'NPS Employer Share [Deduction]', amount: fmt(npsEmpD) });
+  deductionsList.push({ label: 'Professional Tax (PT)', amount: fmt(professionalTax) });
   deductionsList.push({ label: 'Income Tax (TDS)', amount: fmt(tds) });
   if (otherDeductions > 0) deductionsList.push({ label: 'Other Deductions', amount: fmt(otherDeductions) });
 
@@ -114,9 +114,9 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
     return `
       <tr>
         <td>${e ? e.label : ''}</td>
-        <td style="text-align: right;">${e ? e.amount : ''}</td>
+        <td style="text-align: right; font-family: monospace; font-weight: 600;">${e ? e.amount : ''}</td>
         <td>${d ? d.label : ''}</td>
-        <td style="text-align: right;">${d ? d.amount : ''}</td>
+        <td style="text-align: right; font-family: monospace; font-weight: 600;">${d ? d.amount : ''}</td>
       </tr>
     `;
   }).join('');
@@ -127,7 +127,7 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
       <img src="${logoSrc}" class="watermark" alt="Watermark"/>
       
       <div class="payslip-inner">
-        <!-- Header -->
+        <!-- Header Table with Logo on left and Institute info centered -->
         <div class="header-table-wrap">
           <table class="header-table">
             <tr>
@@ -139,7 +139,7 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
                 <div class="inst-sub">(An Institute of National Importance)</div>
                 <div class="inst-min">Ministry of Petroleum and Natural Gas, Government of India</div>
                 <div class="inst-addr">Vangali, Sabbavaram, Anakapalle &ndash; 531035, Andhra Pradesh, India</div>
-                <div class="inst-contact">E-Mail : dr.finance@iipe.ac.in | Website: www.iipe.ac.in</div>
+                <div class="inst-contact"><span>E-Mail :</span> dr.finance@iipe.ac.in &nbsp;|&nbsp; <span>Website :</span> www.iipe.ac.in</div>
               </td>
             </tr>
           </table>
@@ -160,7 +160,7 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
         <table class="emp-info-table">
           <tr>
             <td class="lbl">Employee Number</td>
-            <td class="val">: ${p.employeeId || '-'}</td>
+            <td class="val">: <strong style="color: #0a3161;">${p.employeeId || '-'}</strong></td>
             <td class="lbl">Date of Joining</td>
             <td class="val">: ${doj}</td>
           </tr>
@@ -178,7 +178,7 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
           </tr>
           <tr>
             <td class="lbl">Category</td>
-            <td class="val">: ${empCategory}</td>
+            <td class="val">: <span class="cat-badge">${empCategory}</span></td>
             <td class="lbl">PRAN / EPF Number</td>
             <td class="val">: ${user?.pranAccountNumber || user?.pfAccountNumber || '-'}</td>
           </tr>
@@ -196,36 +196,36 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
           </tr>
         </table>
 
-        <!-- Salary Table (4 Columns, Bordered) -->
+        <!-- Salary Table (4 Columns, Bordered, Colored Highlights) -->
         <table class="salary-table">
           <thead>
             <tr>
-              <th style="width: 32%;">Earnings</th>
-              <th style="width: 18%; text-align: right;">Amount</th>
-              <th style="width: 32%;">Deductions</th>
-              <th style="width: 18%; text-align: right;">Amount</th>
+              <th class="earn-th" style="width: 32%; background-color: #f0fdf4 !important; color: #166534 !important; border-bottom: 2px solid #86efac; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">EARNINGS</th>
+              <th class="earn-th" style="width: 18%; text-align: right; background-color: #f0fdf4 !important; color: #166534 !important; border-bottom: 2px solid #86efac; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">Amount (₹)</th>
+              <th class="ded-th" style="width: 32%; background-color: #fef2f2 !important; color: #991b1b !important; border-bottom: 2px solid #fca5a5; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">DEDUCTIONS</th>
+              <th class="ded-th" style="width: 18%; text-align: right; background-color: #fef2f2 !important; color: #991b1b !important; border-bottom: 2px solid #fca5a5; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">Amount (₹)</th>
             </tr>
           </thead>
           <tbody>
             ${tableRowsHtml}
             <tr class="total-row">
-              <td><strong>Total Earnings (Gross)</strong></td>
-              <td style="text-align: right;"><strong>${fmt(totalEarnings)}</strong></td>
-              <td><strong>Total Deductions</strong></td>
-              <td style="text-align: right;"><strong>${fmt(totalDeductions)}</strong></td>
+              <td class="earn-tot" style="background-color: #f0fdf4 !important; color: #166534 !important; border-top: 1.5px solid #86efac; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;"><strong>TOTAL EARNINGS (GROSS)</strong></td>
+              <td class="earn-tot" style="text-align: right; font-family: monospace; font-size: 10pt; background-color: #f0fdf4 !important; color: #166534 !important; border-top: 1.5px solid #86efac; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;"><strong>${fmt(totalEarnings)}</strong></td>
+              <td class="ded-tot" style="background-color: #fef2f2 !important; color: #991b1b !important; border-top: 1.5px solid #fca5a5; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;"><strong>TOTAL DEDUCTIONS</strong></td>
+              <td class="ded-tot" style="text-align: right; font-family: monospace; font-size: 10pt; background-color: #fef2f2 !important; color: #991b1b !important; border-top: 1.5px solid #fca5a5; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;"><strong>${fmt(totalDeductions)}</strong></td>
             </tr>
             <tr class="net-row">
-              <td style="border: none;"></td>
-              <td style="border: none; border-right: 1px solid #000;"></td>
-              <td><strong>Net Amount</strong></td>
-              <td style="text-align: right;"><strong>Rs ${fmt(netSalary)}</strong></td>
+              <td class="net-blank" style="border: none;"></td>
+              <td class="net-blank" style="border: none; border-right: 1px solid #cbd5e1;"></td>
+              <td class="net-cell" style="background-color: #eff6ff !important; color: #0a3161 !important; border: 1.5px solid #93c5fd; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;"><strong>NET PAYABLE AMOUNT</strong></td>
+              <td class="net-cell" style="text-align: right; font-family: monospace; font-size: 10.5pt; background-color: #eff6ff !important; color: #0a3161 !important; border: 1.5px solid #93c5fd; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;"><strong>Rs. ${fmt(netSalary)}</strong></td>
             </tr>
           </tbody>
         </table>
 
         ${ignorablePension > 0 ? `
         <div class="pension-note">
-          * Note: Deductable Pension of Rs. ${fmt(ignorablePension)} has been adjusted from Gross Salary as per 7th CPC re-employment rules.
+          ⚠️ <strong>Note:</strong> Deductable Pension of Rs. ${fmt(ignorablePension)} has been adjusted from Gross Salary as per 7th CPC re-employment rules.
         </div>
         ` : ''}
 
@@ -241,8 +241,23 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
 
 const payslipSharedCss = `
   @page { size: A4 portrait; margin: 1.5cm 1.0cm 1.5cm 1.5cm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-  html, body { background: #f4f6f8; color: #000; font-size: 10pt; width: 100%; }
+  * { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; 
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  html, body { 
+    background: #f4f6f8; 
+    color: #0f172a; 
+    font-size: 9.5pt; 
+    width: 100%; 
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   
   .payslip-page-wrapper {
     page-break-after: always;
@@ -271,11 +286,11 @@ const payslipSharedCss = `
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 320px;
-    max-width: 65%;
+    width: 360px;
+    max-width: 70%;
     height: auto;
     object-fit: contain;
-    opacity: 0.16;
+    opacity: 0.22;
     pointer-events: none;
     z-index: 0;
   }
@@ -286,46 +301,59 @@ const payslipSharedCss = `
     width: 100%;
   }
 
-  .header-table-wrap { width: 100%; margin-bottom: 12px; }
+  .header-table-wrap { width: 100%; margin-bottom: 12px; border-bottom: 1.5px solid #0a3161; padding-bottom: 8px; }
   .header-table { width: 100%; border-collapse: collapse; }
   .header-logo-cell { width: 75px; vertical-align: middle; text-align: center; }
-  .header-logo { width: 68px; height: 68px; object-fit: contain; }
+  .header-logo { width: 70px; height: 70px; object-fit: contain; }
   .header-text-cell { vertical-align: middle; text-align: center; }
-  .inst-title { font-size: 13.5pt; font-weight: 800; color: #000; margin-bottom: 2px; line-height: 1.2; }
-  .inst-sub { font-size: 10.5pt; font-weight: bold; color: #000; margin-bottom: 2px; }
-  .inst-min { font-size: 10pt; font-weight: bold; color: #000; margin-bottom: 3px; }
-  .inst-addr { font-size: 8.5pt; color: #333; margin-bottom: 2px; }
-  .inst-contact { font-size: 8.5pt; color: #333; }
+  .inst-title { font-size: 13.5pt; font-weight: 800; color: #0a3161; margin-bottom: 2px; line-height: 1.2; letter-spacing: 0.2px; }
+  .inst-sub { font-size: 9.5pt; font-weight: 700; color: #b45309; margin-bottom: 2px; }
+  .inst-min { font-size: 9.5pt; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+  .inst-addr { font-size: 8.5pt; color: #475569; margin-bottom: 2px; }
+  .inst-contact { font-size: 8.5pt; color: #64748b; }
+  .inst-contact span { color: #0a3161; font-weight: 600; }
 
-  .title-section { text-align: center; margin: 14px 0 12px 0; }
-  .ps-title { font-size: 12pt; font-weight: bold; color: #000; margin-bottom: 2px; }
-  .ps-period { font-size: 10pt; color: #000; }
+  .title-section { text-align: center; margin: 10px 0 8px 0; }
+  .ps-title { font-size: 12.5pt; font-weight: 800; color: #0a3161; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .ps-period { font-size: 9.5pt; color: #475569; font-weight: 600; }
 
-  .emp-name-title { text-align: center; font-size: 11pt; font-weight: bold; color: #000; margin-bottom: 16px; }
+  .emp-name-title { text-align: center; font-size: 11.5pt; font-weight: 800; color: #0a3161; margin-bottom: 14px; }
 
-  .emp-info-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 9.5pt; }
-  .emp-info-table td { padding: 3px 4px; vertical-align: middle; }
-  .emp-info-table td.lbl { width: 22%; color: #000; font-weight: 500; }
-  .emp-info-table td.val { width: 28%; color: #000; font-weight: 700; }
+  .emp-info-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 9.5pt; background: rgba(255,255,255,0.4); border-radius: 6px; }
+  .emp-info-table td { padding: 3px 6px; vertical-align: middle; }
+  .emp-info-table td.lbl { width: 22%; color: #475569; font-weight: 500; }
+  .emp-info-table td.val { width: 28%; color: #0f172a; font-weight: 700; }
+  .cat-badge { background: #e0f2fe !important; color: #0369a1 !important; padding: 1px 7px; border-radius: 4px; font-size: 8.5pt; font-weight: 700; display: inline-block; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-  .salary-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 9.5pt; }
-  .salary-table th, .salary-table td { border: 1px solid #000; padding: 5px 8px; vertical-align: middle; }
-  .salary-table th { font-weight: bold; color: #000; text-align: left; }
-  .salary-table .total-row td { font-weight: bold; }
-  .salary-table .net-row td { font-weight: bold; }
+  .salary-table { width: 100%; border-collapse: collapse; margin-bottom: 22px; font-size: 9.5pt; background: rgba(255,255,255,0.5); }
+  .salary-table th, .salary-table td { border: 1px solid #cbd5e1; padding: 5px 8px; vertical-align: middle; }
+  
+  .salary-table th.earn-th { background-color: #f0fdf4 !important; color: #166534 !important; font-weight: 700; border-bottom: 2px solid #86efac; border-color: #86efac; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .salary-table th.ded-th { background-color: #fef2f2 !important; color: #991b1b !important; font-weight: 700; border-bottom: 2px solid #fca5a5; border-color: #fca5a5; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  
+  .salary-table .total-row td.earn-tot { background-color: #f0fdf4 !important; color: #166534 !important; font-weight: 800; border-top: 1.5px solid #86efac; border-color: #86efac; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .salary-table .total-row td.ded-tot { background-color: #fef2f2 !important; color: #991b1b !important; font-weight: 800; border-top: 1.5px solid #fca5a5; border-color: #fca5a5; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  
+  .salary-table .net-row td.net-blank { border: none; }
+  .salary-table .net-row td.net-cell { background-color: #eff6ff !important; color: #0a3161 !important; font-weight: 800; border: 1.5px solid #93c5fd; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-  .pension-note { font-size: 8.5pt; font-style: italic; color: #475569; margin-bottom: 15px; }
+  .pension-note { font-size: 8.5pt; font-style: italic; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 4px 8px; margin-bottom: 12px; }
 
-  .footer-section { text-align: center; font-size: 9pt; color: #000; margin-top: 35px; }
+  .footer-section { text-align: center; font-size: 8.5pt; color: #64748b; margin-top: 30px; border-top: 1px dashed #e2e8f0; padding-top: 8px; }
 
   @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
     html, body {
       background: #fff !important;
       margin: 0 !important;
       padding: 0 !important;
       width: 100% !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     .payslip-page-wrapper {
       page-break-after: always !important;
@@ -355,9 +383,36 @@ const payslipSharedCss = `
       top: 50% !important;
       left: 50% !important;
       transform: translate(-50%, -50%) !important;
-      width: 320px !important;
-      opacity: 0.16 !important;
+      width: 360px !important;
+      opacity: 0.22 !important;
       z-index: 0 !important;
+    }
+    .salary-table th.earn-th, .salary-table .total-row td.earn-tot {
+      background-color: #f0fdf4 !important;
+      color: #166534 !important;
+      border-color: #86efac !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .salary-table th.ded-th, .salary-table .total-row td.ded-tot {
+      background-color: #fef2f2 !important;
+      color: #991b1b !important;
+      border-color: #fca5a5 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .salary-table .net-row td.net-cell {
+      background-color: #eff6ff !important;
+      color: #0a3161 !important;
+      border: 1.5px solid #93c5fd !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .cat-badge {
+      background-color: #e0f2fe !important;
+      color: #0369a1 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
   }
 `;
@@ -369,6 +424,7 @@ export function generateSinglePayslipHtml(payroll: any, user: any): string {
 <head>
   <meta charset="utf-8"/>
   <title>Pay Slip - ${months[(payroll.month || 1) - 1]} ${payroll.year} - ${payroll.employeeId || ''}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     ${payslipSharedCss}
   </style>
@@ -411,6 +467,7 @@ export function generateCombinedPayslipsHtml(
 <head>
   <meta charset="utf-8"/>
   <title>${pageTitle}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     ${payslipSharedCss}
   </style>
