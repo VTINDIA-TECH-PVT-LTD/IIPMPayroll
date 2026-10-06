@@ -161,11 +161,11 @@ public class SettingService {
                 Map.entry("FORM16_EMPLOYER_TAN", "VPNI00723C"),
                 Map.entry("FORM16_EMPLOYER_EMAIL", "fo@iipe.ac.in"),
                 Map.entry("FORM16_CIT_TDS", "The Commissioner of Income Tax (TDS), Hyderabad - 500004"),
-                Map.entry("FORM16_SIGNATORY_NAME", "Dr. Ram Phal Dwivedi"),
+                Map.entry("FORM16_SIGNATORY_NAME", ""),
                 Map.entry("FORM16_SIGNATORY_FATHER_NAME", ""),
-                Map.entry("FORM16_SIGNATORY_DESIGNATION", "Registrar / Authorised Signatory"),
+                Map.entry("FORM16_SIGNATORY_DESIGNATION", ""),
                 Map.entry("FORM16_PLACE", "Visakhapatnam"),
-                Map.entry("FORM16_CERTIFICATE_NO", "ACORZOA"),
+                Map.entry("FORM16_CERTIFICATE_NO", ""),
                 Map.entry("FORM16_Q1_RECEIPT", ""),
                 Map.entry("FORM16_Q2_RECEIPT", ""),
                 Map.entry("FORM16_Q3_RECEIPT", ""),
@@ -195,6 +195,14 @@ public class SettingService {
                 setting.setValue("14");
                 settingRepository.save(setting);
                 log.info("Migrated NPS_EMPLOYER_PERCENTAGE from 10 to 14");
+            } else if (entry.getKey().equals("FORM16_SIGNATORY_NAME") && "Dr. Ram Phal Dwivedi".equals(existing.get().getValue())) {
+                Setting setting = existing.get();
+                setting.setValue("");
+                settingRepository.save(setting);
+            } else if (entry.getKey().equals("FORM16_SIGNATORY_DESIGNATION") && "Registrar / Authorised Signatory".equals(existing.get().getValue())) {
+                Setting setting = existing.get();
+                setting.setValue("");
+                settingRepository.save(setting);
             }
         }
 

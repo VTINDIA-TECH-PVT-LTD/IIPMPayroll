@@ -178,9 +178,7 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
         <table className="f16-table">
           <tbody>
             <tr>
-              <td colSpan={2} className="bold" style={{ width: '50%' }}>
-                Certificate No. <span style={{ marginLeft: '10px', fontWeight: 'normal' }}>{d.certificateNo || 'ACORZOA'}</span>
-              </td>
+              <td colSpan={2} style={{ width: '50%' }}></td>
               <td colSpan={2} className="bold text-right" style={{ width: '50%' }}>
                 Last updated on <span style={{ marginLeft: '10px', fontWeight: 'normal' }}>{lastUpdatedOn}</span>
               </td>
@@ -490,8 +488,8 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
             Verification
           </div>
           <div style={{ border: '1px solid #000', borderTop: 'none', padding: '6px 8px' }}>
-            <p style={{ textAlign: 'justify', lineHeight: '1.35', margin: 0, fontSize: '9.5px' }}>
-              I, <span className="bold">{d.signatoryName || 'AUTHORISED SIGNATORY'}</span>{d.signatoryFatherName && d.signatoryFatherName.trim() !== '' ? <>, son/daughter of <span className="bold">{d.signatoryFatherName}</span></> : ''} working in the capacity of <span className="bold">{d.signatoryDesignation || 'AUTHORISED SIGNATORY'}</span> do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, TDS statements, and other available records.
+            <p style={{ textAlign: 'justify', lineHeight: '1.4', margin: 0, fontSize: '9.5px' }}>
+              I, <span className="bold">{d.signatoryName && d.signatoryName.trim() !== '' ? d.signatoryName : '....................................................................'}</span>{d.signatoryFatherName && d.signatoryFatherName.trim() !== '' ? <>, son/daughter of <span className="bold">{d.signatoryFatherName}</span></> : ''} working in the capacity of <span className="bold">{d.signatoryDesignation && d.signatoryDesignation.trim() !== '' ? d.signatoryDesignation : '....................................................................'}</span> do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, TDS statements, and other available records.
             </p>
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -502,10 +500,10 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
                   <div><span className="bold">Date:</span> <span style={{ marginLeft: '14px' }}>{issueDate}</span></div>
                 </td>
                 <td style={{ width: '50%', border: '1px solid #000', borderTop: 'none', padding: '6px 8px', textAlign: 'right', verticalAlign: 'bottom' }}>
-                  <div style={{ fontSize: '9.5px', marginBottom: '14px' }}>(Signature of person responsible for deduction of tax)</div>
-                  <div style={{ borderTop: '1px solid #000', paddingTop: '4px', textAlign: 'right' }}>
-                    <span className="bold" style={{ fontSize: '10.5px' }}>{d.signatoryName || 'AUTHORISED SIGNATORY'}</span>
-                    <div style={{ fontSize: '9px', color: '#333' }}>{d.signatoryDesignation || 'Authorised Signatory'}</div>
+                  <div style={{ fontSize: '9.5px', marginBottom: '26px' }}>(Signature of person responsible for deduction of tax)</div>
+                  <div style={{ borderTop: '1px solid #000', paddingTop: '4px', textAlign: 'right', minHeight: '28px' }}>
+                    {d.signatoryName && d.signatoryName.trim() !== '' && <><span className="bold" style={{ fontSize: '10.5px' }}>{d.signatoryName}</span><br /></>}
+                    {d.signatoryDesignation && d.signatoryDesignation.trim() !== '' && <div style={{ fontSize: '9px', color: '#333' }}>{d.signatoryDesignation}</div>}
                   </div>
                 </td>
               </tr>

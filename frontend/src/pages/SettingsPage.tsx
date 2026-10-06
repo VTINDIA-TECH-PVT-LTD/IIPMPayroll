@@ -385,27 +385,15 @@ const SettingsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Employer Contact Email</label>
-                    <input
-                      type="email"
-                      className="form-control-iipm"
-                      value={form16Values.FORM16_EMPLOYER_EMAIL || ''}
-                      onChange={e => setForm16Values({ ...form16Values, FORM16_EMPLOYER_EMAIL: e.target.value })}
-                      placeholder="fo@iipe.ac.in"
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Certificate Number Prefix</label>
-                    <input
-                      type="text"
-                      className="form-control-iipm"
-                      value={form16Values.FORM16_CERTIFICATE_NO || ''}
-                      onChange={e => setForm16Values({ ...form16Values, FORM16_CERTIFICATE_NO: e.target.value })}
-                      placeholder="ACORZOA"
-                    />
-                  </div>
+                <div>
+                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Employer Contact Email</label>
+                  <input
+                    type="email"
+                    className="form-control-iipm"
+                    value={form16Values.FORM16_EMPLOYER_EMAIL || ''}
+                    onChange={e => setForm16Values({ ...form16Values, FORM16_EMPLOYER_EMAIL: e.target.value })}
+                    placeholder="fo@iipe.ac.in"
+                  />
                 </div>
 
                 <div>
@@ -430,16 +418,15 @@ const SettingsPage: React.FC = () => {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Signatory Full Name</label>
+                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Signatory Full Name (Optional)</label>
                   <input
                     type="text"
                     className="form-control-iipm"
                     value={form16Values.FORM16_SIGNATORY_NAME || ''}
                     onChange={e => setForm16Values({ ...form16Values, FORM16_SIGNATORY_NAME: e.target.value })}
-                    placeholder="Dr. Ram Phal Dwivedi"
-                    required
+                    placeholder="Leave blank for physical signature or enter Name"
                   />
-                  <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Printed in Part B Verification certificate and under signature block.</small>
+                  <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>If left blank, Form 16 will print a clean signature line for manual signing.</small>
                 </div>
 
                 <div>
@@ -449,19 +436,18 @@ const SettingsPage: React.FC = () => {
                     className="form-control-iipm"
                     value={form16Values.FORM16_SIGNATORY_FATHER_NAME || ''}
                     onChange={e => setForm16Values({ ...form16Values, FORM16_SIGNATORY_FATHER_NAME: e.target.value })}
-                    placeholder="Father's full name (leave blank if not applicable)"
+                    placeholder="Father's full name (optional)"
                   />
                 </div>
 
                 <div>
-                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Signatory Capacity / Designation</label>
+                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Signatory Capacity / Designation (Optional)</label>
                   <input
                     type="text"
                     className="form-control-iipm"
                     value={form16Values.FORM16_SIGNATORY_DESIGNATION || ''}
                     onChange={e => setForm16Values({ ...form16Values, FORM16_SIGNATORY_DESIGNATION: e.target.value })}
-                    placeholder="Registrar / Authorised Signatory"
-                    required
+                    placeholder="e.g. Registrar / Drawing & Disbursing Officer"
                   />
                 </div>
 
@@ -473,15 +459,14 @@ const SettingsPage: React.FC = () => {
                     value={form16Values.FORM16_PLACE || ''}
                     onChange={e => setForm16Values({ ...form16Values, FORM16_PLACE: e.target.value })}
                     placeholder="Visakhapatnam"
-                    required
                   />
                 </div>
 
                 <div style={{ marginTop: '10px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid var(--border)' }}>
                   <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Verification Certificate Preview:</div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: '1.4' }}>
-                    "I, <strong>{form16Values.FORM16_SIGNATORY_NAME || '[Signatory Name]'}</strong>
-                    {form16Values.FORM16_SIGNATORY_FATHER_NAME ? `, son/daughter of ${form16Values.FORM16_SIGNATORY_FATHER_NAME}` : ''} working in the capacity of <strong>{form16Values.FORM16_SIGNATORY_DESIGNATION || 'Authorised Signatory'}</strong> do hereby certify..."
+                    "I, <strong>{form16Values.FORM16_SIGNATORY_NAME || '................................................'}</strong>
+                    {form16Values.FORM16_SIGNATORY_FATHER_NAME ? `, son/daughter of ${form16Values.FORM16_SIGNATORY_FATHER_NAME}` : ''} working in the capacity of <strong>{form16Values.FORM16_SIGNATORY_DESIGNATION || '................................................'}</strong> do hereby certify..."
                   </div>
                 </div>
               </div>

@@ -169,9 +169,7 @@ export function generateForm16PrintHtml(d: any): string {
         <table class="f16-table">
           <tbody>
             <tr>
-              <td colspan="2" class="bold" style="width: 50%;">
-                Certificate No. <span style="margin-left: 10px; font-weight: normal;">${d.certificateNo || 'ACORZOA'}</span>
-              </td>
+              <td colspan="2" style="width: 50%;"></td>
               <td colspan="2" class="bold text-right" style="width: 50%;">
                 Last updated on <span style="margin-left: 10px; font-weight: normal;">${lastUpdatedOn}</span>
               </td>
@@ -476,8 +474,8 @@ export function generateForm16PrintHtml(d: any): string {
             Verification
           </div>
           <div style="border: 1px solid #000; border-top: none; padding: 6px 8px;">
-            <p style="text-align: justify; line-height: 1.35; margin: 0; font-size: 9.5px;">
-              I, <span class="bold">${d.signatoryName || 'AUTHORISED SIGNATORY'}</span>${d.signatoryFatherName && d.signatoryFatherName.trim() !== '' ? `, son/daughter of <span class="bold">${d.signatoryFatherName}</span>` : ''} working in the capacity of <span class="bold">${d.signatoryDesignation || 'AUTHORISED SIGNATORY'}</span> do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, TDS statements, and other available records.
+            <p style="text-align: justify; line-height: 1.4; margin: 0; font-size: 9.5px;">
+              I, <span class="bold">${d.signatoryName && d.signatoryName.trim() !== '' ? d.signatoryName : '....................................................................'}</span>${d.signatoryFatherName && d.signatoryFatherName.trim() !== '' ? `, son/daughter of <span class="bold">${d.signatoryFatherName}</span>` : ''} working in the capacity of <span class="bold">${d.signatoryDesignation && d.signatoryDesignation.trim() !== '' ? d.signatoryDesignation : '....................................................................'}</span> do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, TDS statements, and other available records.
             </p>
           </div>
           <table style="width: 100%; border-collapse: collapse;">
@@ -488,10 +486,10 @@ export function generateForm16PrintHtml(d: any): string {
                   <div><span class="bold">Date:</span> <span style="margin-left: 14px;">${issueDate}</span></div>
                 </td>
                 <td style="width: 50%; border: 1px solid #000; border-top: none; padding: 6px 8px; text-align: right; vertical-align: bottom;">
-                  <div style="font-size: 9.5px; margin-bottom: 14px;">(Signature of person responsible for deduction of tax)</div>
-                  <div style="border-top: 1px solid #000; padding-top: 4px; text-align: right;">
-                    <span class="bold" style="font-size: 10.5px;">${d.signatoryName || 'AUTHORISED SIGNATORY'}</span>
-                    <div style="font-size: 9px; color: #333;">${d.signatoryDesignation || 'Authorised Signatory'}</div>
+                  <div style="font-size: 9.5px; margin-bottom: 26px;">(Signature of person responsible for deduction of tax)</div>
+                  <div style="border-top: 1px solid #000; padding-top: 4px; text-align: right; min-height: 28px;">
+                    ${d.signatoryName && d.signatoryName.trim() !== '' ? `<span class="bold" style="font-size: 10.5px;">${d.signatoryName}</span><br />` : ''}
+                    ${d.signatoryDesignation && d.signatoryDesignation.trim() !== '' ? `<div style="font-size: 9px; color: #333;">${d.signatoryDesignation}</div>` : ''}
                   </div>
                 </td>
               </tr>
