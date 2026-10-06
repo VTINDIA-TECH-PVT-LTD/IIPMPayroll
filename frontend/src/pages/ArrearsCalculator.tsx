@@ -19,10 +19,10 @@ const ArrearsCalculator: React.FC = () => {
   const [bulkCategory, setBulkCategory] = useState<'all' | 'staff' | 'faculty' | 'contract'>('all');
 
   const [signatures, setSignatures] = useState({
-    preparedBy: 'Y RAMA RAO',
-    verifiedBy1: 'Ch KALIKA DEVI',
-    verifiedBy2: 'SATYANARAYAN MOHANTY',
-    approvedBy: 'SHRI. RAM PHAL DWIVEDI'
+    preparedBy: 'Executive',
+    verifiedBy1: 'Junior Superintendent',
+    verifiedBy2: 'Deputy Registrar',
+    approvedBy: 'Registrar'
   });
 
   // Universal Arrear Computation Helper
@@ -460,10 +460,46 @@ const ArrearsCalculator: React.FC = () => {
       <div className="card-iipm" style={{ padding: '16px 20px', marginBottom: '20px' }}>
         <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px' }}>EXCEL EXPORT SIGNATURE BLOCK CONFIGURATION</div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <div><label className="form-label-iipm">Prepared By</label><input className="form-control-iipm" value={signatures.preparedBy} onChange={e => setSignatures({...signatures, preparedBy: e.target.value})} style={{width: '200px'}} /></div>
-          <div><label className="form-label-iipm">Verified By (1)</label><input className="form-control-iipm" value={signatures.verifiedBy1} onChange={e => setSignatures({...signatures, verifiedBy1: e.target.value})} style={{width: '200px'}} /></div>
-          <div><label className="form-label-iipm">Verified By (2)</label><input className="form-control-iipm" value={signatures.verifiedBy2} onChange={e => setSignatures({...signatures, verifiedBy2: e.target.value})} style={{width: '200px'}} /></div>
-          <div><label className="form-label-iipm">Approved By</label><input className="form-control-iipm" value={signatures.approvedBy} onChange={e => setSignatures({...signatures, approvedBy: e.target.value})} style={{width: '200px'}} /></div>
+          <div>
+            <label className="form-label-iipm">PREPARED BY</label>
+            <input
+              className="form-control-iipm"
+              placeholder="Enter name or designation"
+              value={signatures.preparedBy}
+              onChange={e => setSignatures({...signatures, preparedBy: e.target.value})}
+              style={{width: '210px'}}
+            />
+          </div>
+          <div>
+            <label className="form-label-iipm">VERIFIED BY (1)</label>
+            <input
+              className="form-control-iipm"
+              placeholder="Enter name or designation"
+              value={signatures.verifiedBy1}
+              onChange={e => setSignatures({...signatures, verifiedBy1: e.target.value})}
+              style={{width: '210px'}}
+            />
+          </div>
+          <div>
+            <label className="form-label-iipm">VERIFIED BY (2)</label>
+            <input
+              className="form-control-iipm"
+              placeholder="Enter name or designation"
+              value={signatures.verifiedBy2}
+              onChange={e => setSignatures({...signatures, verifiedBy2: e.target.value})}
+              style={{width: '210px'}}
+            />
+          </div>
+          <div>
+            <label className="form-label-iipm">APPROVED BY</label>
+            <input
+              className="form-control-iipm"
+              placeholder="Enter name or designation"
+              value={signatures.approvedBy}
+              onChange={e => setSignatures({...signatures, approvedBy: e.target.value})}
+              style={{width: '210px'}}
+            />
+          </div>
         </div>
       </div>
 

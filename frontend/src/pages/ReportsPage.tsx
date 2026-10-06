@@ -127,10 +127,10 @@ const ReportsPage: React.FC = () => {
   ] as const;
 
   const [signatures, setSignatures] = useState({
-    preparedBy: 'S.SIRISHA',
-    verifiedBy1: 'Y RAMA RAO',
-    verifiedBy2: 'DR. B.MURALI KRISHNA',
-    approvedBy: 'SHRI.RAM PHAL DWIVEDI'
+    preparedBy: 'Executive',
+    verifiedBy1: 'Junior Superintendent',
+    verifiedBy2: 'Deputy Registrar',
+    approvedBy: 'Registrar'
   });
 
   const normalizeBankName = (bank?: string) => {
@@ -875,10 +875,46 @@ const ReportsPage: React.FC = () => {
           <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px' }}>EXCEL EXPORT SIGNATURE BLOCK CONFIGURATION</div>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <div><label className="form-label-iipm">Prepared By</label><input className="form-control-iipm" value={signatures.preparedBy} onChange={e => setSignatures({...signatures, preparedBy: e.target.value})} style={{width: '200px'}} /></div>
-              <div><label className="form-label-iipm">Verified By (1)</label><input className="form-control-iipm" value={signatures.verifiedBy1} onChange={e => setSignatures({...signatures, verifiedBy1: e.target.value})} style={{width: '200px'}} /></div>
-              <div><label className="form-label-iipm">Verified By (2)</label><input className="form-control-iipm" value={signatures.verifiedBy2} onChange={e => setSignatures({...signatures, verifiedBy2: e.target.value})} style={{width: '200px'}} /></div>
-              <div><label className="form-label-iipm">Approved By</label><input className="form-control-iipm" value={signatures.approvedBy} onChange={e => setSignatures({...signatures, approvedBy: e.target.value})} style={{width: '200px'}} /></div>
+              <div>
+                <label className="form-label-iipm">PREPARED BY</label>
+                <input
+                  className="form-control-iipm"
+                  placeholder="Enter name or designation"
+                  value={signatures.preparedBy}
+                  onChange={e => setSignatures({...signatures, preparedBy: e.target.value})}
+                  style={{width: '210px'}}
+                />
+              </div>
+              <div>
+                <label className="form-label-iipm">VERIFIED BY (1)</label>
+                <input
+                  className="form-control-iipm"
+                  placeholder="Enter name or designation"
+                  value={signatures.verifiedBy1}
+                  onChange={e => setSignatures({...signatures, verifiedBy1: e.target.value})}
+                  style={{width: '210px'}}
+                />
+              </div>
+              <div>
+                <label className="form-label-iipm">VERIFIED BY (2)</label>
+                <input
+                  className="form-control-iipm"
+                  placeholder="Enter name or designation"
+                  value={signatures.verifiedBy2}
+                  onChange={e => setSignatures({...signatures, verifiedBy2: e.target.value})}
+                  style={{width: '210px'}}
+                />
+              </div>
+              <div>
+                <label className="form-label-iipm">APPROVED BY</label>
+                <input
+                  className="form-control-iipm"
+                  placeholder="Enter name or designation"
+                  value={signatures.approvedBy}
+                  onChange={e => setSignatures({...signatures, approvedBy: e.target.value})}
+                  style={{width: '210px'}}
+                />
+              </div>
             </div>
           </div>
         )}
