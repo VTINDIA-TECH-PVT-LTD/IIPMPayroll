@@ -1,80 +1,137 @@
 package com.iipm.payroll.util;
 
 import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfWriter;
+import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.time.Month;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
 public class PdfGenerator {
 
+    private byte[] cachedLogoBytes = null;
+
+    private synchronized byte[] loadLogoBytes() {
+        if (cachedLogoBytes != null) return cachedLogoBytes;
+        try {
+            ClassPathResource res = new ClassPathResource("logo.png");
+            if (res.exists()) {
+                cachedLogoBytes = StreamUtils.copyToByteArray(res.getInputStream());
+            }
+        } catch (Exception e) {
+            log.warn("Could not load logo.png from classpath: {}", e.getMessage());
+        }
+        return cachedLogoBytes;
+    }
+
     public byte[] generatePayslipPDF(Map<String, Object> payslipData) throws DocumentException, IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        // Left: 1.5cm (42.5f), Right: 1.0cm (28.35f), Top: 1.5cm (42.5f), Bottom: 1.5cm (42.5f)
-        Document document = new Document(PageSize.A4, 42.5f, 28.35f, 42.5f, 42.5f);
-        PdfWriter.getInstance(document, baos);
+        // Margins: Left: 1.5cm (42.52f), Right: 1.0cm (28.35f), Top: 1.5cm (42.52f), Bottom: 1.5cm (42.52f)
+        Document document = new Document(PageSize.A4, 42.52f, 28.35f, 42.52f, 42.52f);
+        PdfWriter writer = PdfWriter.getInstance(document, baos);
+
+        byte[] logoBytes = loadLogoBytes();
+        if (logoBytes != null) {
+            writer.setPageEvent(new WatermarkPageEvent(logoBytes));
+        }
 
         document.open();
-        renderSinglePayslip(document, payslipData);
+        renderSinglePayslip(document, payslipData, logoBytes);
         document.close();
         return baos.toByteArray();
     }
 
     public byte[] generateCombinedPayslipsPDF(List<Map<String, Object>> payslipsList) throws DocumentException, IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        // Left: 1.5cm (42.5f), Right: 1.0cm (28.35f), Top: 1.5cm (42.5f), Bottom: 1.5cm (42.5f)
-        Document document = new Document(PageSize.A4, 42.5f, 28.35f, 42.5f, 42.5f);
-        PdfWriter.getInstance(document, baos);
+        // Margins: Left: 1.5cm (42.52f), Right: 1.0cm (28.35f), Top: 1.5cm (42.52f), Bottom: 1.5cm (42.52f)
+        Document document = new Document(PageSize.A4, 42.52f, 28.35f, 42.52f, 42.52f);
+        PdfWriter writer = PdfWriter.getInstance(document, baos);
+
+        byte[] logoBytes = loadLogoBytes();
+        if (logoBytes != null) {
+            writer.setPageEvent(new WatermarkPageEvent(logoBytes));
+        }
 
         document.open();
         for (int i = 0; i < payslipsList.size(); i++) {
             if (i > 0) {
                 document.newPage();
             }
-            renderSinglePayslip(document, payslipsList.get(i));
+            renderSinglePayslip(document, payslipsList.get(i), logoBytes);
         }
         document.close();
         return baos.toByteArray();
     }
 
-    private void renderSinglePayslip(Document document, Map<String, Object> payslipData) throws DocumentException {
-        Font boldFont = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD);
-        Font normalFont = new Font(Font.FontFamily.HELVETICA, 10, Font.NORMAL);
-        Font smallFont = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL);
-        Font largeBold = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
+    private void renderSinglePayslip(Document document, Map<String, Object> payslipData, byte[] logoBytes) throws DocumentException {
+        BaseColor primaryBlue = new BaseColor(10, 49, 97);
+        BaseColor darkText = new BaseColor(15, 23, 42);
+        BaseColor grayText = new BaseColor(71, 85, 105);
 
-        // Header
+        Font largeBold = new Font(Font.FontFamily.HELVETICA, 13f, Font.BOLD, primaryBlue);
+        Font boldFont = new Font(Font.FontFamily.HELVETICA, 10.5f, Font.BOLD, darkText);
+        Font normalFont = new Font(Font.FontFamily.HELVETICA, 9.5f, Font.NORMAL, darkText);
+        Font smallFont = new Font(Font.FontFamily.HELVETICA, 8.5f, Font.NORMAL, grayText);
+        Font paySlipFont = new Font(Font.FontFamily.HELVETICA, 12f, Font.BOLD, primaryBlue);
+
+        // Header Table with Logo on left and Institute info centered
+        PdfPTable headerTable = new PdfPTable(2);
+        headerTable.setWidthPercentage(100);
+        try {
+            headerTable.setWidths(new float[]{1.3f, 8.7f});
+        } catch (DocumentException ignored) {}
+
+        PdfPCell logoCell = new PdfPCell();
+        logoCell.setBorder(Rectangle.NO_BORDER);
+        logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        logoCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        if (logoBytes != null) {
+            try {
+                Image logo = Image.getInstance(logoBytes);
+                logo.scaleToFit(65f, 65f);
+                logo.setAlignment(Element.ALIGN_CENTER);
+                logoCell.addElement(logo);
+            } catch (Exception ignored) {}
+        }
+
+        PdfPCell textCell = new PdfPCell();
+        textCell.setBorder(Rectangle.NO_BORDER);
+        textCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
         Paragraph title = new Paragraph("INDIAN INSTITUTE OF PETROLEUM AND ENERGY", largeBold);
         title.setAlignment(Element.ALIGN_CENTER);
-        document.add(title);
+        textCell.addElement(title);
 
         Paragraph subTitle = new Paragraph("(An Institute of National Importance)\nMinistry of Petroleum and Natural Gas, Government of India", boldFont);
         subTitle.setAlignment(Element.ALIGN_CENTER);
-        document.add(subTitle);
+        textCell.addElement(subTitle);
 
         Paragraph address = new Paragraph("Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India\nE-Mail : dr.finance@iipe.ac.in | Website: www.iipe.ac.in", smallFont);
         address.setAlignment(Element.ALIGN_CENTER);
-        document.add(address);
+        textCell.addElement(address);
 
-        document.add(new Paragraph("\n"));
-        
+        headerTable.addCell(logoCell);
+        headerTable.addCell(textCell);
+        document.add(headerTable);
+
+        document.add(new Paragraph(" "));
+
         String monthName = payslipData.get("monthName") != null ? payslipData.get("monthName").toString() : "";
         if (monthName.isEmpty() && payslipData.get("month") != null) {
             monthName = payslipData.get("month").toString();
         }
         String year = payslipData.get("year") != null ? payslipData.get("year").toString() : "";
 
-        Paragraph paySlipTitle = new Paragraph("Pay Slip", boldFont);
+        Paragraph paySlipTitle = new Paragraph("Pay Slip", paySlipFont);
         paySlipTitle.setAlignment(Element.ALIGN_CENTER);
         document.add(paySlipTitle);
 
@@ -82,7 +139,7 @@ public class PdfGenerator {
         paySlipPeriod.setAlignment(Element.ALIGN_CENTER);
         document.add(paySlipPeriod);
 
-        document.add(new Paragraph("\n"));
+        document.add(new Paragraph(" "));
 
         String empName = payslipData.get("employeeName") != null ? payslipData.get("employeeName").toString().trim() : "";
         String category = payslipData.get("category") != null ? payslipData.get("category").toString() : "";
@@ -106,14 +163,14 @@ public class PdfGenerator {
         Paragraph nameHeader = new Paragraph(formattedEmpName, boldFont);
         nameHeader.setAlignment(Element.ALIGN_CENTER);
         document.add(nameHeader);
-        document.add(new Paragraph("\n"));
+        document.add(new Paragraph(" "));
 
-        // Employee Info Table (No Borders)
+        // Employee Info Table (4 Columns, No Borders)
         PdfPTable infoTable = new PdfPTable(4);
         infoTable.setWidthPercentage(100);
         try {
             infoTable.setWidths(new float[]{2.2f, 2.8f, 2.2f, 2.8f});
-        } catch (DocumentException e) {}
+        } catch (DocumentException ignored) {}
 
         addInfoRow(infoTable, "Employee Number", payslipData.get("employeeId"), "Date of Joining", payslipData.get("dateOfJoining"), normalFont);
         addInfoRow(infoTable, "Designation", payslipData.get("designation"), "Date of Next Increment", payslipData.get("dateOfNextIncrement") != null ? payslipData.get("dateOfNextIncrement") : "01-Jul-" + year, normalFont);
@@ -126,14 +183,14 @@ public class PdfGenerator {
         addInfoRow(infoTable, "Bank Details", payslipData.get("bankAccount"), "Pay Drawn (Days)", pDays + " / " + tDays + " Days", normalFont);
 
         document.add(infoTable);
-        document.add(new Paragraph("\n"));
+        document.add(new Paragraph(" "));
 
         // Earnings and Deductions Table
         PdfPTable salaryTable = new PdfPTable(4);
         salaryTable.setWidthPercentage(100);
         try {
             salaryTable.setWidths(new float[]{3f, 2f, 3f, 2f});
-        } catch (DocumentException e) {}
+        } catch (DocumentException ignored) {}
 
         addSalaryCell(salaryTable, "Earnings", true);
         addSalaryCell(salaryTable, "Amount", true);
@@ -195,16 +252,16 @@ public class PdfGenerator {
         addSalaryRow(salaryTable, "", "", "Net Amount", "Rs " + df.format(netSalary), true);
 
         document.add(salaryTable);
-        document.add(new Paragraph("\n"));
+        document.add(new Paragraph(" "));
 
         if (ignorablePension > 0) {
             Font warnFont = new Font(Font.FontFamily.HELVETICA, 8, Font.ITALIC, BaseColor.DARK_GRAY);
             Paragraph warnPara = new Paragraph("* Note: Deductable Pension of Rs. " + df.format(ignorablePension) + " has been adjusted from Gross Salary as per 7th CPC re-employment rules.", warnFont);
             document.add(warnPara);
-            document.add(new Paragraph("\n"));
+            document.add(new Paragraph(" "));
         }
 
-        document.add(new Paragraph("\n"));
+        document.add(new Paragraph(" "));
         Paragraph footer = new Paragraph("This is a Computer Generated Pay Slip", smallFont);
         footer.setAlignment(Element.ALIGN_CENTER);
         document.add(footer);
@@ -228,6 +285,9 @@ public class PdfGenerator {
         Font font = new Font(Font.FontFamily.HELVETICA, 10, isHeader ? Font.BOLD : Font.NORMAL);
         PdfPCell cell = new PdfPCell(new Phrase(text, font));
         cell.setPadding(5f);
+        if (isHeader) {
+            cell.setBackgroundColor(new BaseColor(241, 245, 249));
+        }
         if (text.equals("Amount") || text.startsWith("Rs ") || text.matches(".*\\d+.*")) {
             cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         }
@@ -241,6 +301,14 @@ public class PdfGenerator {
         PdfPCell c2 = new PdfPCell(new Phrase(amt1, font)); c2.setPadding(5f); c2.setHorizontalAlignment(Element.ALIGN_RIGHT);
         PdfPCell c3 = new PdfPCell(new Phrase(label2, font)); c3.setPadding(5f);
         PdfPCell c4 = new PdfPCell(new Phrase(amt2, font)); c4.setPadding(5f); c4.setHorizontalAlignment(Element.ALIGN_RIGHT);
+
+        if (isBold) {
+            BaseColor highlightBg = new BaseColor(248, 250, 252);
+            c1.setBackgroundColor(highlightBg);
+            c2.setBackgroundColor(highlightBg);
+            c3.setBackgroundColor(highlightBg);
+            c4.setBackgroundColor(highlightBg);
+        }
 
         table.addCell(c1); table.addCell(c2); table.addCell(c3); table.addCell(c4);
     }
@@ -269,22 +337,42 @@ public class PdfGenerator {
         return 0.0;
     }
 
-    // Deprecated / Unused based on new layout, returning empty for safety if called elsewhere
     public byte[] generateApprovalSheetPDF(List<Map<String, Object>> payrolls, String month, int year) {
         return new byte[0];
     }
-    
-    // Very basic number to words converter for English
-    private String numberToWords(int n) {
-        if (n == 0) return "Zero";
-        String[] units = { "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen" };
-        String[] tens = { "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety" };
-        
-        if (n < 20) return units[n];
-        if (n < 100) return tens[n / 10] + ((n % 10 != 0) ? " " : "") + units[n % 10];
-        if (n < 1000) return units[n / 100] + " Hundred" + ((n % 100 != 0) ? " and " : "") + numberToWords(n % 100);
-        if (n < 100000) return numberToWords(n / 1000) + " Thousand" + ((n % 1000 != 0) ? " " : "") + numberToWords(n % 1000);
-        if (n < 10000000) return numberToWords(n / 100000) + " Lakh" + ((n % 100000 != 0) ? " " : "") + numberToWords(n % 100000);
-        return numberToWords(n / 10000000) + " Crore" + ((n % 10000000 != 0) ? " " : "") + numberToWords(n % 10000000);
+
+    private static class WatermarkPageEvent extends PdfPageEventHelper {
+        private final byte[] logoBytes;
+
+        public WatermarkPageEvent(byte[] logoBytes) {
+            this.logoBytes = logoBytes;
+        }
+
+        @Override
+        public void onEndPage(PdfWriter writer, Document document) {
+            if (logoBytes == null) return;
+            try {
+                Image watermark = Image.getInstance(logoBytes);
+                PdfContentByte under = writer.getDirectContentUnder();
+                under.saveState();
+                PdfGState gstate = new PdfGState();
+                gstate.setFillOpacity(0.16f); // Subtle watermark
+                under.setGState(gstate);
+
+                float pageWidth = document.getPageSize().getWidth();
+                float pageHeight = document.getPageSize().getHeight();
+                float imgWidth = 280f;
+                float imgHeight = 280f;
+                float x = (pageWidth - imgWidth) / 2f;
+                float y = (pageHeight - imgHeight) / 2f;
+
+                watermark.scaleAbsolute(imgWidth, imgHeight);
+                watermark.setAbsolutePosition(x, y);
+                under.addImage(watermark);
+                under.restoreState();
+            } catch (Exception e) {
+                log.error("Failed to render PDF watermark", e);
+            }
+        }
     }
 }
