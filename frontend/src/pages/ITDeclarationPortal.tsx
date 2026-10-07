@@ -353,13 +353,36 @@ const ITDeclarationPortal = () => {
           <form onSubmit={handleSubmit}>
             {/* Tax Regime Selector */}
             <div style={{ marginBottom: '32px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '1rem', color: 'var(--text-main)', marginBottom: '16px' }}>
-                1. Select Tax Regime <span style={{ color: '#ef4444' }}>*</span>
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)', margin: 0 }}>
+                  1. Whether opting out of taxation u/s 115BAC(1A)? <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  Selected: <b style={{ color: form.taxRegime === 'OLD' ? '#6366f1' : '#3b82f6' }}>{form.taxRegime === 'OLD' ? 'Yes (Opt Out / Old Regime)' : 'No (New Regime - Default)'}</b>
+                </span>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 {[
-                  { value: 'NEW', label: 'New Tax Regime', desc: 'Default regime. Includes standard deduction of ₹75,000. No other deductions (80C, 80D) are allowed.', badge: 'Recommended', color: '#3b82f6', bg: '#eff6ff' },
-                  { value: 'OLD', label: 'Old Tax Regime', desc: 'Allows various deductions like 80C, 80D, HRA, and Home Loan Interest. Standard deduction is ₹50,000.', badge: null, color: '#6366f1', bg: '#eef2ff' },
+                  { 
+                    value: 'NEW', 
+                    optOut: 'No',
+                    label: 'No – New Tax Regime (Sec 115BAC)', 
+                    sub: 'Default Tax Regime (Not Opting Out)',
+                    desc: 'Default regime. Includes standard deduction of ₹75,000. Chapter VI-A deductions (80C, 80D) and HRA exemptions are not applicable.', 
+                    badge: 'No (Default)', 
+                    color: '#3b82f6', 
+                    bg: '#eff6ff' 
+                  },
+                  { 
+                    value: 'OLD', 
+                    optOut: 'Yes',
+                    label: 'Yes – Opt Out to Old Tax Regime', 
+                    sub: 'Opt Out of Sec 115BAC(1A)',
+                    desc: 'Allows declaring statutory deductions like 80C (up to ₹1.5L), 80D (Health Insurance), HRA Exemption, and Home Loan Interest u/s 24(b). Standard deduction is ₹50,000.', 
+                    badge: 'Yes (Opt Out)', 
+                    color: '#6366f1', 
+                    bg: '#eef2ff' 
+                  },
                 ].map(opt => {
                   const isSelected = form.taxRegime === opt.value;
                   return (
@@ -378,12 +401,10 @@ const ITDeclarationPortal = () => {
                         transform: isSelected ? 'translateY(-4px)' : 'none'
                       }}
                     >
-                      {opt.badge && (
-                        <div style={{ position: 'absolute', top: '-12px', right: '24px', background: opt.color, color: '#fff', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, boxShadow: `0 4px 6px ${opt.color}40` }}>
-                          {opt.badge}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                      <div style={{ position: 'absolute', top: '-12px', right: '24px', background: isSelected ? opt.color : '#64748b', color: '#fff', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, boxShadow: `0 4px 6px ${opt.color}40` }}>
+                        {opt.badge}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
                         <div style={{
                           width: '24px', height: '24px', borderRadius: '50%',
                           border: `2px solid ${isSelected ? opt.color : '#cbd5e1'}`,
@@ -393,9 +414,12 @@ const ITDeclarationPortal = () => {
                         }}>
                           {isSelected && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fff' }} />}
                         </div>
-                        <span style={{ fontWeight: 800, fontSize: '1.2rem', color: isSelected ? opt.color : 'var(--text-main)' }}>{opt.label}</span>
+                        <div>
+                          <span style={{ fontWeight: 800, fontSize: '1.1rem', color: isSelected ? opt.color : 'var(--text-main)', display: 'block' }}>{opt.label}</span>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>{opt.sub}</span>
+                        </div>
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.9rem', color: isSelected ? '#1e293b' : 'var(--text-muted)', lineHeight: 1.5, paddingLeft: '36px' }}>{opt.desc}</p>
+                      <p style={{ margin: '8px 0 0', fontSize: '0.88rem', color: isSelected ? '#1e293b' : 'var(--text-muted)', lineHeight: 1.5, paddingLeft: '36px' }}>{opt.desc}</p>
                     </div>
                   );
                 })}
