@@ -5,6 +5,13 @@ import java.util.List;
 
 @Data
 public class Form16DTO {
+    // Form & Statutory Metadata
+    private String formNumber; // FORM NO. 16 or FORM NO. 130
+    private String formRule; // [See rule 31(1)(a)]
+    private String certificateSectionText;
+    private String taxYearLabel; // Tax Year or Assessment Year
+    private String taxYear; // e.g. 2026-2027
+
     // Part A: Employer Details
     private String employerName;
     private String employerAddress;
@@ -28,6 +35,10 @@ public class Form16DTO {
     private String financialYear;
     private String periodFrom;
     private String periodTo;
+
+    // Tax regime choice
+    private String optedOut115BAC; // "Yes" or "No"
+    private boolean isOldRegime;
 
     // Part A: Quarter-wise TDS summary & Challans
     private List<QuarterlyTds> quarterlyTdsList;

@@ -4,7 +4,7 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
   if (!form16Data) return null;
 
   const d = form16Data;
-  const isOldRegime = d.standardDeduction === 50000;
+  const isOldRegime = d.oldRegime === true || (d.optedOut115BAC === 'Yes') || (d.standardDeduction === 50000);
   const optedOut = isOldRegime ? 'Yes' : 'No';
 
   const fmt = (num: number) => {
@@ -21,11 +21,32 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
   const issueDate = d.issueDate || d.lastUpdatedOn || currentDateStr;
   const lastUpdatedOn = d.lastUpdatedOn || currentDateStr;
 
-  // Calculate assessment year and period from financial year if needed
   const ay = d.assessmentYear || '2026-2027';
   const ayStartYear = parseInt(ay.split('-')[0]) || 2026;
   const fromDate = d.periodFrom || `01-Apr-${ayStartYear - 1}`;
   const toDate = d.periodTo || `31-Mar-${ayStartYear}`;
+
+  const formNumber = d.formNumber || (ayStartYear >= 2026 ? 'FORM NO. 130' : 'FORM NO. 16');
+  const formRule = d.formRule || '[See rule 31(1)(a)]';
+  const certText = d.certificateSectionText || (ayStartYear >= 2026
+    ? 'Certificate under section 203 of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P'
+    : 'Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P');
+  const taxYearLabel = d.taxYearLabel || (ayStartYear >= 2026 ? 'Tax Year' : 'Assessment Year');
+  const taxYearValue = d.taxYear || d.assessmentYear || (ayStartYear >= 2026 ? `${ayStartYear - 1}-${ayStartYear}` : ay);
+
+  const quarterlyList = (d.quarterlyTdsList && d.quarterlyTdsList.length > 0) ? d.quarterlyTdsList : [
+    { quarter: 'Q1', receiptNumber: '', amountPaid: 0, taxDeducted: 0, taxDeposited: 0 },
+    { quarter: 'Q2', receiptNumber: '', amountPaid: 0, taxDeducted: 0, taxDeposited: 0 },
+    { quarter: 'Q3', receiptNumber: '', amountPaid: 0, taxDeducted: 0, taxDeposited: 0 },
+    { quarter: 'Q4', receiptNumber: '', amountPaid: 0, taxDeducted: 0, taxDeposited: 0 },
+  ];
+
+  const challanList = (d.challanDetails && d.challanDetails.length > 0) ? d.challanDetails : [
+    { amount: 0, bsrCode: '-', dateOfDeposit: '-', challanSerialNumber: '-' },
+    { amount: 0, bsrCode: '-', dateOfDeposit: '-', challanSerialNumber: '-' },
+    { amount: 0, bsrCode: '-', dateOfDeposit: '-', challanSerialNumber: '-' },
+    { amount: 0, bsrCode: '-', dateOfDeposit: '-', challanSerialNumber: '-' },
+  ];
 
   return (
     <>
@@ -96,34 +117,15 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
         .bg-gray { background-color: #f8f9fa; }
         
         .header-section {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          text-align: center;
           margin-bottom: 6px;
           padding-bottom: 4px;
           border-bottom: 1.5px solid #000;
         }
-        
-        .header-tds {
-          text-align: left;
-          font-family: Arial, sans-serif;
-        }
-        .header-tds h2 { margin: 0; font-size: 16px; font-weight: 800; color: #166534; line-height: 1; }
-        .header-tds p { margin: 2px 0 0; font-size: 8.5px; color: #444; }
 
-        .header-traces {
-          text-align: center;
-          font-family: Arial, sans-serif;
-        }
+        .header-traces { text-align: center; font-family: Arial, sans-serif; }
         .header-traces h1 { margin: 0; font-size: 22px; font-weight: 900; letter-spacing: 1px; color: #0056b3; line-height: 1; }
         .header-traces p { margin: 2px 0 0; font-size: 8.5px; color: #555; }
-        
-        .header-gov {
-          text-align: right;
-          font-family: Arial, sans-serif;
-        }
-        .header-gov h3 { margin: 0; font-size: 11px; font-weight: bold; color: #111; line-height: 1.1; }
-        .header-gov p { margin: 2px 0 0; font-size: 9.5px; font-weight: 600; color: #333; }
 
         .f16-title-bar {
           text-align: center;
@@ -154,25 +156,17 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
       {/* ========================================= PART A (Page 1) ========================================= */}
       <div className="f16-page">
         <div className="header-section">
-          <div className="header-tds">
-            <h2>TDS</h2>
-            <p>Centralized Processing Cell</p>
-          </div>
           <div className="header-traces">
             <h1>TRACES</h1>
             <p>TDS Reconciliation Analysis and Correction Enabling System</p>
           </div>
-          <div className="header-gov">
-            <h3>Government of India</h3>
-            <p>Income Tax Department</p>
-          </div>
         </div>
 
-        <div className="f16-title-bar">FORM NO. 16</div>
-        <div className="f16-subtitle-bar">[See rule 31(1)(a)]</div>
+        <div className="f16-title-bar">{formNumber}</div>
+        <div className="f16-subtitle-bar">{formRule}</div>
         <div className="f16-title-bar" style={{ fontSize: '13.5px' }}>PART A</div>
         <div className="f16-cert-text">
-          Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P
+          {certText}
         </div>
 
         <table className="f16-table">
@@ -188,14 +182,13 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
               <td colSpan={2} className="bold text-center">Name and address of the Employee/Specified senior citizen</td>
             </tr>
             <tr>
-              <td colSpan={2} style={{ height: '62px', verticalAlign: 'top' }}>
-                <span className="bold">{d.employerName}</span><br />
-                {d.employerAddress}<br />
+              <td colSpan={2} style={{ height: '58px', verticalAlign: 'top' }}>
+                <span className="bold">{d.employerName || 'INDIAN INSTITUTE OF PETROLEUM AND ENERGY'}</span><br />
+                {d.employerAddress || 'Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India'}<br />
                 {d.employerEmail && <span style={{ fontSize: '9px', color: '#444' }}>{d.employerEmail}</span>}
               </td>
-              <td colSpan={2} style={{ verticalAlign: 'top' }}>
-                <span className="bold">{d.employeeName}</span><br />
-                {d.employeeAddress || 'Visakhapatnam'}
+              <td colSpan={2} style={{ verticalAlign: 'top', height: '58px' }}>
+                <span className="bold">{d.employeeName || ''}</span>
               </td>
             </tr>
             <tr className="bg-gray">
@@ -205,21 +198,21 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
               <td className="bold text-center" style={{ width: '25%' }}>Employee Reference No.</td>
             </tr>
             <tr>
-              <td className="text-center bold">{d.employerPAN}</td>
-              <td className="text-center bold">{d.employerTAN}</td>
-              <td className="text-center bold">{d.employeePAN}</td>
-              <td className="text-center bold">{d.employeeId}</td>
+              <td className="text-center bold">{d.employerPAN || 'AABAI0046C'}</td>
+              <td className="text-center bold">{d.employerTAN || 'VPNI00723C'}</td>
+              <td className="text-center bold">{d.employeePAN || ''}</td>
+              <td className="text-center bold">{d.employeeId || ''}</td>
             </tr>
             <tr className="bg-gray">
               <td colSpan={2} className="bold text-center">CIT (TDS)</td>
-              <td className="bold text-center">Assessment Year</td>
+              <td className="bold text-center">{taxYearLabel}</td>
               <td className="bold text-center">Period with the Employer</td>
             </tr>
             <tr>
               <td colSpan={2} className="text-center" style={{ fontSize: '9.5px', whiteSpace: 'pre-line' }}>
                 {d.citTds || 'The Commissioner of Income Tax (TDS)\nHyderabad - 500004'}
               </td>
-              <td className="text-center bold" style={{ fontSize: '11px' }}>{ay}</td>
+              <td className="text-center bold" style={{ fontSize: '11px' }}>{taxYearValue}</td>
               <td style={{ padding: 0 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
                   <tbody>
@@ -252,15 +245,16 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
             </tr>
           </thead>
           <tbody>
-            {['Q1', 'Q2', 'Q3', 'Q4'].map((q, i) => {
-              const qData = d.quarterlyTdsList?.find((x: any) => x.quarter === q);
+            {['Q1', 'Q2', 'Q3', 'Q4'].map(q => {
+              const qData = quarterlyList.find((x: any) => x.quarter === q);
+              const hasData = (qData?.amountPaid && qData.amountPaid > 0) || (qData?.taxDeducted && qData.taxDeducted > 0);
               return (
-                <tr key={i}>
+                <tr key={q}>
                   <td className="text-center bold">{q}</td>
-                  <td className="text-center">{qData?.receiptNumber && qData.receiptNumber.trim() !== '' ? qData.receiptNumber : '-'}</td>
-                  <td className="text-right">{fmt(qData?.amountPaid)}</td>
-                  <td className="text-right">{fmt(qData?.taxDeducted)}</td>
-                  <td className="text-right">{fmt(qData?.taxDeposited)}</td>
+                  <td className="text-center">{hasData ? (qData?.receiptNumber && qData.receiptNumber.trim() !== '' ? qData.receiptNumber : '-') : '-'}</td>
+                  <td className="text-right">{hasData ? fmt(qData?.amountPaid) : '-'}</td>
+                  <td className="text-right">{hasData ? fmt(qData?.taxDeducted) : '-'}</td>
+                  <td className="text-right">{hasData ? fmt(qData?.taxDeposited) : '-'}</td>
                 </tr>
               );
             })}
@@ -292,21 +286,21 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
             </tr>
           </thead>
           <tbody>
-            {(d.challanDetails && d.challanDetails.length > 0 ? d.challanDetails : [
-              { amount: 0, bsrCode: '-', dateOfDeposit: '-', challanSerialNumber: '-' },
-              { amount: 0, bsrCode: '-', dateOfDeposit: '-', challanSerialNumber: '-' },
-              { amount: 0, bsrCode: '-', dateOfDeposit: '-', challanSerialNumber: '-' },
-              { amount: 0, bsrCode: '-', dateOfDeposit: '-', challanSerialNumber: '-' }
-            ]).map((c: any, i: number) => (
-              <tr key={i}>
-                <td className="text-center bold">{i + 1}</td>
-                <td className="text-right">{fmt(c.amount)}</td>
-                <td className="text-center">{c.bsrCode && c.bsrCode.trim() !== '' ? c.bsrCode : '-'}</td>
-                <td className="text-center">{c.dateOfDeposit && c.dateOfDeposit.trim() !== '' ? c.dateOfDeposit : '-'}</td>
-                <td className="text-center">{c.challanSerialNumber && c.challanSerialNumber.trim() !== '' ? c.challanSerialNumber : 'F'}</td>
-                <td className="text-center">F</td>
-              </tr>
-            ))}
+            {challanList.map((c: any, i: number) => {
+              const qName = `Q${i + 1}`;
+              const qData = quarterlyList.find((x: any) => x.quarter === qName);
+              const hasData = (c?.amount && c.amount > 0) || (qData?.taxDeposited && qData.taxDeposited > 0) || (c?.bsrCode && c.bsrCode.trim() !== '' && c.bsrCode !== '-');
+              return (
+                <tr key={i}>
+                  <td className="text-center bold">{i + 1}</td>
+                  <td className="text-right">{hasData ? fmt(c.amount || qData?.taxDeposited) : '-'}</td>
+                  <td className="text-center">{hasData && c.bsrCode && c.bsrCode.trim() !== '' ? c.bsrCode : '-'}</td>
+                  <td className="text-center">{hasData && c.dateOfDeposit && c.dateOfDeposit.trim() !== '' ? c.dateOfDeposit : '-'}</td>
+                  <td className="text-center">{hasData && c.challanSerialNumber && c.challanSerialNumber.trim() !== '' ? c.challanSerialNumber : (hasData ? 'F' : '-')}</td>
+                  <td className="text-center">{hasData ? 'F' : '-'}</td>
+                </tr>
+              );
+            })}
             <tr className="bold bg-gray">
               <td className="text-center">Total (Rs.)</td>
               <td className="text-right">{fmt(d.totalTdsDeposited)}</td>
@@ -323,7 +317,7 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
 
       {/* ========================================= PART B (Page 2) ========================================= */}
       <div className="f16-page">
-        <div className="f16-title-bar" style={{ borderTop: '1px solid #000' }}>FORM NO. 16</div>
+        <div className="f16-title-bar" style={{ borderTop: '1px solid #000' }}>{formNumber}</div>
         <div className="f16-title-bar" style={{ fontSize: '13.5px' }}>PART B</div>
         <div className="f16-subtitle-bar" style={{ fontWeight: 'bold' }}>Annexure - I</div>
         
@@ -361,17 +355,26 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
               <td className="text-center bold">2.</td>
               <td colSpan={3} className="bold">Less: Allowances to the extent exempt under section 10</td>
             </tr>
-            <tr>
-              <td className="text-center">(e)</td>
-              <td>House rent allowance under section 10(13A)</td>
-              <td></td>
-              <td className="text-right">{fmt(d.allowancesExemptUpto10)}</td>
-            </tr>
+            {isOldRegime ? (
+              <tr>
+                <td className="text-center">(e)</td>
+                <td>House rent allowance under section 10(13A)</td>
+                <td></td>
+                <td className="text-right">{fmt(d.allowancesExemptUpto10)}</td>
+              </tr>
+            ) : (
+              <tr>
+                <td className="text-center">(e)</td>
+                <td style={{ color: '#666' }}>House rent allowance under section 10(13A)</td>
+                <td></td>
+                <td className="text-right" style={{ color: '#666' }}>0.00</td>
+              </tr>
+            )}
             <tr>
               <td className="text-center bold">3.</td>
-              <td className="bold">Total amount of salary received from current employer [1(d)-2(i)]</td>
+              <td className="bold">Total amount of salary received from current employer [1(d)-2]</td>
               <td></td>
-              <td className="text-right bold">{fmt(d.balance || ((d.grossSalary || 0) - (d.allowancesExemptUpto10 || 0)))}</td>
+              <td className="text-right bold">{fmt(d.balance || ((d.grossSalary || 0) - (isOldRegime ? (d.allowancesExemptUpto10 || 0) : 0)))}</td>
             </tr>
             <tr className="bg-gray">
               <td className="text-center bold">4.</td>
@@ -413,25 +416,42 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
               <td className="text-center bold">Gross Amount</td>
               <td className="text-center bold">Deductible Amount</td>
             </tr>
-            <tr>
-              <td className="text-center">(a)</td>
-              <td>Deduction in respect of life insurance premia, contributions to provident fund etc. under section 80C</td>
-              <td className="text-right">{fmt(d.deduction80C)}</td>
-              <td className="text-right">{fmt(d.deduction80C)}</td>
-            </tr>
-            <tr>
-              <td className="text-center">(f)</td>
-              <td>Deduction in respect of contribution by Employer to pension scheme under section 80CCD (2)</td>
-              <td className="text-right">{fmt(d.deduction80CCD2 || d.deduction80CCD)}</td>
-              <td className="text-right">{fmt(d.deduction80CCD2 || d.deduction80CCD)}</td>
-            </tr>
-            <tr>
-              <td className="text-center">(g)</td>
-              <td>Deduction in respect of health insurance premia under section 80D</td>
-              <td className="text-right">{fmt(d.deduction80D)}</td>
-              <td className="text-right">{fmt(d.deduction80D)}</td>
-            </tr>
-            <tr className="bg-gray">
+            {isOldRegime ? (
+              <>
+                <tr>
+                  <td className="text-center">(a)</td>
+                  <td>Deduction in respect of life insurance premia, contributions to provident fund etc. under section 80C</td>
+                  <td className="text-right">{fmt(d.deduction80C)}</td>
+                  <td className="text-right">{fmt(d.deduction80C)}</td>
+                </tr>
+                <tr>
+                  <td className="text-center">(e)</td>
+                  <td>Deduction in respect of interest on housing loan under section 24(b) / 80EEA (Home Loan)</td>
+                  <td className="text-right">{fmt(d.homeLoanInterest)}</td>
+                  <td className="text-right">{fmt(d.homeLoanInterest)}</td>
+                </tr>
+                <tr>
+                  <td className="text-center">(f)</td>
+                  <td>Deduction in respect of contribution by Employer to pension scheme under section 80CCD (2)</td>
+                  <td className="text-right">{fmt(d.deduction80CCD2 || d.deduction80CCD)}</td>
+                  <td className="text-right">{fmt(d.deduction80CCD2 || d.deduction80CCD)}</td>
+                </tr>
+                <tr>
+                  <td className="text-center">(g)</td>
+                  <td>Deduction in respect of health insurance premia under section 80D</td>
+                  <td className="text-right">{fmt(d.deduction80D)}</td>
+                  <td className="text-right">{fmt(d.deduction80D)}</td>
+                </tr>
+              </>
+            ) : (
+              <tr>
+                <td className="text-center">(f)</td>
+                <td>Deduction in respect of contribution by Employer to pension scheme under section 80CCD (2)</td>
+                <td className="text-right">{fmt(d.deduction80CCD2 || d.deduction80CCD)}</td>
+                <td className="text-right">{fmt(d.deduction80CCD2 || d.deduction80CCD)}</td>
+              </tr>
+            )}
+            <tr className="bold bg-gray">
               <td className="text-center bold">11.</td>
               <td className="bold">Aggregate of deductible amount under Chapter VI-A</td>
               <td></td>
@@ -489,7 +509,7 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
           </div>
           <div style={{ border: '1px solid #000', borderTop: 'none', padding: '6px 8px' }}>
             <p style={{ textAlign: 'justify', lineHeight: '1.4', margin: 0, fontSize: '9.5px' }}>
-              I, <span className="bold">{d.signatoryName && d.signatoryName.trim() !== '' ? d.signatoryName : '....................................................................'}</span>{d.signatoryFatherName && d.signatoryFatherName.trim() !== '' ? <>, son/daughter of <span className="bold">{d.signatoryFatherName}</span></> : ''} working in the capacity of <span className="bold">{d.signatoryDesignation && d.signatoryDesignation.trim() !== '' ? d.signatoryDesignation : '....................................................................'}</span> do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, TDS statements, and other available records.
+              I, <span className="bold">{d.signatoryName && d.signatoryName.trim() !== '' ? d.signatoryName : '....................................................................'}</span>{d.signatoryFatherName && d.signatoryFatherName.trim() !== '' ? `, son/daughter of <span className="bold">${d.signatoryFatherName}</span>` : ''} working in the capacity of <span className="bold">{d.signatoryDesignation && d.signatoryDesignation.trim() !== '' ? d.signatoryDesignation : '....................................................................'}</span> do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, TDS statements, and other available records.
             </p>
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -502,7 +522,7 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
                 <td style={{ width: '50%', border: '1px solid #000', borderTop: 'none', padding: '6px 8px', textAlign: 'right', verticalAlign: 'bottom' }}>
                   <div style={{ fontSize: '9.5px', marginBottom: '26px' }}>(Signature of person responsible for deduction of tax)</div>
                   <div style={{ borderTop: '1px solid #000', paddingTop: '4px', textAlign: 'right', minHeight: '28px' }}>
-                    {d.signatoryName && d.signatoryName.trim() !== '' && <><span className="bold" style={{ fontSize: '10.5px' }}>{d.signatoryName}</span><br /></>}
+                    {d.signatoryName && d.signatoryName.trim() !== '' && <span className="bold" style={{ fontSize: '10.5px' }}>{d.signatoryName}<br /></span>}
                     {d.signatoryDesignation && d.signatoryDesignation.trim() !== '' && <div style={{ fontSize: '9px', color: '#333' }}>{d.signatoryDesignation}</div>}
                   </div>
                 </td>
@@ -520,4 +540,3 @@ const Form16Report: React.FC<{ form16Data: any }> = ({ form16Data }) => {
 };
 
 export default Form16Report;
-

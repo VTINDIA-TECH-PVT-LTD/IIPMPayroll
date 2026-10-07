@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import apiService from '../services/api';
-import { Edit2, Save, X, FileText, Sliders, Building, UserCheck, Calendar, CheckCircle2 } from 'lucide-react';
+import { UserContext } from '../App';
+import { Edit2, Save, X, FileText, Sliders, Building, UserCheck, Calendar, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 const settingsMeta: Record<string, { label: string; desc: string; unit: string }> = {
   DA_PERCENTAGE:           { label: 'DA Percentage',             desc: 'Dearness Allowance % of Basic Pay',           unit: '%' },
@@ -15,7 +16,11 @@ const settingsMeta: Record<string, { label: string; desc: string; unit: string }
 };
 
 const SettingsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'payroll' | 'form16'>('payroll');
+  const userCtx = useContext(UserContext);
+  const userRole = (userCtx?.role || apiService.getRole() || '') as string;
+  const isFaRoleOnly = userRole === 'FA_OPERATOR' || userRole === 'FA_ADMIN';
+
+  const [activeTab, setActiveTab] = useState<'payroll' | 'form16'>(isFaRoleOnly ? 'form16' : 'payroll');
   const [settings, setSettings] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState('');
@@ -25,17 +30,27 @@ const SettingsPage: React.FC = () => {
 
   // Local state for Form 16 form fields for convenient batch saving
   const [form16Values, setForm16Values] = useState<Record<string, string>>({
-    FORM16_EMPLOYER_NAME: '',
-    FORM16_EMPLOYER_ADDRESS: '',
-    FORM16_EMPLOYER_PAN: '',
-    FORM16_EMPLOYER_TAN: '',
-    FORM16_EMPLOYER_EMAIL: '',
-    FORM16_CIT_TDS: '',
+    FORM16_EMPLOYER_NAME: 'INDIAN INSTITUTE OF PETROLEUM AND ENERGY',
+    FORM16_EMPLOYER_ADDRESS: 'Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India',
+    FORM16_EMPLOYER_PAN: 'AABAI0046C',
+    FORM16_EMPLOYER_TAN: 'VPNI00723C',
+    FORM16_EMPLOYER_EMAIL: 'dr.finance@iipe.ac.in',
+    FORM16_CIT_TDS: 'The Commissioner of Income Tax (TDS)\nHyderabad - 500004',
     FORM16_CERTIFICATE_NO: '',
+    
+    // FY 2026-27 Statutory Overrides
+    FORM16_FORM_NO_2627: 'FORM NO. 130',
+    FORM16_RULE_2627: '[See rule 31(1)(a)]',
+    FORM16_CERT_TEXT_2627: 'Certificate under section 203 of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P',
+    FORM16_TAX_YEAR_LABEL_2627: 'Tax Year',
+
+    // Signatory
     FORM16_SIGNATORY_NAME: '',
     FORM16_SIGNATORY_FATHER_NAME: '',
     FORM16_SIGNATORY_DESIGNATION: '',
-    FORM16_PLACE: '',
+    FORM16_PLACE: 'Visakhapatnam',
+
+    // Q1 - Q4 Receipts, BSR Codes, Deposit Dates, Serial Numbers
     FORM16_Q1_RECEIPT: '',
     FORM16_Q1_BSR: '',
     FORM16_Q1_CHALLAN_DATE: '',
@@ -96,7 +111,7 @@ const SettingsPage: React.FC = () => {
       for (const key of keysToSave) {
         await apiService.updateSetting(key, form16Values[key] || '');
       }
-      setMsg({ type: 'success', text: '✓ Form 16 configuration updated successfully! All generated Form 16 documents will use these updated values.' });
+      setMsg({ type: 'success', text: '✓ Form 16 / 130 configuration updated successfully! All generated Form 16 / 130 documents will use these updated values.' });
       loadSettings();
     } catch (e: any) {
       setMsg({ type: 'error', text: e.response?.data?.message || 'Error saving Form 16 configuration.' });
@@ -137,165 +152,184 @@ const SettingsPage: React.FC = () => {
     <div className="page-container">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1>System Settings & Configuration</h1>
-          <p>Configure DA, HRA, NPS, Tax rules, and Form 16 Statutory parameters</p>
+          <h1>{isFaRoleOnly ? 'Update Form 16 / 130 Details' : 'System Settings & Configuration'}</h1>
+          <p>{isFaRoleOnly ? 'Configure Bank BSR codes, Challan deposit dates, and official Form 16 parameters' : 'Configure DA, HRA, NPS, Tax rules, and Form 16 Statutory parameters'}</p>
         </div>
         
         {/* Navigation Tabs */}
-        <div style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '10px', gap: '4px' }}>
-          <button
-            type="button"
-            onClick={() => setActiveTab('payroll')}
-            style={{
-              padding: '8px 18px',
-              borderRadius: '8px',
-              border: 'none',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: '0.2s',
-              background: activeTab === 'payroll' ? 'var(--primary)' : 'transparent',
-              color: activeTab === 'payroll' ? '#ffffff' : '#64748b',
-              boxShadow: activeTab === 'payroll' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
-            }}
-          >
-            <Sliders size={16} /> Payroll Settings
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('form16')}
-            style={{
-              padding: '8px 18px',
-              borderRadius: '8px',
-              border: 'none',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: '0.2s',
-              background: activeTab === 'form16' ? 'var(--primary)' : 'transparent',
-              color: activeTab === 'form16' ? '#ffffff' : '#64748b',
-              boxShadow: activeTab === 'form16' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
-            }}
-          >
-            <FileText size={16} /> Form 16 Configuration
-          </button>
-        </div>
+        {!isFaRoleOnly && (
+          <div style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '10px', gap: '4px' }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('payroll')}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '8px',
+                border: 'none',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: '0.2s',
+                background: activeTab === 'payroll' ? 'var(--primary)' : 'transparent',
+                color: activeTab === 'payroll' ? '#fff' : 'var(--text-secondary)'
+              }}
+            >
+              <Sliders size={16} /> Payroll & Allowances
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('form16')}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '8px',
+                border: 'none',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: '0.2s',
+                background: activeTab === 'form16' ? 'var(--primary)' : 'transparent',
+                color: activeTab === 'form16' ? '#fff' : 'var(--text-secondary)'
+              }}
+            >
+              <FileText size={16} /> Form 16 / 130 Statutory Settings
+            </button>
+          </div>
+        )}
       </div>
 
       {msg && (
-        <div className={`alert-iipm ${msg.type === 'success' ? 'alert-success' : 'alert-danger'}`} style={{ marginBottom: '20px' }}>
-          {msg.text}
-          <button onClick={() => setMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>✕</button>
+        <div style={{
+          padding: '12px 18px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          background: msg.type === 'success' ? '#f0fdf4' : '#fef2f2',
+          border: `1px solid ${msg.type === 'success' ? '#86efac' : '#fca5a5'}`,
+          color: msg.type === 'success' ? '#166534' : '#991b1b',
+          fontSize: '0.9rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>{msg.text}</span>
+          <button onClick={() => setMsg(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>✕</button>
         </div>
       )}
 
-      {activeTab === 'payroll' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
-          {/* Settings table */}
-          <div className="card-iipm" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid var(--border)', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Payroll Configuration Parameters</span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>Auto-applied to monthly payroll generation</span>
+      {activeTab === 'payroll' && !isFaRoleOnly ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+          {/* Settings list */}
+          <div className="card-iipm">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>
+                Active Payroll Rules & Rates
+              </h2>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{payrollSettings.length} rules active</span>
             </div>
+
             {loading ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
+              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading settings...</div>
             ) : (
-              <table className="table-iipm">
-                <thead>
-                  <tr><th>Parameter</th><th>Description</th><th>Current Value</th><th>Actions</th></tr>
-                </thead>
-                <tbody>
-                  {payrollSettings.map(s => {
-                    const meta = settingsMeta[s.key] || { label: s.key, desc: s.description || '', unit: '' };
-                    return (
-                      <tr key={s.id}>
-                        <td>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{meta.label}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{s.key}</div>
-                        </td>
-                        <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{meta.desc}</td>
-                        <td>
-                          {editingId === s.id ? (
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <input className="form-control-iipm" value={editingValue}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {payrollSettings.map(s => {
+                  const meta = settingsMeta[s.key] || { label: s.key, desc: s.description || '', unit: '' };
+                  const isEditing = editingId === s.key;
+
+                  return (
+                    <div
+                      key={s.key}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border)',
+                        background: isEditing ? 'rgba(201,168,76,0.05)' : 'var(--card-bg)',
+                        transition: '0.15s'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{meta.label}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{meta.desc}</div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {isEditing ? (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <input
+                                type="number"
+                                step="any"
+                                value={editingValue}
                                 onChange={e => setEditingValue(e.target.value)}
-                                style={{ width: '100px' }} type="number" step="0.01" autoFocus />
-                              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{meta.unit}</span>
+                                className="form-control-iipm"
+                                style={{ width: '90px', padding: '4px 8px', fontSize: '0.9rem', textAlign: 'right' }}
+                                autoFocus
+                              />
+                              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{meta.unit}</span>
                             </div>
-                          ) : (
-                            <span style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '1.05rem' }}>
-                              {meta.unit === '₹' ? `₹${parseFloat(s.value).toLocaleString('en-IN')}` : `${s.value}${meta.unit}`}
+                            <button
+                              onClick={() => handleSave(s.key)}
+                              className="btn-iipm btn-primary"
+                              style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <Save size={14} /> Save
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="btn-iipm btn-secondary"
+                              style={{ padding: '6px 8px', fontSize: '0.8rem' }}
+                            >
+                              <X size={14} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--accent)', minWidth: '60px', textAlign: 'right' }}>
+                              {s.value} {meta.unit}
                             </span>
-                          )}
-                        </td>
-                        <td style={{ whiteSpace: 'nowrap', display: 'flex', gap: '6px' }}>
-                          {editingId === s.id ? (
-                            <>
-                              <button 
-                                onClick={() => handleSave(s.key)} 
-                                title="Save"
-                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: '#22c55e', color: '#ffffff', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(34, 197, 94, 0.3)' }}
-                                onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(34, 197, 94, 0.4)'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(34, 197, 94, 0.3)'; }}
-                              >
-                                <Save size={16} />
-                              </button>
-                              <button 
-                                onClick={() => setEditingId(null)} 
-                                title="Cancel"
-                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}
-                                onMouseOver={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#334155'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#64748b'; }}
-                              >
-                                <X size={16} />
-                              </button>
-                            </>
-                          ) : (
-                            <button 
-                              onClick={() => { setEditingId(s.id); setEditingValue(s.value); }} 
-                              title="Edit"
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: '#3b82f6', color: '#ffffff', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)' }}
-                              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.4)'; }}
-                              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.3)'; }}
+                            <button
+                              onClick={() => { setEditingId(s.key); setEditingValue(s.value); }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '4px', color: 'var(--text-muted)' }}
+                              title="Edit value"
                             >
                               <Edit2 size={16} />
                             </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {payrollSettings.length === 0 && (
-                    <tr><td colSpan={4} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No settings found. Backend may be initializing...</td></tr>
-                  )}
-                </tbody>
-              </table>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
 
-          {/* Preview panel */}
+          {/* Real-time Payroll Simulation Preview */}
           <div>
-            <div className="card-iipm" style={{ padding: '20px' }}>
-              <div style={{ fontWeight: 600, marginBottom: '16px', color: 'var(--accent)' }}>📊 Salary Preview</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                Example: Level 10 employee with Basic Pay ₹56,100 (index 1)
+            <div className="card-iipm" style={{ padding: '20px', background: 'linear-gradient(135deg, rgba(10,49,97,0.04), rgba(201,168,76,0.06))' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <FileText size={18} color="var(--accent)" />
+                <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Live Calculation Preview</h3>
               </div>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                Simulated calculation for an Assistant Professor (Level-10, Basic: ₹56,100) using active settings:
+              </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {[
                   { label: 'Basic Pay', value: p.fmt(p.basicPay), type: 'earn' },
-                  { label: `DA (${settings.find(s=>s.key==='DA_PERCENTAGE')?.value||'53'}%)`, value: p.fmt(p.daAmt), type: 'earn' },
-                  { label: `HRA (${settings.find(s=>s.key==='HRA_PERCENTAGE')?.value||'20'}%)`, value: p.fmt(p.hraAmt), type: 'earn' },
+                  { label: `DA (${settings.find(s=>s.key==='DA_PERCENTAGE')?.value || 53}%)`, value: p.fmt(p.daAmt), type: 'earn' },
+                  { label: `HRA (${settings.find(s=>s.key==='HRA_PERCENTAGE')?.value || 20}%)`, value: p.fmt(p.hraAmt), type: 'earn' },
                   { label: 'Transport Allowance', value: p.fmt(p.taAmt), type: 'earn' },
                   { label: '──── GROSS ────', value: p.fmt(p.gross), type: 'gross' },
-                  { label: 'NPS Employee', value: p.fmt(p.npsEmpAmt), type: 'ded' },
-                  { label: 'NPS Employer', value: p.fmt(p.npsEmprAmt), type: 'info' },
+                  { label: 'NPS Employee (10%)', value: p.fmt(p.npsEmpAmt), type: 'ded' },
                   { label: 'Professional Tax', value: p.fmt(p.pt), type: 'ded' },
                   { label: 'CGHS', value: p.fmt(p.cghs), type: 'ded' },
                   { label: '──── NET ────', value: p.fmt(p.net), type: 'net' },
@@ -325,7 +359,7 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* Form 16 Configuration Tab */
+        /* Form 16 / 130 Configuration Tab */
         <form onSubmit={handleSaveForm16}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             
@@ -333,7 +367,7 @@ const SettingsPage: React.FC = () => {
             <div className="card-iipm" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
                 <Building size={20} color="var(--accent)" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>1. Employer & Statutory Information</h3>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>1. Employer & Institute Details</h3>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -344,22 +378,22 @@ const SettingsPage: React.FC = () => {
                     className="form-control-iipm"
                     value={form16Values.FORM16_EMPLOYER_NAME || ''}
                     onChange={e => setForm16Values({ ...form16Values, FORM16_EMPLOYER_NAME: e.target.value })}
-                    placeholder="INDIAN INSTITUTE OF PETROLEUM & ENERGY"
+                    placeholder="INDIAN INSTITUTE OF PETROLEUM AND ENERGY"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Employer Address (Printed on Part A)</label>
+                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Official Address (Printed on Part A)</label>
                   <textarea
                     className="form-control-iipm"
-                    rows={3}
+                    rows={2}
                     value={form16Values.FORM16_EMPLOYER_ADDRESS || ''}
                     onChange={e => setForm16Values({ ...form16Values, FORM16_EMPLOYER_ADDRESS: e.target.value })}
-                    placeholder="Tech-Horizon Building, Andhra University Campus, Visakhapatnam - 530003, Andhra Pradesh, India"
+                    placeholder="Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India"
                     required
                   />
-                  <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Enter the complete official campus/office address for Form 16 header.</small>
+                  <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Matches the official address printed on official payslips.</small>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -386,13 +420,13 @@ const SettingsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Employer Contact Email</label>
+                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Finance / Employer Email</label>
                   <input
                     type="email"
                     className="form-control-iipm"
                     value={form16Values.FORM16_EMPLOYER_EMAIL || ''}
                     onChange={e => setForm16Values({ ...form16Values, FORM16_EMPLOYER_EMAIL: e.target.value })}
-                    placeholder="fo@iipe.ac.in"
+                    placeholder="dr.finance@iipe.ac.in"
                   />
                 </div>
 
@@ -409,65 +443,90 @@ const SettingsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Section 2: Authorised Signatory & Place */}
+            {/* Section 2: Statutory Rules & Act Configuration (FY 2026-27) */}
             <div className="card-iipm" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
-                <UserCheck size={20} color="var(--accent)" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>2. Authorised Signatory & Verification</h3>
+                <ShieldAlert size={20} color="var(--accent)" />
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>2. Statutory Form & Act Rules (FY 2026-27)</h3>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Signatory Full Name (Optional)</label>
-                  <input
-                    type="text"
-                    className="form-control-iipm"
-                    value={form16Values.FORM16_SIGNATORY_NAME || ''}
-                    onChange={e => setForm16Values({ ...form16Values, FORM16_SIGNATORY_NAME: e.target.value })}
-                    placeholder="Leave blank for physical signature or enter Name"
-                  />
-                  <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>If left blank, Form 16 will print a clean signature line for manual signing.</small>
-                </div>
-
-                <div>
-                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Signatory Father's Name (Optional)</label>
-                  <input
-                    type="text"
-                    className="form-control-iipm"
-                    value={form16Values.FORM16_SIGNATORY_FATHER_NAME || ''}
-                    onChange={e => setForm16Values({ ...form16Values, FORM16_SIGNATORY_FATHER_NAME: e.target.value })}
-                    placeholder="Father's full name (optional)"
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Signatory Capacity / Designation (Optional)</label>
-                  <input
-                    type="text"
-                    className="form-control-iipm"
-                    value={form16Values.FORM16_SIGNATORY_DESIGNATION || ''}
-                    onChange={e => setForm16Values({ ...form16Values, FORM16_SIGNATORY_DESIGNATION: e.target.value })}
-                    placeholder="e.g. Registrar / Drawing & Disbursing Officer"
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Place of Issue / Signing</label>
-                  <input
-                    type="text"
-                    className="form-control-iipm"
-                    value={form16Values.FORM16_PLACE || ''}
-                    onChange={e => setForm16Values({ ...form16Values, FORM16_PLACE: e.target.value })}
-                    placeholder="Visakhapatnam"
-                  />
-                </div>
-
-                <div style={{ marginTop: '10px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Verification Certificate Preview:</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: '1.4' }}>
-                    "I, <strong>{form16Values.FORM16_SIGNATORY_NAME || '................................................'}</strong>
-                    {form16Values.FORM16_SIGNATORY_FATHER_NAME ? `, son/daughter of ${form16Values.FORM16_SIGNATORY_FATHER_NAME}` : ''} working in the capacity of <strong>{form16Values.FORM16_SIGNATORY_DESIGNATION || '................................................'}</strong> do hereby certify..."
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Form Number (FY 2026-27)</label>
+                    <input
+                      type="text"
+                      className="form-control-iipm"
+                      value={form16Values.FORM16_FORM_NO_2627 || ''}
+                      onChange={e => setForm16Values({ ...form16Values, FORM16_FORM_NO_2627: e.target.value })}
+                      placeholder="FORM NO. 130"
+                    />
                   </div>
+                  <div>
+                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Rule Title (FY 2026-27)</label>
+                    <input
+                      type="text"
+                      className="form-control-iipm"
+                      value={form16Values.FORM16_RULE_2627 || ''}
+                      onChange={e => setForm16Values({ ...form16Values, FORM16_RULE_2627: e.target.value })}
+                      placeholder="[See rule 31(1)(a)]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Certificate Section Text (FY 2026-27)</label>
+                  <textarea
+                    className="form-control-iipm"
+                    rows={3}
+                    value={form16Values.FORM16_CERT_TEXT_2627 || ''}
+                    onChange={e => setForm16Values({ ...form16Values, FORM16_CERT_TEXT_2627: e.target.value })}
+                    placeholder="Certificate under section 203 of the Income-tax Act, 2025 for tax deducted at source..."
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Tax Year Header Label</label>
+                    <input
+                      type="text"
+                      className="form-control-iipm"
+                      value={form16Values.FORM16_TAX_YEAR_LABEL_2627 || ''}
+                      onChange={e => setForm16Values({ ...form16Values, FORM16_TAX_YEAR_LABEL_2627: e.target.value })}
+                      placeholder="Tax Year"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Place of Signing</label>
+                    <input
+                      type="text"
+                      className="form-control-iipm"
+                      value={form16Values.FORM16_PLACE || ''}
+                      onChange={e => setForm16Values({ ...form16Values, FORM16_PLACE: e.target.value })}
+                      placeholder="Visakhapatnam"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Signatory Name & Designation (Optional)</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <input
+                      type="text"
+                      className="form-control-iipm"
+                      value={form16Values.FORM16_SIGNATORY_NAME || ''}
+                      onChange={e => setForm16Values({ ...form16Values, FORM16_SIGNATORY_NAME: e.target.value })}
+                      placeholder="Signatory Name"
+                    />
+                    <input
+                      type="text"
+                      className="form-control-iipm"
+                      value={form16Values.FORM16_SIGNATORY_DESIGNATION || ''}
+                      onChange={e => setForm16Values({ ...form16Values, FORM16_SIGNATORY_DESIGNATION: e.target.value })}
+                      placeholder="e.g. Registrar / DDO"
+                    />
+                  </div>
+                  <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Leave blank for a clean physical signature line.</small>
                 </div>
               </div>
             </div>
@@ -478,10 +537,10 @@ const SettingsPage: React.FC = () => {
           <div className="card-iipm" style={{ padding: '24px', marginTop: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
               <Calendar size={20} color="var(--accent)" />
-              <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>3. Quarterly Statement Receipt Numbers & Challan Identifiers (Q1 - Q4)</h3>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>3. Quarterly Statement Receipt Numbers & Bank Challan Identifiers (Q1 - Q4)</h3>
             </div>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '-8px', marginBottom: '16px' }}>
-              Configure the quarterly e-TDS return 24Q receipt numbers and Bank Challan details. Fields left blank will show as a clean hyphen (-) or dynamic placeholder on Form 16.
+              Configure the quarterly e-TDS return 24Q receipt numbers, Bank BSR Codes, and Challan deposit dates. Fields left blank will show as a clean hyphen (-) when downloaded.
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
@@ -526,7 +585,7 @@ const SettingsPage: React.FC = () => {
                         style={{ fontSize: '0.8rem', padding: '6px 8px' }}
                         value={form16Values[item.dKey] || ''}
                         onChange={e => setForm16Values({ ...form16Values, [item.dKey]: e.target.value })}
-                        placeholder="e.g. 07-07-2025"
+                        placeholder="e.g. 07-07-2026"
                       />
                     </div>
                     <div>
@@ -565,7 +624,7 @@ const SettingsPage: React.FC = () => {
                   <>Saving Changes...</>
                 ) : (
                   <>
-                    <Save size={18} /> Save Form 16 Configuration
+                    <Save size={18} /> Save Form 16 / 130 Configuration
                   </>
                 )}
               </button>
@@ -577,7 +636,7 @@ const SettingsPage: React.FC = () => {
       {/* Info banner */}
       <div style={{ marginTop: '24px', padding: '14px 18px', background: 'rgba(59,130,246,0.08)', borderRadius: '10px', border: '1px solid rgba(59,130,246,0.2)', fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <CheckCircle2 size={18} color="#3b82f6" />
-        <span><strong>Live Dynamic Synchronization:</strong> Any changes made to the Employer Address, Signatory details, or Quarterly Challans are saved to the database and immediately reflected across all Form 16 generated for employees and F&A reports.</span>
+        <span><strong>Live Dynamic Synchronization:</strong> Any updates made to BSR Codes, Deposit Dates, Form Numbers, or Signatories are saved immediately and reflected when Form 16 / 130 is downloaded for any employee.</span>
       </div>
     </div>
   );

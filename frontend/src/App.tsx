@@ -150,7 +150,7 @@ const AppContent: React.FC = () => {
 
             {/* Admin */}
             <Route path="/users"    element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_ADMIN', 'ADMIN_OPERATOR']}><UserManagement /></RoleRoute>} />
-            <Route path="/settings" element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_ADMIN']}><SettingsPage /></RoleRoute>} />
+            <Route path="/settings" element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_ADMIN', 'FA_OPERATOR', 'FA_ADMIN']}><SettingsPage /></RoleRoute>} />
             <Route path="/data"     element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_ADMIN']}><DataManagementPage /></RoleRoute>} />
 
             {/* Payroll */}

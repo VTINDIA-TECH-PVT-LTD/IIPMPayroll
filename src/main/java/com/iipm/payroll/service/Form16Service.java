@@ -48,16 +48,26 @@ public class Form16Service {
                         .orElseThrow(() -> new RuntimeException("User not found: " + userId)));
 
         // Financial Year: 01-Apr-year to 31-Mar-(year+1)
-        // Assessment Year: (year+1)-(year+2)
         String financialYear = year + "-" + (year + 1);
+        String financialYearShort = year + "-" + String.valueOf(year + 1).substring(2);
         String assessmentYear = (year + 1) + "-" + (year + 2);
+        String taxYear = year + "-" + (year + 1);
         String periodFrom = "01-Apr-" + year;
         String periodTo = "31-Mar-" + (year + 1);
 
-        ItDeclaration declaration = itDeclarationRepository.findByUserIdAndFinancialYear(userId, financialYear).orElse(null);
-        String regime = (declaration != null && declaration.getTaxRegime() != null) ? declaration.getTaxRegime().toUpperCase() : "NEW";
+        // Fetch IT Declaration if any
+        ItDeclaration declaration = itDeclarationRepository.findByUserIdAndFinancialYear(user.getId(), financialYear)
+                .orElseGet(() -> itDeclarationRepository.findByUserIdAndFinancialYear(user.getId(), financialYearShort)
+                        .orElseGet(() -> itDeclarationRepository.findByUserIdAndFinancialYear(user.getEmployeeId(), financialYear)
+                                .orElseGet(() -> itDeclarationRepository.findByUserIdAndFinancialYear(user.getEmployeeId(), financialYearShort)
+                                        .orElse(null))));
 
-        // 1. Calculate standard monthly salary components from user profile
+        String userRegime = user.getTaxRegime() != null ? user.getTaxRegime().toUpperCase() : "NEW";
+        String regime = (declaration != null && declaration.getTaxRegime() != null) ? declaration.getTaxRegime().toUpperCase() : userRegime;
+        boolean isOldRegime = regime.contains("OLD");
+        String optedOut = isOldRegime ? "Yes" : "No";
+
+        // 1. Calculate standard monthly salary components from user profile (used as fallback only if 0 payrolls exist)
         double basic = user.getBasicPay() != null ? user.getBasicPay() : 0.0;
         double daPct = settingService.getSettingAsDouble("DA_PERCENTAGE") != null ? settingService.getSettingAsDouble("DA_PERCENTAGE") : 60.0;
         double hraPct = settingService.getSettingAsDouble("HRA_PERCENTAGE") != null ? settingService.getSettingAsDouble("HRA_PERCENTAGE") : 20.0;
@@ -77,7 +87,7 @@ public class Form16Service {
                 : ((user.getSpecialAllowance() != null) ? user.getSpecialAllowance() : 0.0);
         double monthlyNpsEmployer = (basic + da) * 0.14;
         double stdMonthlyGross = basic + da + hra + ta + specialAllowance + monthlyNpsEmployer;
-        double stdMonthlyPt = 200.0;
+        double stdMonthlyPt = (basic >= 20000) ? 200.0 : 0.0;
 
         // 2. Fetch existing payrolls for the 12 months in this Financial Year
         // Months 4..12 of year, Months 1..3 of year+1
@@ -99,49 +109,94 @@ public class Form16Service {
             }
         }
 
-        double q1Gross = 0, q2Gross = 0, q3Gross = 0, q4Gross = 0;
-        double totalPt = 0, totalNpsEmployer = 0;
+        double q1Gross = 0, q1Tds = 0, q1Pt = 0, q1Nps = 0; int q1Count = 0;
+        double q2Gross = 0, q2Tds = 0, q2Pt = 0, q2Nps = 0; int q2Count = 0;
+        double q3Gross = 0, q3Tds = 0, q3Pt = 0, q3Nps = 0; int q3Count = 0;
+        double q4Gross = 0, q4Tds = 0, q4Pt = 0, q4Nps = 0; int q4Count = 0;
 
-        for (int m = 4; m <= 12; m++) {
+        // Q1: Apr, May, Jun (Months 4, 5, 6 of year)
+        for (int m = 4; m <= 6; m++) {
             Payroll p = payrollMap.get(m + "_" + year);
-            double g = (p != null) ? p.getGrossSalary() : stdMonthlyGross;
-            double pt = (p != null) ? p.getProfessionalTax() : stdMonthlyPt;
-            double nps = (p != null && p.getNpsEmployerShare() > 0) ? p.getNpsEmployerShare() : monthlyNpsEmployer;
-
-            totalPt += pt;
-            totalNpsEmployer += nps;
-
-            if (m <= 6) q1Gross += g;
-            else if (m <= 9) q2Gross += g;
-            else q3Gross += g;
+            if (p != null) {
+                q1Gross += p.getGrossSalary();
+                q1Tds += p.getTds();
+                q1Pt += p.getProfessionalTax();
+                q1Nps += p.getNpsEmployerShare();
+                q1Count++;
+            }
         }
 
+        // Q2: Jul, Aug, Sep (Months 7, 8, 9 of year)
+        for (int m = 7; m <= 9; m++) {
+            Payroll p = payrollMap.get(m + "_" + year);
+            if (p != null) {
+                q2Gross += p.getGrossSalary();
+                q2Tds += p.getTds();
+                q2Pt += p.getProfessionalTax();
+                q2Nps += p.getNpsEmployerShare();
+                q2Count++;
+            }
+        }
+
+        // Q3: Oct, Nov, Dec (Months 10, 11, 12 of year)
+        for (int m = 10; m <= 12; m++) {
+            Payroll p = payrollMap.get(m + "_" + year);
+            if (p != null) {
+                q3Gross += p.getGrossSalary();
+                q3Tds += p.getTds();
+                q3Pt += p.getProfessionalTax();
+                q3Nps += p.getNpsEmployerShare();
+                q3Count++;
+            }
+        }
+
+        // Q4: Jan, Feb, Mar (Months 1, 2, 3 of year+1)
         for (int m = 1; m <= 3; m++) {
             Payroll p = payrollMap.get(m + "_" + (year + 1));
-            double g = (p != null) ? p.getGrossSalary() : stdMonthlyGross;
-            double pt = (p != null) ? p.getProfessionalTax() : stdMonthlyPt;
-            double nps = (p != null && p.getNpsEmployerShare() > 0) ? p.getNpsEmployerShare() : monthlyNpsEmployer;
-
-            totalPt += pt;
-            totalNpsEmployer += nps;
-            q4Gross += g;
+            if (p != null) {
+                q4Gross += p.getGrossSalary();
+                q4Tds += p.getTds();
+                q4Pt += p.getProfessionalTax();
+                q4Nps += p.getNpsEmployerShare();
+                q4Count++;
+            }
         }
 
-        double grossSalary = q1Gross + q2Gross + q3Gross + q4Gross;
+        int totalMonthsWithPayroll = q1Count + q2Count + q3Count + q4Count;
+        double grossSalary = 0, totalPt = 0, totalNpsEmployer = 0, totalTdsDeposited = 0;
+
+        if (totalMonthsWithPayroll > 0) {
+            // Use exact dynamic sums from actual database payroll records
+            grossSalary = q1Gross + q2Gross + q3Gross + q4Gross;
+            totalPt = q1Pt + q2Pt + q3Pt + q4Pt;
+            totalNpsEmployer = q1Nps + q2Nps + q3Nps + q4Nps;
+            totalTdsDeposited = q1Tds + q2Tds + q3Tds + q4Tds;
+        } else {
+            // Fallback for archive years with no stored monthly records (project 12 months)
+            q1Gross = stdMonthlyGross * 3; q1Pt = stdMonthlyPt * 3; q1Nps = monthlyNpsEmployer * 3;
+            q2Gross = stdMonthlyGross * 3; q2Pt = stdMonthlyPt * 3; q2Nps = monthlyNpsEmployer * 3;
+            q3Gross = stdMonthlyGross * 3; q3Pt = stdMonthlyPt * 3; q3Nps = monthlyNpsEmployer * 3;
+            q4Gross = stdMonthlyGross * 3; q4Pt = stdMonthlyPt * 3; q4Nps = monthlyNpsEmployer * 3;
+            grossSalary = q1Gross + q2Gross + q3Gross + q4Gross;
+            totalPt = q1Pt + q2Pt + q3Pt + q4Pt;
+            totalNpsEmployer = q1Nps + q2Nps + q3Nps + q4Nps;
+        }
 
         // 3. Part B Computations
         Form16DTO dto = new Form16DTO();
         dto.setGrossSalary(grossSalary);
         dto.setProfessionalTax(totalPt);
+        dto.setOptedOut115BAC(optedOut);
+        dto.setOldRegime(isOldRegime);
 
         double exemptHra = 0;
         double sec80C = 0;
         double sec80D = 0;
         double homeLoan = 0;
 
-        if ("OLD".equals(regime)) {
+        if (isOldRegime) {
             dto.setStandardDeduction(STANDARD_DEDUCTION_OLD);
-            if (declaration != null && ("APPROVED".equalsIgnoreCase(declaration.getStatus()) || "PENDING".equalsIgnoreCase(declaration.getStatus()))) {
+            if (declaration != null) {
                 exemptHra = declaration.getHraExemption();
                 sec80C = Math.min(declaration.getSection80C(), 150000.0);
                 sec80D = declaration.getSection80D();
@@ -152,7 +207,7 @@ public class Form16Service {
         }
 
         dto.setAllowancesExemptUpto10(exemptHra);
-        dto.setBalance(grossSalary - exemptHra);
+        dto.setBalance(Math.max(0, grossSalary - exemptHra));
         dto.setIncomeChargeableUnderSalaries(Math.max(0, dto.getBalance() - dto.getStandardDeduction() - totalPt));
         dto.setGrossTotalIncome(dto.getIncomeChargeableUnderSalaries());
 
@@ -161,7 +216,12 @@ public class Form16Service {
         dto.setDeduction80CCD2(totalNpsEmployer);
         dto.setDeduction80CCD(totalNpsEmployer);
         dto.setHomeLoanInterest(homeLoan);
-        dto.setTotalChapterVIADeductions(sec80C + sec80D + homeLoan + totalNpsEmployer);
+
+        if (isOldRegime) {
+            dto.setTotalChapterVIADeductions(sec80C + sec80D + homeLoan + totalNpsEmployer);
+        } else {
+            dto.setTotalChapterVIADeductions(totalNpsEmployer);
+        }
 
         double taxableIncome = Math.max(0, dto.getGrossTotalIncome() - dto.getTotalChapterVIADeductions());
         dto.setTotalTaxableIncome(taxableIncome);
@@ -170,7 +230,7 @@ public class Form16Service {
         double tax = 0;
         double rebate = 0;
 
-        if ("NEW".equals(regime)) {
+        if (!isOldRegime) {
             if (taxableIncome > 300000) {
                 if (taxableIncome > 300000) tax += (Math.min(taxableIncome, 700000) - 300000) * 0.05;
                 if (taxableIncome > 700000) tax += (Math.min(taxableIncome, 1000000) - 700000) * 0.10;
@@ -205,21 +265,21 @@ public class Form16Service {
         double totalTaxPayable = Math.round((tax + cess) * 100.0) / 100.0;
         dto.setTotalTaxPayable(totalTaxPayable);
 
-        // Tax deducted at source exactly equals the statutory tax payable
-        dto.setTaxDeductedAtSource(totalTaxPayable);
-        dto.setTotalTdsDeposited(totalTaxPayable);
-        dto.setTaxPayableOrRefundable(0.0);
-
-        // 4. Distribute TDS across the 4 Quarters proportionally
-        double q1Tds = 0, q2Tds = 0, q3Tds = 0, q4Tds = 0;
-        if (totalTaxPayable > 0 && grossSalary > 0) {
-            q1Tds = Math.round(totalTaxPayable * (q1Gross / grossSalary) * 100.0) / 100.0;
-            q2Tds = Math.round(totalTaxPayable * (q2Gross / grossSalary) * 100.0) / 100.0;
-            q3Tds = Math.round(totalTaxPayable * (q3Gross / grossSalary) * 100.0) / 100.0;
-            q4Tds = Math.max(0.0, Math.round((totalTaxPayable - q1Tds - q2Tds - q3Tds) * 100.0) / 100.0);
+        if (totalMonthsWithPayroll == 0) {
+            totalTdsDeposited = totalTaxPayable;
+            if (grossSalary > 0) {
+                q1Tds = Math.round(totalTaxPayable * (q1Gross / grossSalary) * 100.0) / 100.0;
+                q2Tds = Math.round(totalTaxPayable * (q2Gross / grossSalary) * 100.0) / 100.0;
+                q3Tds = Math.round(totalTaxPayable * (q3Gross / grossSalary) * 100.0) / 100.0;
+                q4Tds = Math.max(0.0, Math.round((totalTaxPayable - q1Tds - q2Tds - q3Tds) * 100.0) / 100.0);
+            }
         }
 
-        // Receipt Numbers from settings (default blank/- if not configured)
+        dto.setTaxDeductedAtSource(totalTdsDeposited);
+        dto.setTotalTdsDeposited(totalTdsDeposited);
+        dto.setTaxPayableOrRefundable(Math.max(0.0, totalTaxPayable - totalTdsDeposited));
+
+        // Receipt Numbers from settings
         String q1Receipt = getSettingOrDefault("FORM16_Q1_RECEIPT", "");
         String q2Receipt = getSettingOrDefault("FORM16_Q2_RECEIPT", "");
         String q3Receipt = getSettingOrDefault("FORM16_Q3_RECEIPT", "");
@@ -255,10 +315,29 @@ public class Form16Service {
                 new Form16DTO.ChallanDetail(q4Bsr, q4Date, q4Serial, q4Tds, "F")
         ));
 
-        // Employer details from MongoDB settings
-        dto.setEmployerName(getSettingOrDefault("FORM16_EMPLOYER_NAME", "INDIAN INSTITUTE OF PETROLEUM & ENERGY"));
-        dto.setEmployerAddress(getSettingOrDefault("FORM16_EMPLOYER_ADDRESS", "Tech-Horizon Building, Andhra University Campus, Visakhapatnam - 530003, Andhra Pradesh, India"));
-        dto.setEmployerEmail(getSettingOrDefault("FORM16_EMPLOYER_EMAIL", "fo@iipe.ac.in"));
+        // Statutory Form Title & Section per Financial Year
+        if (year <= 2025) {
+            // FY 2025-26
+            dto.setFormNumber(getSettingOrDefault("FORM16_FORM_NO_2526", "FORM NO. 16"));
+            dto.setFormRule(getSettingOrDefault("FORM16_RULE_2526", "[See rule 31(1)(a)]"));
+            dto.setCertificateSectionText(getSettingOrDefault("FORM16_CERT_TEXT_2526",
+                    "Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P"));
+            dto.setTaxYearLabel(getSettingOrDefault("FORM16_TAX_YEAR_LABEL_2526", "Assessment Year"));
+            dto.setTaxYear(assessmentYear);
+        } else {
+            // FY 2026-27 and later
+            dto.setFormNumber(getSettingOrDefault("FORM16_FORM_NO_2627", "FORM NO. 130"));
+            dto.setFormRule(getSettingOrDefault("FORM16_RULE_2627", "[See rule 31(1)(a)]"));
+            dto.setCertificateSectionText(getSettingOrDefault("FORM16_CERT_TEXT_2627",
+                    "Certificate under section 203 of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P"));
+            dto.setTaxYearLabel(getSettingOrDefault("FORM16_TAX_YEAR_LABEL_2627", "Tax Year"));
+            dto.setTaxYear(taxYear);
+        }
+
+        // Employer details
+        dto.setEmployerName(getSettingOrDefault("FORM16_EMPLOYER_NAME", "INDIAN INSTITUTE OF PETROLEUM AND ENERGY"));
+        dto.setEmployerAddress(getSettingOrDefault("FORM16_EMPLOYER_ADDRESS", "Vangali, Sabbavaram, Anakapalle \u2013 531035, Andhra Pradesh, India"));
+        dto.setEmployerEmail(getSettingOrDefault("FORM16_EMPLOYER_EMAIL", "dr.finance@iipe.ac.in"));
         dto.setEmployerPAN(getSettingOrDefault("FORM16_EMPLOYER_PAN", "AABAI0046C"));
         dto.setEmployerTAN(getSettingOrDefault("FORM16_EMPLOYER_TAN", "VPNI00723C"));
         dto.setCitTds(getSettingOrDefault("FORM16_CIT_TDS", "The Commissioner of Income Tax (TDS)\nHyderabad - 500004"));
@@ -269,11 +348,31 @@ public class Form16Service {
         dto.setLastUpdatedOn(getSettingOrDefault("FORM16_LAST_UPDATED", currentDateStr));
         dto.setIssueDate(getSettingOrDefault("FORM16_ISSUE_DATE", currentDateStr));
 
-        // Employee details
-        dto.setEmployeeName(user.getFirstName() + " " + user.getLastName());
+        // Format Employee Name with Title
+        String rawFirst = user.getFirstName() != null ? user.getFirstName() : "";
+        String rawLast = user.getLastName() != null ? user.getLastName() : "";
+        String rawName = (rawFirst + " " + rawLast).trim();
+        if (rawName.isEmpty()) rawName = user.getName() != null ? user.getName() : user.getEmployeeId();
+
+        String eid = user.getEmployeeId() != null ? user.getEmployeeId().toUpperCase().trim() : "";
+        String desig = user.getDesignation() != null ? user.getDesignation().toUpperCase() : "";
+        String dept = user.getDepartment() != null ? user.getDepartment().toUpperCase() : "";
+        String et = user.getEmployeeType() != null ? user.getEmployeeType().toUpperCase() : "";
+        String fn = user.getFunction() != null ? user.getFunction().toUpperCase() : "";
+
+        boolean isAcademic = eid.startsWith("TS") || (eid.startsWith("CT") && !eid.startsWith("CNT")) ||
+                desig.contains("PROFESSOR") || desig.contains("FACULTY") || desig.contains("LECTURER") ||
+                dept.contains("ENGINEERING") || dept.contains("SCIENCES") || dept.equals("FACULTY") || dept.equals("ACADEMIC") ||
+                et.contains("TEACHING") || fn.contains("TEACHING");
+
+        String cleanName = rawName.replaceAll("(?i)^(dr\\.?|prof\\.?|professor|mr\\.?|shri\\.?|ms\\.?|mrs\\.?|smt\\.?)\\s+", "").trim();
+        String prefix = isAcademic ? "Dr. " : "Mr. ";
+        String formattedEmpName = prefix + cleanName;
+
+        dto.setEmployeeName(formattedEmpName);
         dto.setEmployeePAN(user.getPan() != null && !user.getPan().isEmpty() ? user.getPan() : "ASKPY8597N");
         dto.setEmployeeId(user.getEmployeeId() != null ? user.getEmployeeId() : "NT1005");
-        dto.setEmployeeAddress(user.getLocation() != null && !user.getLocation().isEmpty() ? user.getLocation() : "Visakhapatnam");
+        dto.setEmployeeAddress(""); // Address omitted per client requirement
         dto.setAssessmentYear(assessmentYear);
         dto.setFinancialYear(financialYear);
         dto.setPeriodFrom(periodFrom);

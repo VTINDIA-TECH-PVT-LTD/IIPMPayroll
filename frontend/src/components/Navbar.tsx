@@ -151,9 +151,12 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout, isOpen = false, onClose }) =>
                   <span className="sidebar-nav-icon"><IndianRupee size={20} /></span> Arrears
                 </NavLink>
               )}
-              <div className="sidebar-section-label">Reports</div>
+              <div className="sidebar-section-label">Reports & Settings</div>
               <NavLink to="/reports" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
                 <span className="sidebar-nav-icon"><FileText size={20} /></span> Reports
+              </NavLink>
+              <NavLink to="/settings" className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`} onClick={handleLinkClick}>
+                <span className="sidebar-nav-icon"><Settings size={20} /></span> Form 16 Settings
               </NavLink>
             </>
           )}

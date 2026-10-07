@@ -15,13 +15,21 @@ export function generateForm16PrintHtml(d: any): string {
   const issueDate = d.issueDate || d.lastUpdatedOn || currentDateStr;
   const lastUpdatedOn = d.lastUpdatedOn || currentDateStr;
 
-  const isOldRegime = d.standardDeduction === 50000;
+  const isOldRegime = d.oldRegime === true || (d.optedOut115BAC === 'Yes') || (d.standardDeduction === 50000);
   const optedOut = isOldRegime ? 'Yes' : 'No';
 
   const ay = d.assessmentYear || '2026-2027';
   const ayStartYear = parseInt(ay.split('-')[0]) || 2026;
   const fromDate = d.periodFrom || `01-Apr-${ayStartYear - 1}`;
   const toDate = d.periodTo || `31-Mar-${ayStartYear}`;
+
+  const formNumber = d.formNumber || (ayStartYear >= 2026 ? 'FORM NO. 130' : 'FORM NO. 16');
+  const formRule = d.formRule || '[See rule 31(1)(a)]';
+  const certText = d.certificateSectionText || (ayStartYear >= 2026
+    ? 'Certificate under section 203 of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P'
+    : 'Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P');
+  const taxYearLabel = d.taxYearLabel || (ayStartYear >= 2026 ? 'Tax Year' : 'Assessment Year');
+  const taxYearValue = d.taxYear || d.assessmentYear || (ayStartYear >= 2026 ? `${ayStartYear - 1}-${ayStartYear}` : ay);
 
   const quarterlyList = (d.quarterlyTdsList && d.quarterlyTdsList.length > 0) ? d.quarterlyTdsList : [
     { quarter: 'Q1', receiptNumber: '', amountPaid: 0, taxDeducted: 0, taxDeposited: 0 },
@@ -42,7 +50,7 @@ export function generateForm16PrintHtml(d: any): string {
     <html>
     <head>
       <meta charset="utf-8" />
-      <title>Form 16 - ${d.employeeName || 'TRACES Format'}</title>
+      <title>${formNumber} - ${d.employeeName || 'TRACES Format'}</title>
       <style>
         @page {
           size: A4 portrait;
@@ -96,24 +104,14 @@ export function generateForm16PrintHtml(d: any): string {
         .bg-gray { background-color: #f8f9fa; }
         
         .header-section {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          text-align: center;
           margin-bottom: 6px;
           padding-bottom: 4px;
           border-bottom: 1.5px solid #000;
         }
-        .header-tds { text-align: left; font-family: Arial, sans-serif; }
-        .header-tds h2 { margin: 0; font-size: 16px; font-weight: 800; color: #166534; line-height: 1; }
-        .header-tds p { margin: 2px 0 0; font-size: 8.5px; color: #444; }
-
         .header-traces { text-align: center; font-family: Arial, sans-serif; }
         .header-traces h1 { margin: 0; font-size: 22px; font-weight: 900; letter-spacing: 1px; color: #0056b3; line-height: 1; }
         .header-traces p { margin: 2px 0 0; font-size: 8.5px; color: #555; }
-        
-        .header-gov { text-align: right; font-family: Arial, sans-serif; }
-        .header-gov h3 { margin: 0; font-size: 11px; font-weight: bold; color: #111; line-height: 1.1; }
-        .header-gov p { margin: 2px 0 0; font-size: 9.5px; font-weight: 600; color: #333; }
 
         .f16-title-bar {
           text-align: center;
@@ -145,25 +143,17 @@ export function generateForm16PrintHtml(d: any): string {
       <!-- ========================================= PART A (Page 1) ========================================= -->
       <div class="f16-page">
         <div class="header-section">
-          <div class="header-tds">
-            <h2>TDS</h2>
-            <p>Centralized Processing Cell</p>
-          </div>
           <div class="header-traces">
             <h1>TRACES</h1>
             <p>TDS Reconciliation Analysis and Correction Enabling System</p>
           </div>
-          <div class="header-gov">
-            <h3>Government of India</h3>
-            <p>Income Tax Department</p>
-          </div>
         </div>
 
-        <div class="f16-title-bar">FORM NO. 16</div>
-        <div class="f16-subtitle-bar">[See rule 31(1)(a)]</div>
+        <div class="f16-title-bar">${formNumber}</div>
+        <div class="f16-subtitle-bar">${formRule}</div>
         <div class="f16-title-bar" style="font-size: 13.5px;">PART A</div>
         <div class="f16-cert-text">
-          Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P
+          ${certText}
         </div>
 
         <table class="f16-table">
@@ -179,14 +169,13 @@ export function generateForm16PrintHtml(d: any): string {
               <td colspan="2" class="bold text-center">Name and address of the Employee/Specified senior citizen</td>
             </tr>
             <tr>
-              <td colspan="2" style="height: 62px; vertical-align: top;">
-                <span class="bold">${d.employerName || 'INDIAN INSTITUTE OF PETROLEUM & ENERGY'}</span><br />
-                ${d.employerAddress || ''}<br />
+              <td colspan="2" style="height: 58px; vertical-align: top;">
+                <span class="bold">${d.employerName || 'INDIAN INSTITUTE OF PETROLEUM AND ENERGY'}</span><br />
+                ${d.employerAddress || 'Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India'}<br />
                 ${d.employerEmail ? `<span style="font-size: 9px; color: #444;">${d.employerEmail}</span>` : ''}
               </td>
-              <td colspan="2" style="vertical-align: top;">
-                <span class="bold">${d.employeeName || ''}</span><br />
-                ${d.employeeAddress || 'Visakhapatnam'}
+              <td colspan="2" style="vertical-align: top; height: 58px;">
+                <span class="bold">${d.employeeName || ''}</span>
               </td>
             </tr>
             <tr class="bg-gray">
@@ -196,21 +185,21 @@ export function generateForm16PrintHtml(d: any): string {
               <td class="bold text-center" style="width: 25%;">Employee Reference No.</td>
             </tr>
             <tr>
-              <td class="text-center bold">${d.employerPAN || ''}</td>
-              <td class="text-center bold">${d.employerTAN || ''}</td>
+              <td class="text-center bold">${d.employerPAN || 'AABAI0046C'}</td>
+              <td class="text-center bold">${d.employerTAN || 'VPNI00723C'}</td>
               <td class="text-center bold">${d.employeePAN || ''}</td>
               <td class="text-center bold">${d.employeeId || ''}</td>
             </tr>
             <tr class="bg-gray">
               <td colspan="2" class="bold text-center">CIT (TDS)</td>
-              <td class="bold text-center">Assessment Year</td>
+              <td class="bold text-center">${taxYearLabel}</td>
               <td class="bold text-center">Period with the Employer</td>
             </tr>
             <tr>
               <td colspan="2" class="text-center" style="font-size: 9.5px; white-space: pre-line;">
                 ${d.citTds || 'The Commissioner of Income Tax (TDS)\nHyderabad - 500004'}
               </td>
-              <td class="text-center bold" style="font-size: 11px;">${ay}</td>
+              <td class="text-center bold" style="font-size: 11px;">${taxYearValue}</td>
               <td style="padding: 0;">
                 <table style="width: 100%; border-collapse: collapse; border: none;">
                   <tbody>
@@ -245,13 +234,14 @@ export function generateForm16PrintHtml(d: any): string {
           <tbody>
             ${['Q1', 'Q2', 'Q3', 'Q4'].map(q => {
               const qData = quarterlyList.find((x: any) => x.quarter === q);
+              const hasData = (qData?.amountPaid && qData.amountPaid > 0) || (qData?.taxDeducted && qData.taxDeducted > 0);
               return `
                 <tr>
                   <td class="text-center bold">${q}</td>
-                  <td class="text-center">${qData?.receiptNumber && qData.receiptNumber.trim() !== '' ? qData.receiptNumber : '-'}</td>
-                  <td class="text-right">${fmt(qData?.amountPaid)}</td>
-                  <td class="text-right">${fmt(qData?.taxDeducted)}</td>
-                  <td class="text-right">${fmt(qData?.taxDeposited)}</td>
+                  <td class="text-center">${hasData ? (qData?.receiptNumber && qData.receiptNumber.trim() !== '' ? qData.receiptNumber : '-') : '-'}</td>
+                  <td class="text-right">${hasData ? fmt(qData?.amountPaid) : '-'}</td>
+                  <td class="text-right">${hasData ? fmt(qData?.taxDeducted) : '-'}</td>
+                  <td class="text-right">${hasData ? fmt(qData?.taxDeposited) : '-'}</td>
                 </tr>
               `;
             }).join('')}
@@ -283,16 +273,21 @@ export function generateForm16PrintHtml(d: any): string {
             </tr>
           </thead>
           <tbody>
-            ${challanList.map((c: any, i: number) => `
-              <tr>
-                <td class="text-center bold">${i + 1}</td>
-                <td class="text-right">${fmt(c.amount)}</td>
-                <td class="text-center">${c.bsrCode && c.bsrCode.trim() !== '' ? c.bsrCode : '-'}</td>
-                <td class="text-center">${c.dateOfDeposit && c.dateOfDeposit.trim() !== '' ? c.dateOfDeposit : '-'}</td>
-                <td class="text-center">${c.challanSerialNumber && c.challanSerialNumber.trim() !== '' ? c.challanSerialNumber : 'F'}</td>
-                <td class="text-center">F</td>
-              </tr>
-            `).join('')}
+            ${challanList.map((c: any, i: number) => {
+              const qName = `Q${i + 1}`;
+              const qData = quarterlyList.find((x: any) => x.quarter === qName);
+              const hasData = (c?.amount && c.amount > 0) || (qData?.taxDeposited && qData.taxDeposited > 0) || (c?.bsrCode && c.bsrCode.trim() !== '' && c.bsrCode !== '-');
+              return `
+                <tr>
+                  <td class="text-center bold">${i + 1}</td>
+                  <td class="text-right">${hasData ? fmt(c.amount || qData?.taxDeposited) : '-'}</td>
+                  <td class="text-center">${hasData && c.bsrCode && c.bsrCode.trim() !== '' ? c.bsrCode : '-'}</td>
+                  <td class="text-center">${hasData && c.dateOfDeposit && c.dateOfDeposit.trim() !== '' ? c.dateOfDeposit : '-'}</td>
+                  <td class="text-center">${hasData && c.challanSerialNumber && c.challanSerialNumber.trim() !== '' ? c.challanSerialNumber : (hasData ? 'F' : '-')}</td>
+                  <td class="text-center">${hasData ? 'F' : '-'}</td>
+                </tr>
+              `;
+            }).join('')}
             <tr class="bold bg-gray">
               <td class="text-center">Total (Rs.)</td>
               <td class="text-right">${fmt(d.totalTdsDeposited)}</td>
@@ -309,7 +304,7 @@ export function generateForm16PrintHtml(d: any): string {
 
       <!-- ========================================= PART B (Page 2) ========================================= -->
       <div class="f16-page">
-        <div class="f16-title-bar" style="border-top: 1px solid #000;">FORM NO. 16</div>
+        <div class="f16-title-bar" style="border-top: 1px solid #000;">${formNumber}</div>
         <div class="f16-title-bar" style="font-size: 13.5px;">PART B</div>
         <div class="f16-subtitle-bar" style="font-weight: bold;">Annexure - I</div>
         
@@ -347,17 +342,26 @@ export function generateForm16PrintHtml(d: any): string {
               <td class="text-center bold">2.</td>
               <td colspan="3" class="bold">Less: Allowances to the extent exempt under section 10</td>
             </tr>
+            ${isOldRegime ? `
             <tr>
               <td class="text-center">(e)</td>
               <td>House rent allowance under section 10(13A)</td>
               <td></td>
               <td class="text-right">${fmt(d.allowancesExemptUpto10)}</td>
             </tr>
+            ` : `
+            <tr>
+              <td class="text-center">(e)</td>
+              <td style="color: #666;">House rent allowance under section 10(13A)</td>
+              <td></td>
+              <td class="text-right" style="color: #666;">0.00</td>
+            </tr>
+            `}
             <tr>
               <td class="text-center bold">3.</td>
-              <td class="bold">Total amount of salary received from current employer [1(d)-2(i)]</td>
+              <td class="bold">Total amount of salary received from current employer [1(d)-2]</td>
               <td></td>
-              <td class="text-right bold">${fmt(d.balance || ((d.grossSalary || 0) - (d.allowancesExemptUpto10 || 0)))}</td>
+              <td class="text-right bold">${fmt(d.balance || ((d.grossSalary || 0) - (isOldRegime ? (d.allowancesExemptUpto10 || 0) : 0)))}</td>
             </tr>
             <tr class="bg-gray">
               <td class="text-center bold">4.</td>
@@ -399,11 +403,18 @@ export function generateForm16PrintHtml(d: any): string {
               <td class="text-center bold">Gross Amount</td>
               <td class="text-center bold">Deductible Amount</td>
             </tr>
+            ${isOldRegime ? `
             <tr>
               <td class="text-center">(a)</td>
               <td>Deduction in respect of life insurance premia, contributions to provident fund etc. under section 80C</td>
               <td class="text-right">${fmt(d.deduction80C)}</td>
               <td class="text-right">${fmt(d.deduction80C)}</td>
+            </tr>
+            <tr>
+              <td class="text-center">(e)</td>
+              <td>Deduction in respect of interest on housing loan under section 24(b) / 80EEA (Home Loan)</td>
+              <td class="text-right">${fmt(d.homeLoanInterest)}</td>
+              <td class="text-right">${fmt(d.homeLoanInterest)}</td>
             </tr>
             <tr>
               <td class="text-center">(f)</td>
@@ -417,7 +428,15 @@ export function generateForm16PrintHtml(d: any): string {
               <td class="text-right">${fmt(d.deduction80D)}</td>
               <td class="text-right">${fmt(d.deduction80D)}</td>
             </tr>
-            <tr class="bg-gray">
+            ` : `
+            <tr>
+              <td class="text-center">(f)</td>
+              <td>Deduction in respect of contribution by Employer to pension scheme under section 80CCD (2)</td>
+              <td class="text-right">${fmt(d.deduction80CCD2 || d.deduction80CCD)}</td>
+              <td class="text-right">${fmt(d.deduction80CCD2 || d.deduction80CCD)}</td>
+            </tr>
+            `}
+            <tr class="bold bg-gray">
               <td class="text-center bold">11.</td>
               <td class="bold">Aggregate of deductible amount under Chapter VI-A</td>
               <td></td>
