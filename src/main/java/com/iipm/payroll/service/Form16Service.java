@@ -315,24 +315,21 @@ public class Form16Service {
                 new Form16DTO.ChallanDetail(q4Bsr, q4Date, q4Serial, q4Tds, "F")
         ));
 
-        // Statutory Form Title & Section per Financial Year
-        if (year <= 2025) {
-            // FY 2025-26
-            dto.setFormNumber(getSettingOrDefault("FORM16_FORM_NO_2526", "FORM NO. 16"));
-            dto.setFormRule(getSettingOrDefault("FORM16_RULE_2526", "[See rule 31(1)(a)]"));
-            dto.setCertificateSectionText(getSettingOrDefault("FORM16_CERT_TEXT_2526",
-                    "Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P"));
-            dto.setTaxYearLabel(getSettingOrDefault("FORM16_TAX_YEAR_LABEL_2526", "Assessment Year"));
-            dto.setTaxYear(assessmentYear);
-        } else {
-            // FY 2026-27 and later
-            dto.setFormNumber(getSettingOrDefault("FORM16_FORM_NO_2627", "FORM NO. 130"));
-            dto.setFormRule(getSettingOrDefault("FORM16_RULE_2627", "[See rule 31(1)(a)]"));
-            dto.setCertificateSectionText(getSettingOrDefault("FORM16_CERT_TEXT_2627",
-                    "Certificate under section 203 of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P"));
-            dto.setTaxYearLabel(getSettingOrDefault("FORM16_TAX_YEAR_LABEL_2627", "Tax Year"));
-            dto.setTaxYear(taxYear);
-        }
+        // Statutory Form Title & Section per Financial Year (Dynamically configurable per FY)
+        String fySuffix = String.valueOf(year).substring(2) + String.valueOf(year + 1).substring(2);
+        String defaultFormNo = (year >= 2026) ? "FORM NO. 130" : "FORM NO. 16";
+        String defaultRule = "[See rule 31(1)(a)]";
+        String defaultCertText = (year >= 2026) 
+                ? "Certificate under section of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or section 194P"
+                : "Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P";
+        String defaultYearLabel = (year >= 2026) ? "Tax Year" : "Assessment Year";
+        String defaultYearVal = (year >= 2026) ? taxYear : assessmentYear;
+
+        dto.setFormNumber(getSettingOrDefault("FORM16_FORM_NO_" + fySuffix, getSettingOrDefault("FORM16_FORM_NO", defaultFormNo)));
+        dto.setFormRule(getSettingOrDefault("FORM16_RULE_" + fySuffix, getSettingOrDefault("FORM16_RULE", defaultRule)));
+        dto.setCertificateSectionText(getSettingOrDefault("FORM16_CERT_TEXT_" + fySuffix, getSettingOrDefault("FORM16_CERT_TEXT", defaultCertText)));
+        dto.setTaxYearLabel(getSettingOrDefault("FORM16_TAX_YEAR_LABEL_" + fySuffix, getSettingOrDefault("FORM16_TAX_YEAR_LABEL", defaultYearLabel)));
+        dto.setTaxYear(defaultYearVal);
 
         // Employer details
         dto.setEmployerName(getSettingOrDefault("FORM16_EMPLOYER_NAME", "INDIAN INSTITUTE OF PETROLEUM AND ENERGY"));

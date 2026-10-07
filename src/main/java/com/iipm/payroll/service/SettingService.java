@@ -155,17 +155,25 @@ public class SettingService {
                 Map.entry("STANDARD_DEDUCTION_NEW", "75000"),
                 Map.entry("STANDARD_DEDUCTION_OLD", "50000"),
                 Map.entry("MAX_80C_DEDUCTION", "150000"),
-                Map.entry("FORM16_EMPLOYER_NAME", "INDIAN INSTITUTE OF PETROLEUM & ENERGY"),
-                Map.entry("FORM16_EMPLOYER_ADDRESS", "Tech-Horizon Building, Andhra University Campus, Visakhapatnam - 530003, Andhra Pradesh, India"),
+                Map.entry("FORM16_EMPLOYER_NAME", "INDIAN INSTITUTE OF PETROLEUM AND ENERGY"),
+                Map.entry("FORM16_EMPLOYER_ADDRESS", "Vangali, Sabbavaram, Anakapalle \u2013 531035, Andhra Pradesh, India"),
                 Map.entry("FORM16_EMPLOYER_PAN", "AABAI0046C"),
                 Map.entry("FORM16_EMPLOYER_TAN", "VPNI00723C"),
-                Map.entry("FORM16_EMPLOYER_EMAIL", "fo@iipe.ac.in"),
+                Map.entry("FORM16_EMPLOYER_EMAIL", "dr.finance@iipe.ac.in"),
                 Map.entry("FORM16_CIT_TDS", "The Commissioner of Income Tax (TDS), Hyderabad - 500004"),
                 Map.entry("FORM16_SIGNATORY_NAME", ""),
                 Map.entry("FORM16_SIGNATORY_FATHER_NAME", ""),
                 Map.entry("FORM16_SIGNATORY_DESIGNATION", ""),
                 Map.entry("FORM16_PLACE", "Visakhapatnam"),
                 Map.entry("FORM16_CERTIFICATE_NO", ""),
+                Map.entry("FORM16_FORM_NO_2627", "FORM NO. 130"),
+                Map.entry("FORM16_RULE_2627", "[See rule 31(1)(a)]"),
+                Map.entry("FORM16_CERT_TEXT_2627", "Certificate under section of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or section 194P"),
+                Map.entry("FORM16_TAX_YEAR_LABEL_2627", "Tax Year"),
+                Map.entry("FORM16_FORM_NO_2526", "FORM NO. 16"),
+                Map.entry("FORM16_RULE_2526", "[See rule 31(1)(a)]"),
+                Map.entry("FORM16_CERT_TEXT_2526", "Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P"),
+                Map.entry("FORM16_TAX_YEAR_LABEL_2526", "Assessment Year"),
                 Map.entry("FORM16_Q1_RECEIPT", ""),
                 Map.entry("FORM16_Q2_RECEIPT", ""),
                 Map.entry("FORM16_Q3_RECEIPT", ""),
@@ -195,6 +203,21 @@ public class SettingService {
                 setting.setValue("14");
                 settingRepository.save(setting);
                 log.info("Migrated NPS_EMPLOYER_PERCENTAGE from 10 to 14");
+            } else if (entry.getKey().equals("FORM16_EMPLOYER_NAME") && existing.get().getValue().contains("&")) {
+                Setting setting = existing.get();
+                setting.setValue("INDIAN INSTITUTE OF PETROLEUM AND ENERGY");
+                settingRepository.save(setting);
+                log.info("Migrated FORM16_EMPLOYER_NAME to official AND name");
+            } else if (entry.getKey().equals("FORM16_EMPLOYER_ADDRESS") && existing.get().getValue().contains("Tech-Horizon")) {
+                Setting setting = existing.get();
+                setting.setValue("Vangali, Sabbavaram, Anakapalle \u2013 531035, Andhra Pradesh, India");
+                settingRepository.save(setting);
+                log.info("Migrated FORM16_EMPLOYER_ADDRESS to official payslip address");
+            } else if (entry.getKey().equals("FORM16_EMPLOYER_EMAIL") && "fo@iipe.ac.in".equals(existing.get().getValue())) {
+                Setting setting = existing.get();
+                setting.setValue("dr.finance@iipe.ac.in");
+                settingRepository.save(setting);
+                log.info("Migrated FORM16_EMPLOYER_EMAIL to dr.finance@iipe.ac.in");
             } else if (entry.getKey().equals("FORM16_SIGNATORY_NAME") && "Dr. Ram Phal Dwivedi".equals(existing.get().getValue())) {
                 Setting setting = existing.get();
                 setting.setValue("");

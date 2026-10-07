@@ -28,6 +28,8 @@ const SettingsPage: React.FC = () => {
   const [savingForm16, setSavingForm16] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const [selectedConfigFy, setSelectedConfigFy] = useState<'2627' | '2526' | '2425' | '2728'>('2627');
+
   // Local state for Form 16 form fields for convenient batch saving
   const [form16Values, setForm16Values] = useState<Record<string, string>>({
     FORM16_EMPLOYER_NAME: 'INDIAN INSTITUTE OF PETROLEUM AND ENERGY',
@@ -41,8 +43,14 @@ const SettingsPage: React.FC = () => {
     // FY 2026-27 Statutory Overrides
     FORM16_FORM_NO_2627: 'FORM NO. 130',
     FORM16_RULE_2627: '[See rule 31(1)(a)]',
-    FORM16_CERT_TEXT_2627: 'Certificate under section 203 of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P',
+    FORM16_CERT_TEXT_2627: 'Certificate under section of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or section 194P',
     FORM16_TAX_YEAR_LABEL_2627: 'Tax Year',
+
+    // FY 2025-26 Statutory Overrides
+    FORM16_FORM_NO_2526: 'FORM NO. 16',
+    FORM16_RULE_2526: '[See rule 31(1)(a)]',
+    FORM16_CERT_TEXT_2526: 'Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P',
+    FORM16_TAX_YEAR_LABEL_2526: 'Assessment Year',
 
     // Signatory
     FORM16_SIGNATORY_NAME: '',
@@ -443,57 +451,81 @@ const SettingsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Section 2: Statutory Rules & Act Configuration (FY 2026-27) */}
+            {/* Section 2: Statutory Rules & Act Configuration (Dynamic by Financial Year) */}
             <div className="card-iipm" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
-                <ShieldAlert size={20} color="var(--accent)" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>2. Statutory Form & Act Rules (FY 2026-27)</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', borderBottom: '1px solid var(--border)', paddingBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <ShieldAlert size={20} color="var(--accent)" />
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>2. Statutory Form & Act Rules</h3>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>Financial Year:</label>
+                  <select
+                    className="form-control-iipm"
+                    style={{ width: 'auto', padding: '4px 10px', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer' }}
+                    value={selectedConfigFy}
+                    onChange={e => setSelectedConfigFy(e.target.value as any)}
+                  >
+                    <option value="2627">FY 2026-27 (Form 130)</option>
+                    <option value="2526">FY 2025-26 (Form 16)</option>
+                    <option value="2425">FY 2024-25 (Form 16)</option>
+                    <option value="2728">FY 2027-28</option>
+                  </select>
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Form Number (FY 2026-27)</label>
+                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                      Form Number ({selectedConfigFy === '2627' ? 'FY 2026-27' : selectedConfigFy === '2526' ? 'FY 2025-26' : `FY 20${selectedConfigFy.slice(0, 2)}-${selectedConfigFy.slice(2)}`})
+                    </label>
                     <input
                       type="text"
                       className="form-control-iipm"
-                      value={form16Values.FORM16_FORM_NO_2627 || ''}
-                      onChange={e => setForm16Values({ ...form16Values, FORM16_FORM_NO_2627: e.target.value })}
-                      placeholder="FORM NO. 130"
+                      value={form16Values[`FORM16_FORM_NO_${selectedConfigFy}`] || ''}
+                      onChange={e => setForm16Values({ ...form16Values, [`FORM16_FORM_NO_${selectedConfigFy}`]: e.target.value })}
+                      placeholder={selectedConfigFy === '2627' ? 'FORM NO. 130' : 'FORM NO. 16'}
                     />
                   </div>
                   <div>
-                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Rule Title (FY 2026-27)</label>
+                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                      Rule Title ({selectedConfigFy === '2627' ? 'FY 2026-27' : selectedConfigFy === '2526' ? 'FY 2025-26' : `FY 20${selectedConfigFy.slice(0, 2)}-${selectedConfigFy.slice(2)}`})
+                    </label>
                     <input
                       type="text"
                       className="form-control-iipm"
-                      value={form16Values.FORM16_RULE_2627 || ''}
-                      onChange={e => setForm16Values({ ...form16Values, FORM16_RULE_2627: e.target.value })}
+                      value={form16Values[`FORM16_RULE_${selectedConfigFy}`] || ''}
+                      onChange={e => setForm16Values({ ...form16Values, [`FORM16_RULE_${selectedConfigFy}`]: e.target.value })}
                       placeholder="[See rule 31(1)(a)]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Certificate Section Text (FY 2026-27)</label>
+                  <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                    Certificate Section Text ({selectedConfigFy === '2627' ? 'FY 2026-27' : selectedConfigFy === '2526' ? 'FY 2025-26' : `FY 20${selectedConfigFy.slice(0, 2)}-${selectedConfigFy.slice(2)}`})
+                  </label>
                   <textarea
                     className="form-control-iipm"
                     rows={3}
-                    value={form16Values.FORM16_CERT_TEXT_2627 || ''}
-                    onChange={e => setForm16Values({ ...form16Values, FORM16_CERT_TEXT_2627: e.target.value })}
-                    placeholder="Certificate under section 203 of the Income-tax Act, 2025 for tax deducted at source..."
+                    value={form16Values[`FORM16_CERT_TEXT_${selectedConfigFy}`] || ''}
+                    onChange={e => setForm16Values({ ...form16Values, [`FORM16_CERT_TEXT_${selectedConfigFy}`]: e.target.value })}
+                    placeholder={selectedConfigFy === '2627'
+                      ? "Certificate under section of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or section 194P"
+                      : "Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P"}
                   />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Tax Year Header Label</label>
+                    <label className="form-label-iipm" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Year Header Label</label>
                     <input
                       type="text"
                       className="form-control-iipm"
-                      value={form16Values.FORM16_TAX_YEAR_LABEL_2627 || ''}
-                      onChange={e => setForm16Values({ ...form16Values, FORM16_TAX_YEAR_LABEL_2627: e.target.value })}
-                      placeholder="Tax Year"
+                      value={form16Values[`FORM16_TAX_YEAR_LABEL_${selectedConfigFy}`] || ''}
+                      onChange={e => setForm16Values({ ...form16Values, [`FORM16_TAX_YEAR_LABEL_${selectedConfigFy}`]: e.target.value })}
+                      placeholder={selectedConfigFy === '2627' ? 'Tax Year' : 'Assessment Year'}
                     />
                   </div>
                   <div>
