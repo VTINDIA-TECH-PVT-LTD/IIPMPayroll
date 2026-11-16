@@ -19,6 +19,12 @@ public class Form16DTO {
     private String employerPAN;
     private String employerTAN;
     private String citTds;
+    private String employerContactCountryCode;
+    private String employerContactNumber;
+    private String signatoryPAN;
+    private String taxDepositedInWords;
+    private String paymentNatureCode;
+    private String paymentNatureDesc;
 
     // Certificate metadata
     private String certificateNo;

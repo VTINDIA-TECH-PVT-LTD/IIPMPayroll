@@ -309,19 +309,34 @@ public class Form16Service {
         String q4Serial = getSettingOrDefault("FORM16_Q4_CHALLAN_SERIAL", "");
 
         dto.setChallanDetails(Arrays.asList(
-                new Form16DTO.ChallanDetail(q1Bsr, q1Date, q1Serial, q1Tds, "F"),
-                new Form16DTO.ChallanDetail(q2Bsr, q2Date, q2Serial, q2Tds, "F"),
-                new Form16DTO.ChallanDetail(q3Bsr, q3Date, q3Serial, q3Tds, "F"),
-                new Form16DTO.ChallanDetail(q4Bsr, q4Date, q4Serial, q4Tds, "F")
+                new Form16DTO.ChallanDetail(q1Bsr, q1Date, q1Serial, q1Tds, "Final"),
+                new Form16DTO.ChallanDetail(q2Bsr, q2Date, q2Serial, q2Tds, "Final"),
+                new Form16DTO.ChallanDetail(q3Bsr, q3Date, q3Serial, q3Tds, "Final"),
+                new Form16DTO.ChallanDetail(q4Bsr, q4Date, q4Serial, q4Tds, "Final")
         ));
 
         // Statutory Form Title & Section per Financial Year (Dynamically configurable per FY)
         String fySuffix = String.valueOf(year).substring(2) + String.valueOf(year + 1).substring(2);
-        String defaultFormNo = (year >= 2026) ? "FORM NO. 130" : "FORM NO. 16";
-        String defaultRule = "[See rule 31(1)(a)]";
-        String defaultCertText = (year >= 2026) 
-                ? "Certificate under section of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or section 194P"
-                : "Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P";
+        
+        boolean isContract = (user.getEmployeeType() != null && user.getEmployeeType().equalsIgnoreCase("Contract"))
+                || (user.getDepartment() != null && user.getDepartment().equalsIgnoreCase("Contract"))
+                || (user.getFunction() != null && user.getFunction().equalsIgnoreCase("Contract"));
+
+        String defaultFormNo = (year >= 2026) ? (isContract ? "FORM NO. 131" : "FORM NO. 130") : "FORM NO. 16";
+        String defaultRule;
+        String defaultCertText;
+
+        if (defaultFormNo.equals("FORM NO. 131")) {
+            defaultRule = "[See rule 215(1)(Table: Sl. No. 2)]";
+            defaultCertText = "Certificate under section 395(4) of the Income-tax Act deducted at source other than on salary paid to an employee under section 392 or pension or interest income of specified senior citizen under section 393(1)[Table: Sl. No. 8(iii)]";
+        } else if (year >= 2026) {
+            defaultRule = "[See rule 215(1)(Table: Sl. No. 1)]";
+            defaultCertText = "Certificate under section 395(1) of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 392 or pension or interest income of specified senior citizen under section 393(1)[Table: Sl. No. 8(iii)]";
+        } else {
+            defaultRule = "[See rule 31(1)(a)]";
+            defaultCertText = "Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P";
+        }
+
         String defaultYearLabel = (year >= 2026) ? "Tax Year" : "Assessment Year";
         String defaultYearVal = (year >= 2026) ? taxYear : assessmentYear;
 
@@ -337,13 +352,20 @@ public class Form16Service {
         dto.setEmployerEmail(getSettingOrDefault("FORM16_EMPLOYER_EMAIL", "dr.finance@iipe.ac.in"));
         dto.setEmployerPAN(getSettingOrDefault("FORM16_EMPLOYER_PAN", "AABAI0046C"));
         dto.setEmployerTAN(getSettingOrDefault("FORM16_EMPLOYER_TAN", "VPNI00723C"));
+        dto.setEmployerContactCountryCode(getSettingOrDefault("FORM16_EMPLOYER_CONTACT_CC", "91"));
+        dto.setEmployerContactNumber(getSettingOrDefault("FORM16_EMPLOYER_CONTACT_NO", "0891-2856000"));
         dto.setCitTds(getSettingOrDefault("FORM16_CIT_TDS", "The Commissioner of Income Tax (TDS)\nHyderabad - 500004"));
-        dto.setCertificateNo("");
+        
+        String defaultCertNo = "AAP" + fySuffix + String.format("%06d", Math.abs((user.getEmployeeId() + (user.getPan() != null ? user.getPan() : "ASKPY8597N") + year).hashCode() % 1000000));
+        dto.setCertificateNo(getSettingOrDefault("FORM16_CERTIFICATE_NO", defaultCertNo));
 
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH);
         String currentDateStr = LocalDate.now().format(dtf);
         dto.setLastUpdatedOn(getSettingOrDefault("FORM16_LAST_UPDATED", currentDateStr));
         dto.setIssueDate(getSettingOrDefault("FORM16_ISSUE_DATE", currentDateStr));
+        dto.setTaxDepositedInWords(convertAmountToWords(Math.round(totalTdsDeposited)));
+        dto.setPaymentNatureCode(getSettingOrDefault("FORM16_PAYMENT_NATURE_CODE", "1021"));
+        dto.setPaymentNatureDesc(getSettingOrDefault("FORM16_PAYMENT_NATURE_DESC", "Any income by way of interest other than interest on securities, in case of deductee/payee is other than senior citizen"));
 
         // Format Employee Name with Title
         String rawFirst = user.getFirstName() != null ? user.getFirstName() : "";
@@ -379,8 +401,43 @@ public class Form16Service {
         dto.setSignatoryName(getSettingOrDefault("FORM16_SIGNATORY_NAME", ""));
         dto.setSignatoryFatherName(getSettingOrDefault("FORM16_SIGNATORY_FATHER_NAME", ""));
         dto.setSignatoryDesignation(getSettingOrDefault("FORM16_SIGNATORY_DESIGNATION", ""));
+        dto.setSignatoryPAN(getSettingOrDefault("FORM16_SIGNATORY_PAN", dto.getEmployerPAN()));
         dto.setPlace(getSettingOrDefault("FORM16_PLACE", "Visakhapatnam"));
 
         return dto;
+    }
+
+    public static String convertAmountToWords(long n) {
+        if (n <= 0) return "Zero only";
+        String[] units = {"", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+                "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"};
+        String[] tens = {"", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"};
+        
+        StringBuilder words = new StringBuilder();
+        if ((n / 10000000) > 0) {
+            words.append(convertAmountToWords(n / 10000000).replace(" only", "")).append(" Crore ");
+            n %= 10000000;
+        }
+        if ((n / 100000) > 0) {
+            words.append(convertAmountToWords(n / 100000).replace(" only", "")).append(" Lakh ");
+            n %= 100000;
+        }
+        if ((n / 1000) > 0) {
+            words.append(convertAmountToWords(n / 1000).replace(" only", "")).append(" Thousand ");
+            n %= 1000;
+        }
+        if ((n / 100) > 0) {
+            words.append(convertAmountToWords(n / 100).replace(" only", "")).append(" Hundred ");
+            n %= 100;
+        }
+        if (n > 0) {
+            if (n < 20) {
+                words.append(units[(int) n]).append(" ");
+            } else {
+                words.append(tens[(int) (n / 10)]).append(" ");
+                if ((n % 10) > 0) words.append(units[(int) (n % 10)]).append(" ");
+            }
+        }
+        return words.toString().trim() + " only";
     }
 }

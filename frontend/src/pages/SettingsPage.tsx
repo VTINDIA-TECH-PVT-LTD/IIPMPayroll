@@ -37,13 +37,14 @@ const SettingsPage: React.FC = () => {
     FORM16_EMPLOYER_PAN: 'AABAI0046C',
     FORM16_EMPLOYER_TAN: 'VPNI00723C',
     FORM16_EMPLOYER_EMAIL: 'dr.finance@iipe.ac.in',
+    FORM16_EMPLOYER_CONTACT_NO: '0891-2856000',
     FORM16_CIT_TDS: 'The Commissioner of Income Tax (TDS)\nHyderabad - 500004',
     FORM16_CERTIFICATE_NO: '',
     
-    // FY 2026-27 Statutory Overrides
+    // FY 2026-27 Statutory Overrides (Income-tax Act, 2025)
     FORM16_FORM_NO_2627: 'FORM NO. 130',
-    FORM16_RULE_2627: '[See rule 31(1)(a)]',
-    FORM16_CERT_TEXT_2627: 'Certificate under section of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or section 194P',
+    FORM16_RULE_2627: '[See rule 215(1)(Table: Sl. No. 1)]',
+    FORM16_CERT_TEXT_2627: 'Certificate under section 395(1) of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 392 or pension or interest income of specified senior citizen under section 393(1)[Table: Sl. No. 8(iii)]',
     FORM16_TAX_YEAR_LABEL_2627: 'Tax Year',
 
     // FY 2025-26 Statutory Overrides
@@ -56,6 +57,7 @@ const SettingsPage: React.FC = () => {
     FORM16_SIGNATORY_NAME: '',
     FORM16_SIGNATORY_FATHER_NAME: '',
     FORM16_SIGNATORY_DESIGNATION: '',
+    FORM16_SIGNATORY_PAN: '',
     FORM16_PLACE: 'Visakhapatnam',
 
     // Q1 - Q4 Receipts, BSR Codes, Deposit Dates, Serial Numbers
@@ -512,7 +514,7 @@ const SettingsPage: React.FC = () => {
                     value={form16Values[`FORM16_CERT_TEXT_${selectedConfigFy}`] || ''}
                     onChange={e => setForm16Values({ ...form16Values, [`FORM16_CERT_TEXT_${selectedConfigFy}`]: e.target.value })}
                     placeholder={selectedConfigFy === '2627'
-                      ? "Certificate under section of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 192 or section 194P"
+                      ? "Certificate under section 395(1) of the Income-tax Act, 2025 for tax deducted at source on salary paid to an employee under section 392 or pension or interest income of specified senior citizen under section 393(1)[Table: Sl. No. 8(iii)]"
                       : "Certificate under section 203 of the Income-tax Act, 1961 for tax deducted at source on salary paid to an employee under section 192 or pension/interest income of specified senior citizen under section 194P"}
                   />
                 </div>

@@ -1863,24 +1863,33 @@ const ReportsPage: React.FC = () => {
             <select className="form-control-iipm" id="form16YearSelect" defaultValue="2026" style={{ width: '150px' }}>
               <option value="2026">FY 2026-27</option>
               <option value="2025">FY 2025-26</option>
+              <option value="2024">FY 2024-25</option>
+            </select>
+            <select className="form-control-iipm" id="form16FormatSelect" defaultValue="auto" style={{ width: '220px' }}>
+              <option value="auto">Auto (Smart Statutory Form)</option>
+              <option value="130">FORM NO. 130 (Salary u/s 392)</option>
+              <option value="131">FORM NO. 131 (Contract / Other u/s 395)</option>
+              <option value="16">FORM NO. 16 (Salary u/s 192)</option>
             </select>
           </div>
         </div>
         <button className="btn-accent-iipm" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 20px', fontSize: '0.95rem' }} onClick={async () => {
           const selectEl = document.getElementById('form16EmployeeSelect') as HTMLSelectElement;
           const yearEl = document.getElementById('form16YearSelect') as HTMLSelectElement;
+          const formatEl = document.getElementById('form16FormatSelect') as HTMLSelectElement;
           const selectedUserId = selectEl?.value;
           const selectedYear = parseInt(yearEl?.value || '2026');
+          const selectedFormat = formatEl?.value === 'auto' ? undefined : formatEl?.value;
           if (!selectedUserId) { alert('Please select an employee first.'); return; }
           
           try {
             const data = await apiService.getForm16(selectedUserId, selectedYear);
-            printForm16Document(data);
+            printForm16Document(data, selectedFormat);
           } catch(e: any) {
             alert('Failed to fetch Form 16. ' + e.message);
           }
         }}>
-          Download Form 16
+          🖨️ Print Form 16 / 130 / 131
         </button>
       </div>
 
