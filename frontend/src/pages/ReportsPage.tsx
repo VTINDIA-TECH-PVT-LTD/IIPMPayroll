@@ -659,7 +659,7 @@ const ReportsPage: React.FC = () => {
       <body>
         <div class="header">
           <div class="title">INDIAN INSTITUTE OF PETROLEUM AND ENERGY</div>
-          <div class="subtitle">(An Institute of National Importance) - Ministry of Petroleum and Natural Gas, Govt. of India</div>
+          <div class="subtitle">(An Institution of National Importance) - Ministry of Petroleum and Natural Gas, Govt. of India</div>
           <div class="subtitle">Vangali, Sabbavaram, Anakapalle – 531035, Andhra Pradesh, India</div>
         </div>
         <table class="ref-table">

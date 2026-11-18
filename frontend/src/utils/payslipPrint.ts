@@ -136,7 +136,7 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
               </td>
               <td class="header-text-cell">
                 <h1 class="inst-title">INDIAN INSTITUTE OF PETROLEUM AND ENERGY</h1>
-                <div class="inst-sub">(An Institute of National Importance)</div>
+                <div class="inst-sub">(An Institution of National Importance)</div>
                 <div class="inst-min">Ministry of Petroleum and Natural Gas, Government of India</div>
                 <div class="inst-addr">Vangali, Sabbavaram, Anakapalle &ndash; 531035, Andhra Pradesh, India</div>
                 <div class="inst-contact"><span>E-Mail :</span> dr.finance@iipe.ac.in &nbsp;|&nbsp; <span>Website :</span> www.iipe.ac.in</div>
@@ -231,7 +231,7 @@ export function generateSinglePayslipCardHtml(p: any, u: any): string {
 
         <!-- Footer -->
         <div class="footer-section">
-          This is a Computer Generated Pay Slip
+          This is a Computer Generated Pay Slip and signature is not required.
         </div>
       </div>
     </div>

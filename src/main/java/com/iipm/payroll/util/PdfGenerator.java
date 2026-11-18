@@ -157,7 +157,7 @@ public class PdfGenerator {
         title.setAlignment(Element.ALIGN_CENTER);
         textCell.addElement(title);
 
-        Paragraph subTitle = new Paragraph("(An Institute of National Importance)\nMinistry of Petroleum and Natural Gas, Government of India", boldFont);
+        Paragraph subTitle = new Paragraph("(An Institution of National Importance)\nMinistry of Petroleum and Natural Gas, Government of India", boldFont);
         subTitle.setAlignment(Element.ALIGN_CENTER);
         textCell.addElement(subTitle);
 
@@ -308,7 +308,7 @@ public class PdfGenerator {
         }
 
         document.add(new Paragraph(" "));
-        Paragraph footer = new Paragraph("This is a Computer Generated Pay Slip", smallFont);
+        Paragraph footer = new Paragraph("This is a Computer Generated Pay Slip and signature is not required.", smallFont);
         footer.setAlignment(Element.ALIGN_CENTER);
         document.add(footer);
     }
