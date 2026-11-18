@@ -1,5 +1,3 @@
-import { TRACES_HEADER_BANNER_BASE64, TRACES_WATERMARK_BASE64 } from '../assets/tracesAssetsBase64';
-
 export function generateForm16PrintHtml(d: any, formTypeOverride?: string): string {
   if (!d) return '';
 
@@ -26,7 +24,7 @@ export function generateForm16PrintHtml(d: any, formTypeOverride?: string): stri
   const toDate = d.periodTo || `31-Mar-${ayStartYear}`;
 
   // Determine Form Type (131 vs 130 vs 16)
-  const isType131 = (formTypeOverride === '131') || 
+  const isType131 = (formTypeOverride === '131') ||
     (!formTypeOverride && (d.formNumber?.includes('131') || d.employeeType?.toLowerCase() === 'contract' || d.department?.toLowerCase() === 'contract'));
   const isType16 = (formTypeOverride === '16') || (!formTypeOverride && (d.formNumber?.includes('16') || ayStartYear <= 2025));
 
@@ -58,7 +56,8 @@ export function generateForm16PrintHtml(d: any, formTypeOverride?: string): stri
     if (d.taxYearLabel) taxYearLabel = d.taxYearLabel;
   }
 
-  const certificateNo = d.certificateNo || `AAP${String(ayStartYear - 1).slice(-2)}${String(ayStartYear).slice(-2)}62995170`;
+  // Certificate number may be blank per client requirement
+  const certificateNo = d.certificateNo || '';
 
   const quarterlyList = (d.quarterlyTdsList && d.quarterlyTdsList.length > 0) ? d.quarterlyTdsList : [
     { quarter: 'Q1', receiptNumber: '', amountPaid: 0, taxDeducted: 0, taxDeposited: 0 },
@@ -199,15 +198,7 @@ export function generateForm16PrintHtml(d: any, formTypeOverride?: string): stri
     <body>
       <!-- ========================================= PAGE 1 ========================================= -->
       <div class="f16-page">
-        <div class="f16-watermark">
-          <img src="${TRACES_WATERMARK_BASE64}" alt="TRACES Watermark" />
-        </div>
-
         <div class="f16-content">
-          <div class="header-banner">
-            <img src="${TRACES_HEADER_BANNER_BASE64}" alt="TDS Centralized Processing Cell | TRACES | Government of India Income Tax Department" />
-          </div>
-
           <div class="f16-title-bar">${formNumber}</div>
           <div class="f16-subtitle-bar">${formRule}</div>
           <div class="f16-cert-text">${certText}</div>
@@ -309,18 +300,18 @@ export function generateForm16PrintHtml(d: any, formTypeOverride?: string): stri
             </thead>
             <tbody>
               ${['Q1', 'Q2', 'Q3', 'Q4'].map(q => {
-                const qData = quarterlyList.find((x: any) => x.quarter === q);
-                const hasData = (qData?.amountPaid && qData.amountPaid > 0) || (qData?.taxDeducted && qData.taxDeducted > 0);
-                return `
+    const qData = quarterlyList.find((x: any) => x.quarter === q);
+    const hasData = (qData?.amountPaid && qData.amountPaid > 0) || (qData?.taxDeducted && qData.taxDeducted > 0);
+    return `
                   <tr>
                     <td class="text-center bold">${q}</td>
-                    <td class="text-center" style="font-family: monospace;">${hasData ? (qData?.receiptNumber && qData.receiptNumber.trim() !== '' ? qData.receiptNumber : '770000424989084') : '-'}</td>
+                    <td class="text-center" style="font-family: monospace;">${hasData && qData?.receiptNumber && qData.receiptNumber.trim() !== '' ? qData.receiptNumber : '-'}</td>
                     <td class="text-right">${hasData ? `₹${fmt(qData?.amountPaid)}` : '-'}</td>
                     <td class="text-right">${hasData ? `₹${fmt(qData?.taxDeducted)}` : '-'}</td>
                     <td class="text-right">${hasData ? `₹${fmt(qData?.taxDeposited)}` : '-'}</td>
                   </tr>
                 `;
-              }).join('')}
+  }).join('')}
               <tr class="bold bg-gray">
                 <td colspan="2" class="text-center">Total</td>
                 <td class="text-right">₹${fmt(d.grossSalary)}</td>
@@ -351,20 +342,20 @@ export function generateForm16PrintHtml(d: any, formTypeOverride?: string): stri
             </thead>
             <tbody>
               ${challanList.map((c: any, i: number) => {
-                const qName = `Q${i + 1}`;
-                const qData = quarterlyList.find((x: any) => x.quarter === qName);
-                const hasData = (c?.amount && c.amount > 0) || (qData?.taxDeposited && qData.taxDeposited > 0) || (c?.bsrCode && c.bsrCode.trim() !== '' && c.bsrCode !== '-');
-                return `
+    const qName = `Q${i + 1}`;
+    const qData = quarterlyList.find((x: any) => x.quarter === qName);
+    const hasData = (c?.amount && c.amount > 0) || (qData?.taxDeposited && qData.taxDeposited > 0) || (c?.bsrCode && c.bsrCode.trim() !== '' && c.bsrCode !== '-');
+    return `
                   <tr>
                     <td class="text-center bold">${i + 1}</td>
                     <td class="text-right">${hasData ? `₹${fmt(c.amount || qData?.taxDeposited)}` : '-'}</td>
-                    <td class="text-center">${hasData && c.bsrCode && c.bsrCode.trim() !== '' && c.bsrCode !== '-' ? c.bsrCode : (hasData ? '0220002' : '-')}</td>
-                    <td class="text-center">${hasData && c.dateOfDeposit && c.dateOfDeposit.trim() !== '' && c.dateOfDeposit !== '-' ? c.dateOfDeposit : (hasData ? '06/Oct/2026' : '-')}</td>
-                    <td class="text-center">${hasData && c.challanSerialNumber && c.challanSerialNumber.trim() !== '' && c.challanSerialNumber !== '-' ? c.challanSerialNumber : (hasData ? '06815' : '-')}</td>
+                    <td class="text-center">${hasData && c.bsrCode && c.bsrCode.trim() !== '' && c.bsrCode !== '-' ? c.bsrCode : '-'}</td>
+                    <td class="text-center">${hasData && c.dateOfDeposit && c.dateOfDeposit.trim() !== '' && c.dateOfDeposit !== '-' ? c.dateOfDeposit : '-'}</td>
+                    <td class="text-center">${hasData && c.challanSerialNumber && c.challanSerialNumber.trim() !== '' && c.challanSerialNumber !== '-' ? c.challanSerialNumber : '-'}</td>
                     <td class="text-center bold">${hasData ? (c.statusMatching || 'Final') : '-'}</td>
                   </tr>
                 `;
-              }).join('')}
+  }).join('')}
               <tr class="bold bg-gray">
                 <td class="text-center">Total</td>
                 <td class="text-right">₹${fmt(totalTds)}</td>
@@ -443,10 +434,6 @@ export function generateForm16PrintHtml(d: any, formTypeOverride?: string): stri
       ${!isType131 ? `
       <!-- ========================================= PAGE 2 (PART B FOR SALARY: FORM 130 / FORM 16) ========================================= -->
       <div class="f16-page">
-        <div class="f16-watermark">
-          <img src="${TRACES_WATERMARK_BASE64}" alt="TRACES Watermark" />
-        </div>
-
         <div class="f16-content">
           <!-- Running Header on Page 2 matching TRACES -->
           <table class="f16-table" style="margin-bottom: 5px; background: #f8f9fa;">

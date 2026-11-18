@@ -42,6 +42,26 @@ public class Form16Service {
         return defaultValue;
     }
 
+    private LocalDate parseDateSafe(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty() || dateStr.equals("-")) return null;
+        dateStr = dateStr.trim();
+        List<DateTimeFormatter> formatters = Arrays.asList(
+                DateTimeFormatter.ISO_LOCAL_DATE,
+                DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH),
+                DateTimeFormatter.ofPattern("d-MMM-yyyy", Locale.ENGLISH),
+                DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+                DateTimeFormatter.ofPattern("d/M/yyyy"),
+                DateTimeFormatter.ofPattern("yyyy/MM/dd"),
+                DateTimeFormatter.ofPattern("dd-MM-yyyy")
+        );
+        for (DateTimeFormatter dtf : formatters) {
+            try {
+                return LocalDate.parse(dateStr, dtf);
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
     public Form16DTO generateForm16(String userId, int year) {
         User user = userRepository.findById(userId)
                 .orElseGet(() -> userRepository.findByEmployeeId(userId)
@@ -52,8 +72,24 @@ public class Form16Service {
         String financialYearShort = year + "-" + String.valueOf(year + 1).substring(2);
         String assessmentYear = (year + 1) + "-" + (year + 2);
         String taxYear = year + "-" + (year + 1);
+
+        LocalDate fyStart = LocalDate.of(year, 4, 1);
+        LocalDate fyEnd = LocalDate.of(year + 1, 3, 31);
+        LocalDate doj = parseDateSafe(user.getDateOfJoining());
+
         String periodFrom = "01-Apr-" + year;
         String periodTo = "31-Mar-" + (year + 1);
+
+        if (doj != null) {
+            if (doj.isAfter(fyEnd)) {
+                // Employee was not in the institute during this financial year
+                periodFrom = "-";
+                periodTo = "-";
+            } else if (doj.isAfter(fyStart)) {
+                periodFrom = doj.format(DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH));
+                periodTo = "31-Mar-" + (year + 1);
+            }
+        }
 
         // Fetch IT Declaration if any
         ItDeclaration declaration = itDeclarationRepository.findByUserIdAndFinancialYear(user.getId(), financialYear)
@@ -172,14 +208,16 @@ public class Form16Service {
             totalNpsEmployer = q1Nps + q2Nps + q3Nps + q4Nps;
             totalTdsDeposited = q1Tds + q2Tds + q3Tds + q4Tds;
         } else {
-            // Fallback for archive years with no stored monthly records (project 12 months)
-            q1Gross = stdMonthlyGross * 3; q1Pt = stdMonthlyPt * 3; q1Nps = monthlyNpsEmployer * 3;
-            q2Gross = stdMonthlyGross * 3; q2Pt = stdMonthlyPt * 3; q2Nps = monthlyNpsEmployer * 3;
-            q3Gross = stdMonthlyGross * 3; q3Pt = stdMonthlyPt * 3; q3Nps = monthlyNpsEmployer * 3;
-            q4Gross = stdMonthlyGross * 3; q4Pt = stdMonthlyPt * 3; q4Nps = monthlyNpsEmployer * 3;
-            grossSalary = q1Gross + q2Gross + q3Gross + q4Gross;
-            totalPt = q1Pt + q2Pt + q3Pt + q4Pt;
-            totalNpsEmployer = q1Nps + q2Nps + q3Nps + q4Nps;
+            // Employee was not in the institute or has 0 payroll records for this Financial Year.
+            // Keep all amounts strictly 0.0 (no fabricated or projected amounts).
+            q1Gross = 0; q1Pt = 0; q1Nps = 0; q1Tds = 0;
+            q2Gross = 0; q2Pt = 0; q2Nps = 0; q2Tds = 0;
+            q3Gross = 0; q3Pt = 0; q3Nps = 0; q3Tds = 0;
+            q4Gross = 0; q4Pt = 0; q4Nps = 0; q4Tds = 0;
+            grossSalary = 0;
+            totalPt = 0;
+            totalNpsEmployer = 0;
+            totalTdsDeposited = 0;
         }
 
         // 3. Part B Computations
@@ -194,90 +232,103 @@ public class Form16Service {
         double sec80D = 0;
         double homeLoan = 0;
 
-        if (isOldRegime) {
-            dto.setStandardDeduction(STANDARD_DEDUCTION_OLD);
-            if (declaration != null) {
-                exemptHra = declaration.getHraExemption();
-                sec80C = Math.min(declaration.getSection80C(), 150000.0);
-                sec80D = declaration.getSection80D();
-                homeLoan = Math.min(declaration.getHomeLoanInterest(), 200000.0);
-            }
-        } else {
-            dto.setStandardDeduction(STANDARD_DEDUCTION_NEW);
-        }
-
-        dto.setAllowancesExemptUpto10(exemptHra);
-        dto.setBalance(Math.max(0, grossSalary - exemptHra));
-        dto.setIncomeChargeableUnderSalaries(Math.max(0, dto.getBalance() - dto.getStandardDeduction() - totalPt));
-        dto.setGrossTotalIncome(dto.getIncomeChargeableUnderSalaries());
-
-        dto.setDeduction80C(sec80C);
-        dto.setDeduction80D(sec80D);
-        dto.setDeduction80CCD2(totalNpsEmployer);
-        dto.setDeduction80CCD(totalNpsEmployer);
-        dto.setHomeLoanInterest(homeLoan);
-
-        if (isOldRegime) {
-            dto.setTotalChapterVIADeductions(sec80C + sec80D + homeLoan + totalNpsEmployer);
-        } else {
-            dto.setTotalChapterVIADeductions(totalNpsEmployer);
-        }
-
-        double taxableIncome = Math.max(0, dto.getGrossTotalIncome() - dto.getTotalChapterVIADeductions());
-        dto.setTotalTaxableIncome(taxableIncome);
-
-        // Tax calculation matching Indian statutory tax slabs
-        double tax = 0;
-        double rebate = 0;
-
-        if (!isOldRegime) {
-            if (taxableIncome > 300000) {
-                if (taxableIncome > 300000) tax += (Math.min(taxableIncome, 700000) - 300000) * 0.05;
-                if (taxableIncome > 700000) tax += (Math.min(taxableIncome, 1000000) - 700000) * 0.10;
-                if (taxableIncome > 1000000) tax += (Math.min(taxableIncome, 1200000) - 1000000) * 0.15;
-                if (taxableIncome > 1200000) tax += (Math.min(taxableIncome, 1500000) - 1200000) * 0.20;
-                if (taxableIncome > 1500000) tax += (taxableIncome - 1500000) * 0.30;
-
-                if (taxableIncome <= 700000) {
-                    rebate = Math.min(tax, 25000.0);
-                    tax -= rebate;
-                }
-            }
-        } else {
-            if (taxableIncome > 250000) {
-                if (taxableIncome > 250000) tax += (Math.min(taxableIncome, 500000) - 250000) * 0.05;
-                if (taxableIncome > 500000) tax += (Math.min(taxableIncome, 1000000) - 500000) * 0.20;
-                if (taxableIncome > 1000000) tax += (taxableIncome - 1000000) * 0.30;
-
-                if (taxableIncome <= 500000) {
-                    rebate = Math.min(tax, 12500.0);
-                    tax -= rebate;
-                }
-            }
-        }
-
-        dto.setTaxOnTotalIncome(tax + rebate);
-        dto.setRebate87A(rebate);
-
-        double cess = (tax > 0) ? Math.round(tax * 0.04 * 100.0) / 100.0 : 0;
-        dto.setHealthAndEducationCess(cess);
-        dto.setSurcharge(0);
-        double totalTaxPayable = Math.round((tax + cess) * 100.0) / 100.0;
-        dto.setTotalTaxPayable(totalTaxPayable);
-
         if (totalMonthsWithPayroll == 0) {
-            totalTdsDeposited = totalTaxPayable;
-            if (grossSalary > 0) {
-                q1Tds = Math.round(totalTaxPayable * (q1Gross / grossSalary) * 100.0) / 100.0;
-                q2Tds = Math.round(totalTaxPayable * (q2Gross / grossSalary) * 100.0) / 100.0;
-                q3Tds = Math.round(totalTaxPayable * (q3Gross / grossSalary) * 100.0) / 100.0;
-                q4Tds = Math.max(0.0, Math.round((totalTaxPayable - q1Tds - q2Tds - q3Tds) * 100.0) / 100.0);
+            dto.setStandardDeduction(0.0);
+            dto.setAllowancesExemptUpto10(0.0);
+            dto.setBalance(0.0);
+            dto.setIncomeChargeableUnderSalaries(0.0);
+            dto.setGrossTotalIncome(0.0);
+            dto.setDeduction80C(0.0);
+            dto.setDeduction80D(0.0);
+            dto.setDeduction80CCD2(0.0);
+            dto.setDeduction80CCD(0.0);
+            dto.setHomeLoanInterest(0.0);
+            dto.setTotalChapterVIADeductions(0.0);
+            dto.setTotalTaxableIncome(0.0);
+            dto.setTaxOnTotalIncome(0.0);
+            dto.setRebate87A(0.0);
+            dto.setHealthAndEducationCess(0.0);
+            dto.setSurcharge(0.0);
+            dto.setTotalTaxPayable(0.0);
+            dto.setTaxDeductedAtSource(0.0);
+            dto.setTotalTdsDeposited(0.0);
+            dto.setTaxPayableOrRefundable(0.0);
+        } else {
+            if (isOldRegime) {
+                dto.setStandardDeduction(STANDARD_DEDUCTION_OLD);
+                if (declaration != null) {
+                    exemptHra = declaration.getHraExemption();
+                    sec80C = Math.min(declaration.getSection80C(), 150000.0);
+                    sec80D = declaration.getSection80D();
+                    homeLoan = Math.min(declaration.getHomeLoanInterest(), 200000.0);
+                }
+            } else {
+                dto.setStandardDeduction(STANDARD_DEDUCTION_NEW);
             }
-        }
 
-        dto.setTaxDeductedAtSource(totalTdsDeposited);
-        dto.setTotalTdsDeposited(totalTdsDeposited);
-        dto.setTaxPayableOrRefundable(Math.max(0.0, totalTaxPayable - totalTdsDeposited));
+            dto.setAllowancesExemptUpto10(exemptHra);
+            dto.setBalance(Math.max(0, grossSalary - exemptHra));
+            dto.setIncomeChargeableUnderSalaries(Math.max(0, dto.getBalance() - dto.getStandardDeduction() - totalPt));
+            dto.setGrossTotalIncome(dto.getIncomeChargeableUnderSalaries());
+
+            dto.setDeduction80C(sec80C);
+            dto.setDeduction80D(sec80D);
+            dto.setDeduction80CCD2(totalNpsEmployer);
+            dto.setDeduction80CCD(totalNpsEmployer);
+            dto.setHomeLoanInterest(homeLoan);
+
+            if (isOldRegime) {
+                dto.setTotalChapterVIADeductions(sec80C + sec80D + homeLoan + totalNpsEmployer);
+            } else {
+                dto.setTotalChapterVIADeductions(totalNpsEmployer);
+            }
+
+            double taxableIncome = Math.max(0, dto.getGrossTotalIncome() - dto.getTotalChapterVIADeductions());
+            dto.setTotalTaxableIncome(taxableIncome);
+
+            // Tax calculation matching Indian statutory tax slabs
+            double tax = 0;
+            double rebate = 0;
+
+            if (!isOldRegime) {
+                if (taxableIncome > 300000) {
+                    if (taxableIncome > 300000) tax += (Math.min(taxableIncome, 700000) - 300000) * 0.05;
+                    if (taxableIncome > 700000) tax += (Math.min(taxableIncome, 1000000) - 700000) * 0.10;
+                    if (taxableIncome > 1000000) tax += (Math.min(taxableIncome, 1200000) - 1000000) * 0.15;
+                    if (taxableIncome > 1200000) tax += (Math.min(taxableIncome, 1500000) - 1200000) * 0.20;
+                    if (taxableIncome > 1500000) tax += (taxableIncome - 1500000) * 0.30;
+
+                    if (taxableIncome <= 700000) {
+                        rebate = Math.min(tax, 25000.0);
+                        tax -= rebate;
+                    }
+                }
+            } else {
+                if (taxableIncome > 250000) {
+                    if (taxableIncome > 250000) tax += (Math.min(taxableIncome, 500000) - 250000) * 0.05;
+                    if (taxableIncome > 500000) tax += (Math.min(taxableIncome, 1000000) - 500000) * 0.20;
+                    if (taxableIncome > 1000000) tax += (taxableIncome - 1000000) * 0.30;
+
+                    if (taxableIncome <= 500000) {
+                        rebate = Math.min(tax, 12500.0);
+                        tax -= rebate;
+                    }
+                }
+            }
+
+            dto.setTaxOnTotalIncome(tax + rebate);
+            dto.setRebate87A(rebate);
+
+            double cess = (tax > 0) ? Math.round(tax * 0.04 * 100.0) / 100.0 : 0;
+            dto.setHealthAndEducationCess(cess);
+            dto.setSurcharge(0);
+            double totalTaxPayable = Math.round((tax + cess) * 100.0) / 100.0;
+            dto.setTotalTaxPayable(totalTaxPayable);
+
+            dto.setTaxDeductedAtSource(totalTdsDeposited);
+            dto.setTotalTdsDeposited(totalTdsDeposited);
+            dto.setTaxPayableOrRefundable(Math.max(0.0, totalTaxPayable - totalTdsDeposited));
+        }
 
         // Receipt Numbers from settings
         String q1Receipt = getSettingOrDefault("FORM16_Q1_RECEIPT", "");
@@ -356,8 +407,8 @@ public class Form16Service {
         dto.setEmployerContactNumber(getSettingOrDefault("FORM16_EMPLOYER_CONTACT_NO", "0891-2856000"));
         dto.setCitTds(getSettingOrDefault("FORM16_CIT_TDS", "The Commissioner of Income Tax (TDS)\nHyderabad - 500004"));
         
-        String defaultCertNo = "AAP" + fySuffix + String.format("%06d", Math.abs((user.getEmployeeId() + (user.getPan() != null ? user.getPan() : "ASKPY8597N") + year).hashCode() % 1000000));
-        dto.setCertificateNo(getSettingOrDefault("FORM16_CERTIFICATE_NO", defaultCertNo));
+        // Certificate number may be blank per client requirement
+        dto.setCertificateNo(getSettingOrDefault("FORM16_CERTIFICATE_NO", ""));
 
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH);
         String currentDateStr = LocalDate.now().format(dtf);
@@ -367,28 +418,13 @@ public class Form16Service {
         dto.setPaymentNatureCode(getSettingOrDefault("FORM16_PAYMENT_NATURE_CODE", "1021"));
         dto.setPaymentNatureDesc(getSettingOrDefault("FORM16_PAYMENT_NATURE_DESC", "Any income by way of interest other than interest on securities, in case of deductee/payee is other than senior citizen"));
 
-        // Format Employee Name with Title
+        // Use exact employee registered name without artificially prepending Dr. or Mr.
         String rawFirst = user.getFirstName() != null ? user.getFirstName() : "";
         String rawLast = user.getLastName() != null ? user.getLastName() : "";
         String rawName = (rawFirst + " " + rawLast).trim();
         if (rawName.isEmpty()) rawName = user.getName() != null ? user.getName() : user.getEmployeeId();
 
-        String eid = user.getEmployeeId() != null ? user.getEmployeeId().toUpperCase().trim() : "";
-        String desig = user.getDesignation() != null ? user.getDesignation().toUpperCase() : "";
-        String dept = user.getDepartment() != null ? user.getDepartment().toUpperCase() : "";
-        String et = user.getEmployeeType() != null ? user.getEmployeeType().toUpperCase() : "";
-        String fn = user.getFunction() != null ? user.getFunction().toUpperCase() : "";
-
-        boolean isAcademic = eid.startsWith("TS") || (eid.startsWith("CT") && !eid.startsWith("CNT")) ||
-                desig.contains("PROFESSOR") || desig.contains("FACULTY") || desig.contains("LECTURER") ||
-                dept.contains("ENGINEERING") || dept.contains("SCIENCES") || dept.equals("FACULTY") || dept.equals("ACADEMIC") ||
-                et.contains("TEACHING") || fn.contains("TEACHING");
-
-        String cleanName = rawName.replaceAll("(?i)^(dr\\.?|prof\\.?|professor|mr\\.?|shri\\.?|ms\\.?|mrs\\.?|smt\\.?)\\s+", "").trim();
-        String prefix = isAcademic ? "Dr. " : "Mr. ";
-        String formattedEmpName = prefix + cleanName;
-
-        dto.setEmployeeName(formattedEmpName);
+        dto.setEmployeeName(rawName);
         dto.setEmployeePAN(user.getPan() != null && !user.getPan().isEmpty() ? user.getPan() : "ASKPY8597N");
         dto.setEmployeeId(user.getEmployeeId() != null ? user.getEmployeeId() : "NT1005");
         dto.setEmployeeAddress(""); // Address omitted per client requirement

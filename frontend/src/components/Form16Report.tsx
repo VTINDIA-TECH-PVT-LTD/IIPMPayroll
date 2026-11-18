@@ -1,5 +1,4 @@
 import React from 'react';
-import { TRACES_HEADER_BANNER_BASE64, TRACES_WATERMARK_BASE64 } from '../assets/tracesAssetsBase64';
 
 interface Form16ReportProps {
   form16Data: any;
@@ -33,7 +32,7 @@ const Form16Report: React.FC<Form16ReportProps> = ({ form16Data, formTypeOverrid
   const toDate = d.periodTo || `31-Mar-${ayStartYear}`;
 
   // Determine Form Type (131 vs 130 vs 16)
-  const isType131 = (formTypeOverride === '131') || 
+  const isType131 = (formTypeOverride === '131') ||
     (!formTypeOverride && (d.formNumber?.includes('131') || d.employeeType?.toLowerCase() === 'contract' || d.department?.toLowerCase() === 'contract'));
   const isType16 = (formTypeOverride === '16') || (!formTypeOverride && (d.formNumber?.includes('16') || ayStartYear <= 2025));
 
@@ -65,7 +64,8 @@ const Form16Report: React.FC<Form16ReportProps> = ({ form16Data, formTypeOverrid
     if (d.taxYearLabel) taxYearLabel = d.taxYearLabel;
   }
 
-  const certificateNo = d.certificateNo || `AAP${String(ayStartYear - 1).slice(-2)}${String(ayStartYear).slice(-2)}62995170`;
+  // Certificate number may be blank per client requirement
+  const certificateNo = d.certificateNo || '';
 
   const quarterlyList = (d.quarterlyTdsList && d.quarterlyTdsList.length > 0) ? d.quarterlyTdsList : [
     { quarter: 'Q1', receiptNumber: '', amountPaid: 0, taxDeducted: 0, taxDeposited: 0 },
@@ -190,15 +190,7 @@ const Form16Report: React.FC<Form16ReportProps> = ({ form16Data, formTypeOverrid
       <div className="f16-wrapper">
         {/* ========================================= PAGE 1 ========================================= */}
         <div className="f16-page-preview">
-          <div className="f16-watermark-preview">
-            <img src={TRACES_WATERMARK_BASE64} alt="TRACES Watermark" />
-          </div>
-
           <div className="f16-content-preview">
-            <div className="header-banner-preview">
-              <img src={TRACES_HEADER_BANNER_BASE64} alt="TDS Centralized Processing Cell | TRACES | Government of India Income Tax Department" />
-            </div>
-
             <div className="f16-title-bar">{formNumber}</div>
             <div className="f16-subtitle-bar">{formRule}</div>
             <div className="f16-cert-text">{certText}</div>
@@ -309,7 +301,7 @@ const Form16Report: React.FC<Form16ReportProps> = ({ form16Data, formTypeOverrid
                   return (
                     <tr key={q}>
                       <td className="text-center bold">{q}</td>
-                      <td className="text-center" style={{ fontFamily: 'monospace' }}>{hasData ? (qData?.receiptNumber && qData.receiptNumber.trim() !== '' ? qData.receiptNumber : '770000424989084') : '-'}</td>
+                      <td className="text-center" style={{ fontFamily: 'monospace' }}>{hasData && qData?.receiptNumber && qData.receiptNumber.trim() !== '' ? qData.receiptNumber : '-'}</td>
                       <td className="text-right">{hasData ? `₹${fmt(qData?.amountPaid)}` : '-'}</td>
                       <td className="text-right">{hasData ? `₹${fmt(qData?.taxDeducted)}` : '-'}</td>
                       <td className="text-right">{hasData ? `₹${fmt(qData?.taxDeposited)}` : '-'}</td>
@@ -353,9 +345,9 @@ const Form16Report: React.FC<Form16ReportProps> = ({ form16Data, formTypeOverrid
                     <tr key={i}>
                       <td className="text-center bold">{i + 1}</td>
                       <td className="text-right">{hasData ? `₹${fmt(c.amount || qData?.taxDeposited)}` : '-'}</td>
-                      <td className="text-center">{hasData && c.bsrCode && c.bsrCode.trim() !== '' && c.bsrCode !== '-' ? c.bsrCode : (hasData ? '0220002' : '-')}</td>
-                      <td className="text-center">{hasData && c.dateOfDeposit && c.dateOfDeposit.trim() !== '' && c.dateOfDeposit !== '-' ? c.dateOfDeposit : (hasData ? '06/Oct/2026' : '-')}</td>
-                      <td className="text-center">{hasData && c.challanSerialNumber && c.challanSerialNumber.trim() !== '' && c.challanSerialNumber !== '-' ? c.challanSerialNumber : (hasData ? '06815' : '-')}</td>
+                      <td className="text-center">{hasData && c.bsrCode && c.bsrCode.trim() !== '' && c.bsrCode !== '-' ? c.bsrCode : '-'}</td>
+                      <td className="text-center">{hasData && c.dateOfDeposit && c.dateOfDeposit.trim() !== '' && c.dateOfDeposit !== '-' ? c.dateOfDeposit : '-'}</td>
+                      <td className="text-center">{hasData && c.challanSerialNumber && c.challanSerialNumber.trim() !== '' && c.challanSerialNumber !== '-' ? c.challanSerialNumber : '-'}</td>
                       <td className="text-center bold">{hasData ? (c.statusMatching || 'Final') : '-'}</td>
                     </tr>
                   );
@@ -445,10 +437,6 @@ const Form16Report: React.FC<Form16ReportProps> = ({ form16Data, formTypeOverrid
         {/* ========================================= PAGE 2 (PART B FOR SALARY: FORM 130 / FORM 16) ========================================= */}
         {!isType131 && (
           <div className="f16-page-preview">
-            <div className="f16-watermark-preview">
-              <img src={TRACES_WATERMARK_BASE64} alt="TRACES Watermark" />
-            </div>
-
             <div className="f16-content-preview">
               {/* Running Header on Page 2 */}
               <table className="f16-table" style={{ marginBottom: '5px', background: '#f8f9fa' }}>
@@ -465,7 +453,7 @@ const Form16Report: React.FC<Form16ReportProps> = ({ form16Data, formTypeOverrid
               <div className="f16-title-bar" style={{ borderTop: '1px solid #000' }}>{formNumber}</div>
               <div className="f16-title-bar" style={{ fontSize: '12.5px' }}>PART B</div>
               <div className="f16-subtitle-bar" style={{ fontWeight: 'bold' }}>Annexure - I</div>
-              
+
               <table className="f16-table" style={{ borderTop: '1px solid #000' }}>
                 <tbody>
                   <tr className="bg-gray">
